@@ -403,43 +403,51 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
               {/* ── FLAGS ── */}
               <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14, marginTop: 4 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", letterSpacing: ".06em", marginBottom: 10, textTransform: "uppercase" }}>Flags</div>
-                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>Toggle risk flags for this driver</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                  {FLAGS_OPT.map((flag) => (
-                    <label
-                      key={flag}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                        padding: "11px 14px",
-                        background: driver.flags.includes(flag) ? "#f0f9ff" : "#f8fafc",
-                        border: `1px solid ${driver.flags.includes(flag) ? "#bae6fd" : "#e2e8f0"}`,
-                        borderRadius: 9,
-                        cursor: "pointer",
-                        transition: "all .12s",
-                      }}
-                    >
-                      <div
+                  {FLAGS_OPT.map(({ label: flag, type }) => {
+                    const isActive = driver.flags.includes(flag);
+                    const isGreen = type === "green";
+                    const activeBg     = isGreen ? "#f0fdf4" : "#fef2f2";
+                    const activeBorder = isGreen ? "#86efac" : "#fca5a5";
+                    const checkColor   = isGreen ? "#16a34a" : "#dc2626";
+                    const idleBg       = isGreen ? "#f7fef9" : "#fff8f8";
+                    const idleBorder   = isGreen ? "#d1fae5" : "#fee2e2";
+                    return (
+                      <label
+                        key={flag}
                         style={{
-                          width: 16,
-                          height: 16,
-                          borderRadius: 4,
-                          border: `2px solid ${driver.flags.includes(flag) ? "#3b82f6" : "#d1d5db"}`,
-                          background: driver.flags.includes(flag) ? "#3b82f6" : "transparent",
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                          transition: "all .15s",
+                          gap: 12,
+                          padding: "11px 14px",
+                          background: isActive ? activeBg : idleBg,
+                          border: `1px solid ${isActive ? activeBorder : idleBorder}`,
+                          borderRadius: 9,
+                          cursor: "pointer",
+                          transition: "all .12s",
                         }}
                       >
-                        {driver.flags.includes(flag) && <span style={{ color: "#fff", fontSize: 9, fontWeight: 700 }}>v</span>}
-                      </div>
-                      <input type="checkbox" checked={driver.flags.includes(flag)} onChange={() => toggleFlag(flag)} style={{ display: "none" }} />
-                      <span style={{ fontSize: 13, color: "#374151" }}>{flag}</span>
-                    </label>
-                  ))}
+                        <div
+                          style={{
+                            width: 16,
+                            height: 16,
+                            borderRadius: 4,
+                            border: `2px solid ${isActive ? checkColor : (isGreen ? "#86efac" : "#fca5a5")}`,
+                            background: isActive ? checkColor : "transparent",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                            transition: "all .15s",
+                          }}
+                        >
+                          {isActive && <span style={{ color: "#fff", fontSize: 9, fontWeight: 700 }}>v</span>}
+                        </div>
+                        <input type="checkbox" checked={isActive} onChange={() => toggleFlag(flag)} style={{ display: "none" }} />
+                        <span style={{ fontSize: 13, color: isActive ? checkColor : "#374151", fontWeight: isActive ? 600 : 400 }}>{flag}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
 

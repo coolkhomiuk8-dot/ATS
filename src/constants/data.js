@@ -63,10 +63,10 @@ export const TEXT_TEMPLATES = [
 export const CALL_LOG_TPL = `Date/Time: [DATE] [TIME]\nType: [Call / Text / Email / Voicemail]\nDuration: [X min]   Spoke To: [Yes / No]\n------------------------------\nSUMMARY:\n[What was discussed]\n\nKEY POINTS:\n- CDL Class:            - Experience:\n- Available:            - Interest: [Hot/Warm/Cold]\n- Objections:\n\nNEXT ACTION: [What + When]`;
 
 export const FLAGS_OPT = [
-  "DUI / Major Violation",
-  "Gaps in Employment >6 months",
-  "Multiple jobs in last 2 years",
-  "Failed drug test history",
-  "Referral (priority)",
-  "No-show / ghosted",
+  { label: "Good Experience",          type: "green" },
+  { label: "Good impression",          type: "green" },
+  { label: "Referral (priority)",      type: "green" },
+  { label: "Do not answer, ignores calls", type: "red" },
+  { label: "Bad Criminal record",      type: "red" },
+  { label: "Ghosted",                  type: "red" },
 ];
