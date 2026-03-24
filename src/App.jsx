@@ -16,7 +16,7 @@ import RoleManagerModal from "./components/RoleManagerModal";
 import { auth, db, isFirebaseConfigured } from "./lib/firebase";
 
 export default function App() {
-  const { drivers, upd, addNote, addFile, addDriver, initDrivers, stopDriversSync, isLoading, syncError } = useDriversStore();
+  const { drivers, upd, addNote, addFile, removeFile, addDriver, initDrivers, stopDriversSync, isLoading, syncError } = useDriversStore();
   const [firebaseUser, setFirebaseUser] = useState(() => auth?.currentUser || null);
   const [authLoading, setAuthLoading] = useState(isFirebaseConfigured);
 
@@ -569,6 +569,7 @@ export default function App() {
           onUpd={upd}
           onNote={addNote}
           onFile={addFile}
+          onDeleteFile={removeFile}
           onStageChange={requestStageChange}
         />
       )}

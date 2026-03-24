@@ -346,6 +346,57 @@ export const useDriversStore = create((set, get) => ({
     }
   },
 
+  removeFile: async (id, fileIdx) => {
+    const currentDriver = get().drivers.find((driver) => driver.id === id);
+    if (!currentDriver) return;
+
+    const currentFiles = currentDriver.files || [];
+    const fileToDelete = currentFiles[fileIdx];
+    if (!fileToDelete) return;
+
+    const nextFiles = currentFiles.filter((_, idx) => idx !== fileIdx);
+    const nextDocs = { ...(currentDriver.docs || {}) };
+
+    if (fileToDelete?.linkedDoc) {
+      const stillLinked = nextFiles.some((item) => item.linkedDoc === fileToDelete.linkedDoc);
+      if (!stillLinked) nextDocs[fileToDelete.linkedDoc] = false;
+    }
+
+    set((state) => ({
+      drivers: state.drivers.map((driver) =>
+        driver.id === id
+          ? { ...driver, files: nextFiles, docs: nextDocs }
+          : driver,
+      ),
+    }));
+
+    if (!isFirebaseConfigured || !db) return;
+
+    try {
+      await ensureAuthReady();
+      const current = get().drivers.find((driver) => driver.id === id) || currentDriver;
+      const docId = getDriverDocId(current || { id });
+      await updateDoc(doc(db, "drivers", docId), {
+        files: nextFiles,
+        docs: nextDocs,
+      });
+    } catch (error) {
+      set({ syncError: error.message || "Failed to remove file from driver." });
+      return;
+    }
+
+    if (!storage || !fileToDelete.storagePath) return;
+
+    try {
+      await deleteObject(ref(storage, fileToDelete.storagePath));
+    } catch (error) {
+      set({
+        syncError:
+          error?.message || "File metadata removed, but failed to delete physical file from Storage.",
+      });
+    }
+  },
+
   addDriver: async (data) => {
     const nextId = get().idCounter + 1;
     const newDriver = ensureDriverShape({
@@ -369,12 +420,4 @@ export const useDriversStore = create((set, get) => ({
     }
   },
 
-  deleteDriverFileFromStorage: async (fileObj) => {
-    if (!storage || !fileObj?.storagePath) return;
-    try {
-      await deleteObject(ref(storage, fileObj.storagePath));
-    } catch {
-      // Ignore storage cleanup errors. Metadata is source of truth.
-    }
-  },
 }));

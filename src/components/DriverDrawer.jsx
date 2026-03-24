@@ -4,12 +4,13 @@ import { fmtDate, minutesUntil } from "../utils/date";
 import { fmtSize } from "../utils/file";
 import { Btn, FL } from "./UiBits";
 
-export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, onStageChange }) {
+export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, onDeleteFile, onStageChange }) {
   const [tab, setTab] = useState("info");
   const [note, setNote] = useState("");
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({ ...driver });
   const [pendingFile, setPendingFile] = useState(null);
+  const [deleteModal, setDeleteModal] = useState(null);
   const fileRef = useRef(null);
 
   const stage = STAGES.find((item) => item.id === driver.stage) || STAGES[0];
@@ -76,15 +77,14 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
 
   function deleteFile(fileIdx) {
     const file = (driver.files || [])[fileIdx];
-    const newFiles = (driver.files || []).filter((_, idx) => idx !== fileIdx);
-    const newDocs = { ...driver.docs };
+    if (!file) return;
+    setDeleteModal({ idx: fileIdx, name: file.name || "file" });
+  }
 
-    if (file?.linkedDoc) {
-      const stillLinked = newFiles.some((item) => item.linkedDoc === file.linkedDoc);
-      if (!stillLinked) newDocs[file.linkedDoc] = false;
-    }
-
-    onUpd(driver.id, { files: newFiles, docs: newDocs });
+  function confirmDeleteFile() {
+    if (!deleteModal) return;
+    onDeleteFile(driver.id, deleteModal.idx);
+    setDeleteModal(null);
   }
 
   return (
@@ -661,6 +661,85 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
             >
               Skip - upload without linking to checklist
             </button>
+          </div>
+        </div>
+      )}
+
+      {deleteModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15,23,42,.55)",
+            zIndex: 220,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+          onClick={() => setDeleteModal(null)}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              width: "100%",
+              maxWidth: 420,
+              padding: 22,
+              boxShadow: "0 20px 60px rgba(0,0,0,.2)",
+              border: "1px solid #fee2e2",
+            }}
+          >
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#7f1d1d", marginBottom: 6 }}>
+              Delete file?
+            </div>
+            <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5, marginBottom: 16 }}>
+              File{" "}
+              <span
+                style={{
+                  fontWeight: 600,
+                  color: "#334155",
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word",
+                }}
+              >
+                {deleteModal.name}
+              </span>{" "}
+              will be permanently removed from the driver profile and cloud storage.
+            </div>
+
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setDeleteModal(null)}
+                style={{
+                  padding: "9px 14px",
+                  background: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 8,
+                  fontSize: 13,
+                  color: "#475569",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteFile}
+                style={{
+                  padding: "9px 14px",
+                  background: "#dc2626",
+                  border: "1px solid #dc2626",
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#fff",
+                  cursor: "pointer",
+                }}
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
