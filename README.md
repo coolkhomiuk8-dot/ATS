@@ -6,6 +6,7 @@ This project was split from a single-file prototype into a modular React archite
 
 - React 18
 - Zustand (state management)
+- Firebase Firestore + Storage (drivers data + documents)
 - Vite (build/dev server)
 - Netlify (deployment)
 
@@ -24,12 +25,36 @@ This project was split from a single-file prototype into a modular React archite
 ## Run locally
 
 1. Install Node.js 20+ (includes npm).
+2. Create `.env` from `.env.example` and fill Firebase values.
 2. Install dependencies:
    npm install
 3. Start development server:
    npm run dev
 4. Build for production:
    npm run build
+
+## Firebase setup
+
+1. Create a Firebase project.
+2. Enable Firestore Database (production or test mode).
+3. Enable Firebase Storage.
+4. In Project Settings -> Your apps -> Web app, copy config values into `.env`.
+
+Required `.env` keys:
+
+- VITE_FIREBASE_API_KEY
+- VITE_FIREBASE_AUTH_DOMAIN
+- VITE_FIREBASE_PROJECT_ID
+- VITE_FIREBASE_STORAGE_BUCKET
+- VITE_FIREBASE_MESSAGING_SENDER_ID
+- VITE_FIREBASE_APP_ID
+
+Data behavior:
+
+- Driver profiles, stage, notes, flags, docs checklist are stored in Firestore collection `drivers`.
+- Uploaded files are stored in Firebase Storage under `driver-files/{driverId}/...`.
+- On first launch with empty Firestore, sample drivers are auto-seeded.
+- On each page load, drivers are loaded from Firestore in real time.
 
 ## Deploy to Netlify
 

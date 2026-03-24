@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { STAGES } from "./constants/data";
 import { minutesUntil, nextActionTs, todayStr } from "./utils/date";
 import { useDriversStore } from "./store/useDriversStore";
@@ -11,7 +11,7 @@ import AddModal from "./components/AddModal";
 import StageModal from "./components/StageModal";
 
 export default function App() {
-  const { drivers, upd, addNote, addFile, addDriver } = useDriversStore();
+  const { drivers, upd, addNote, addFile, addDriver, initDrivers, stopDriversSync, isLoading, syncError } = useDriversStore();
 
   const [view, setView] = useState("pipeline");
   const [selectedId, setSelectedId] = useState(null);
@@ -21,6 +21,11 @@ export default function App() {
   const [searchFocus, setSearchFocus] = useState(false);
   const [copiedTpl, setCopiedTpl] = useState(null);
   const [stageModal, setStageModal] = useState(null);
+
+  useEffect(() => {
+    initDrivers();
+    return () => stopDriversSync();
+  }, [initDrivers, stopDriversSync]);
 
   const searchResults = useMemo(() => {
     if (!search.trim()) return [];
@@ -364,13 +369,42 @@ export default function App() {
           </button>
         </header>
 
+        {isLoading && (
+          <div
+            style={{
+              padding: "8px 14px",
+              borderBottom: "1px solid #dbeafe",
+              background: "#eff6ff",
+              color: "#1d4ed8",
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            Syncing drivers from Firebase...
+          </div>
+        )}
+
+        {!isLoading && syncError && (
+          <div
+            style={{
+              padding: "8px 14px",
+              borderBottom: "1px solid #fed7aa",
+              background: "#fff7ed",
+              color: "#9a3412",
+              fontSize: 12,
+            }}
+          >
+            {syncError}
+          </div>
+        )}
+
         <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
           {view === "pipeline" && (
             <PipelineView
               stages={STAGES}
               filteredDrivers={filtered}
               onSelectDriver={setSelectedId}
-              onStageChange={requestStageChange}
+              onDropDriverToStage={requestStageChange}
             />
           )}
 

@@ -49,6 +49,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
           type: file.type.startsWith("image/") ? "image" : "file",
           mime: file.type,
           data: event.target.result,
+          rawFile: file,
           size: file.size,
           date: new Date().toLocaleString("en-US", {
             month: "short",
@@ -453,7 +454,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                       <div key={idx} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 9, overflow: "hidden" }}>
                         {file.type === "image" ? (
                           <>
-                            <img src={file.data} alt={file.name} style={{ width: "100%", maxHeight: 160, objectFit: "cover", display: "block" }} />
+                            <img src={file.url || file.data} alt={file.name} style={{ width: "100%", maxHeight: 160, objectFit: "cover", display: "block" }} />
                             <div style={{ padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <div>
                                 <div style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>{file.name}</div>
@@ -463,7 +464,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                                 </div>
                               </div>
                               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                                <a href={file.data} download={file.name} style={{ fontSize: 11, color: "#2563eb", textDecoration: "none", fontWeight: 600 }}>Save</a>
+                                <a href={file.url || file.data} download={file.name} style={{ fontSize: 11, color: "#2563eb", textDecoration: "none", fontWeight: 600 }}>Save</a>
                                 <button onClick={() => deleteFile(idx)} style={{ background: "none", border: "none", color: "#dc2626", fontSize: 12, cursor: "pointer" }}>Delete</button>
                               </div>
                             </div>
@@ -479,7 +480,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                               </div>
                             </div>
                             <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-                              <a href={file.data} download={file.name} style={{ fontSize: 11, color: "#2563eb", textDecoration: "none", fontWeight: 600 }}>Save</a>
+                              <a href={file.url || file.data} download={file.name} style={{ fontSize: 11, color: "#2563eb", textDecoration: "none", fontWeight: 600 }}>Save</a>
                               <button onClick={() => deleteFile(idx)} style={{ background: "none", border: "none", color: "#dc2626", fontSize: 12, cursor: "pointer" }}>Delete</button>
                             </div>
                           </div>
