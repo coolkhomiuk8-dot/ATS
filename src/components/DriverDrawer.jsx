@@ -228,8 +228,6 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
           {[
             ["info", "Info"],
             ["documents", "Documents"],
-            ["notes", "Log"],
-            ["flags", "Flags"],
           ].map(([id, label]) => (
             <button
               key={id}
@@ -251,7 +249,6 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                   {(driver.files || []).length > 0 ? ` · ${(driver.files || []).length} files` : ""})
                 </span>
               )}
-              {id === "notes" && <span style={{ fontSize: 10, color: "#94a3b8", marginLeft: 3 }}>({driver.notes.length})</span>}
             </button>
           ))}
         </div>
@@ -259,6 +256,8 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
         <div style={{ flex: 1, overflowY: "auto", padding: "16px 22px" }}>
           {tab === "info" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+
+              {/* ── INFO ── */}
               {editing ? (
                 <>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -350,6 +349,100 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                   <Btn label="Edit Info" onClick={() => { setEditData({ ...driver }); setEditing(true); }} />
                 </>
               )}
+
+              {/* ── LOG ── */}
+              <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14, marginTop: 4 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", letterSpacing: ".06em", marginBottom: 10, textTransform: "uppercase" }}>
+                  Log <span style={{ fontWeight: 400, color: "#94a3b8" }}>({driver.notes.length})</span>
+                </div>
+                <div>
+                  <FL t="Add Entry" />
+                  <textarea
+                    value={note}
+                    onChange={(event) => setNote(event.target.value)}
+                    placeholder="Log a call, text, email or note"
+                    rows={4}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      fontSize: 13,
+                      background: "#f8fafc",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: 8,
+                      resize: "vertical",
+                      lineHeight: 1.6,
+                      color: "#0f172a",
+                      outline: "none",
+                    }}
+                  />
+                  <div style={{ marginTop: 6 }}>
+                    <Btn label="Add Entry" onClick={submitNote} primary />
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 7, marginTop: 12 }}>
+                  {driver.notes.length === 0 && (
+                    <div style={{ textAlign: "center", padding: 24, fontSize: 13, color: "#cbd5e1" }}>No entries yet</div>
+                  )}
+                  {driver.notes.map((item, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        background: "#f8fafc",
+                        border: `1px solid ${item.text.startsWith("[Stage:") ? "#dbeafe" : "#e2e8f0"}`,
+                        borderRadius: 9,
+                        padding: "10px 12px",
+                      }}
+                    >
+                      <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 4 }}>{item.date}</div>
+                      <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{item.text}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── FLAGS ── */}
+              <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14, marginTop: 4 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", letterSpacing: ".06em", marginBottom: 10, textTransform: "uppercase" }}>Flags</div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>Toggle risk flags for this driver</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                  {FLAGS_OPT.map((flag) => (
+                    <label
+                      key={flag}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "11px 14px",
+                        background: driver.flags.includes(flag) ? "#f0f9ff" : "#f8fafc",
+                        border: `1px solid ${driver.flags.includes(flag) ? "#bae6fd" : "#e2e8f0"}`,
+                        borderRadius: 9,
+                        cursor: "pointer",
+                        transition: "all .12s",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: 4,
+                          border: `2px solid ${driver.flags.includes(flag) ? "#3b82f6" : "#d1d5db"}`,
+                          background: driver.flags.includes(flag) ? "#3b82f6" : "transparent",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                          transition: "all .15s",
+                        }}
+                      >
+                        {driver.flags.includes(flag) && <span style={{ color: "#fff", fontSize: 9, fontWeight: 700 }}>v</span>}
+                      </div>
+                      <input type="checkbox" checked={driver.flags.includes(flag)} onChange={() => toggleFlag(flag)} style={{ display: "none" }} />
+                      <span style={{ fontSize: 13, color: "#374151" }}>{flag}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
             </div>
           )}
 
@@ -493,94 +586,6 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
             </div>
           )}
 
-          {tab === "notes" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div>
-                <FL t="Add Entry" />
-                <textarea
-                  value={note}
-                  onChange={(event) => setNote(event.target.value)}
-                  placeholder="Log a call, text, email or note"
-                  rows={4}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    fontSize: 13,
-                    background: "#f8fafc",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: 8,
-                    resize: "vertical",
-                    lineHeight: 1.6,
-                    color: "#0f172a",
-                    outline: "none",
-                  }}
-                />
-                <div style={{ marginTop: 6 }}>
-                  <Btn label="Add Entry" onClick={submitNote} primary />
-                </div>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                {driver.notes.length === 0 && (
-                  <div style={{ textAlign: "center", padding: 24, fontSize: 13, color: "#cbd5e1" }}>No entries yet</div>
-                )}
-                {driver.notes.map((item, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      background: "#f8fafc",
-                      border: `1px solid ${item.text.startsWith("[Stage:") ? "#dbeafe" : "#e2e8f0"}`,
-                      borderRadius: 9,
-                      padding: "10px 12px",
-                    }}
-                  >
-                    <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 4 }}>{item.date}</div>
-                    <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{item.text}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {tab === "flags" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-              <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Toggle risk flags for this driver</div>
-              {FLAGS_OPT.map((flag) => (
-                <label
-                  key={flag}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    padding: "11px 14px",
-                    background: driver.flags.includes(flag) ? "#f0f9ff" : "#f8fafc",
-                    border: `1px solid ${driver.flags.includes(flag) ? "#bae6fd" : "#e2e8f0"}`,
-                    borderRadius: 9,
-                    cursor: "pointer",
-                    transition: "all .12s",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 16,
-                      height: 16,
-                      borderRadius: 4,
-                      border: `2px solid ${driver.flags.includes(flag) ? "#3b82f6" : "#d1d5db"}`,
-                      background: driver.flags.includes(flag) ? "#3b82f6" : "transparent",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      transition: "all .15s",
-                    }}
-                  >
-                    {driver.flags.includes(flag) && <span style={{ color: "#fff", fontSize: 9, fontWeight: 700 }}>v</span>}
-                  </div>
-                  <input type="checkbox" checked={driver.flags.includes(flag)} onChange={() => toggleFlag(flag)} style={{ display: "none" }} />
-                  <span style={{ fontSize: 13, color: "#374151" }}>{flag}</span>
-                </label>
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
