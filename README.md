@@ -53,7 +53,6 @@ Data behavior:
 
 - Driver profiles, stage, notes, flags, docs checklist are stored in Firestore collection `drivers`.
 - Uploaded files are stored in Firebase Storage under `driver-files/{driverId}/...`.
-- On first launch with empty Firestore, sample drivers are auto-seeded.
 - On each page load, drivers are loaded from Firestore in real time.
 
 ## Storage rules for file uploads (admin/root)
