@@ -1,0 +1,45 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function hasCustomPrivilegedRole() {
+      return isSignedIn()
+        && (
+          request.auth.token.role == 'admin'
+          || request.auth.token.role == 'root'
+        );
+    }
+
+    function hasFirestorePrivilegedRole() {
+      return isSignedIn()
+        && request.auth.token.email != null
+        && firestore.exists(
+          /databases/(default)/documents/user_roles/$(request.auth.token.email)
+        )
+        && (
+          firestore.get(
+            /databases/(default)/documents/user_roles/$(request.auth.token.email)
+          ).data.role == 'admin'
+          || firestore.get(
+            /databases/(default)/documents/user_roles/$(request.auth.token.email)
+          ).data.role == 'root'
+        );
+    }
+
+    function isPrivilegedUploader() {
+      return hasCustomPrivilegedRole() || hasFirestorePrivilegedRole();
+    }
+
+    match /driver-files/{driverKey}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isPrivilegedUploader();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

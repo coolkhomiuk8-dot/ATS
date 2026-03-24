@@ -4,7 +4,9 @@ import { todayStr } from "../utils/date";
 import { db, ensureAuthReady, isFirebaseConfigured, storage } from "../lib/firebase";
 import {
   collection,
+  deleteDoc,
   doc,
+  getDoc,
   getDocs,
   limit,
   onSnapshot,
@@ -56,11 +58,42 @@ function sanitizeFileForDb(fileObj) {
   return stripUndefined(rest);
 }
 
+function getDriverDocId(driver) {
+  return String(driver?.docId || driver?.id || "");
+}
+
+function normalizeDriverKeyPart(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^\p{L}\p{N}_]+/gu, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function buildDriverFileDocId(name, phone) {
+  const tokens = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .map(normalizeDriverKeyPart)
+    .filter(Boolean);
+
+  const first = tokens[0] || "driver";
+  const second = tokens[1] || "unknown";
+  const phonePart = String(phone || "").replace(/\D/g, "") || "0000000000";
+
+  return `${first}_${second}_${phonePart}`;
+}
+
 async function seedSampleDrivers() {
   const batch = writeBatch(db);
   SAMPLE_DRIVERS.forEach((driver) => {
     const safeDriver = ensureDriverShape(driver);
-    batch.set(doc(db, "drivers", String(safeDriver.id)), safeDriver);
+    batch.set(doc(db, "drivers", String(safeDriver.id)), {
+      ...safeDriver,
+      docId: String(safeDriver.id),
+    });
   });
   await batch.commit();
 }
@@ -152,7 +185,12 @@ export const useDriversStore = create((set, get) => ({
           }
 
           const drivers = snapshot.docs
-            .map((snap) => ensureDriverShape(snap.data()))
+            .map((snap) =>
+              ensureDriverShape({
+                ...snap.data(),
+                docId: snap.id,
+              }),
+            )
             .sort((a, b) => Number(b.id) - Number(a.id));
 
           const idCounter = drivers.length
@@ -204,7 +242,9 @@ export const useDriversStore = create((set, get) => ({
 
     try {
       await ensureAuthReady();
-      await updateDoc(doc(db, "drivers", String(id)), safePatch);
+      const current = get().drivers.find((driver) => driver.id === id);
+      const docId = getDriverDocId(current || { id });
+      await updateDoc(doc(db, "drivers", docId), safePatch);
     } catch (error) {
       set({ syncError: error.message || "Failed to update driver." });
     }
@@ -239,7 +279,9 @@ export const useDriversStore = create((set, get) => ({
 
     try {
       await ensureAuthReady();
-      await updateDoc(doc(db, "drivers", String(id)), {
+      const current = get().drivers.find((driver) => driver.id === id);
+      const docId = getDriverDocId(current || { id });
+      await updateDoc(doc(db, "drivers", docId), {
         notes: nextNotes,
         lastContact,
       });
@@ -249,14 +291,55 @@ export const useDriversStore = create((set, get) => ({
   },
 
   addFile: async (id, fileObj) => {
+    const currentDriver = get().drivers.find((driver) => driver.id === id);
+    if (!currentDriver) return;
+
+    let resolvedDocId = getDriverDocId(currentDriver);
+    const targetDocId = buildDriverFileDocId(currentDriver.name, currentDriver.phone);
+
     let savedFile = sanitizeFileForDb(fileObj);
 
     try {
       if (isFirebaseConfigured && db) {
-        savedFile = await uploadDriverFile(id, fileObj);
+        await ensureAuthReady();
+
+        if (resolvedDocId !== targetDocId) {
+          const targetRef = doc(db, "drivers", targetDocId);
+          const targetSnap = await getDoc(targetRef);
+
+          if (targetSnap.exists() && Number(targetSnap.data()?.id) !== Number(currentDriver.id)) {
+            throw new Error("Another driver already uses this name_surname_phonenumber key.");
+          }
+
+          await setDoc(
+            targetRef,
+            stripUndefined({
+              ...currentDriver,
+              docId: targetDocId,
+            }),
+            { merge: true },
+          );
+
+          if (resolvedDocId && resolvedDocId !== targetDocId) {
+            await deleteDoc(doc(db, "drivers", resolvedDocId));
+          }
+
+          resolvedDocId = targetDocId;
+        }
+
+        savedFile = await uploadDriverFile(resolvedDocId, fileObj);
       }
     } catch (error) {
-      set({ syncError: error.message || "Failed to upload file." });
+      const message = String(error?.message || "");
+      const isStorageUnauthorized =
+        message.includes("storage/unauthorized") ||
+        message.includes("does not have permission to access");
+
+      set({
+        syncError: isStorageUnauthorized
+          ? "Upload blocked by Firebase Storage rules. Grant write access to role admin/root for path driver-files/{driverKey}/{fileName}."
+          : error.message || "Failed to upload file.",
+      });
       return;
     }
 
@@ -266,7 +349,7 @@ export const useDriversStore = create((set, get) => ({
         driver.id === id
           ? (() => {
               nextFiles = [...(driver.files || []), savedFile];
-              return { ...driver, files: nextFiles };
+              return { ...driver, docId: resolvedDocId, files: nextFiles };
             })()
           : driver,
       ),
@@ -275,8 +358,10 @@ export const useDriversStore = create((set, get) => ({
     if (!isFirebaseConfigured || !db) return;
 
     try {
-      await ensureAuthReady();
-      await updateDoc(doc(db, "drivers", String(id)), { files: nextFiles });
+      await updateDoc(doc(db, "drivers", resolvedDocId), {
+        files: nextFiles,
+        docId: resolvedDocId,
+      });
     } catch (error) {
       set({ syncError: error.message || "Failed to save file metadata." });
     }
@@ -286,6 +371,7 @@ export const useDriversStore = create((set, get) => ({
     const nextId = get().idCounter + 1;
     const newDriver = ensureDriverShape({
       id: nextId,
+      docId: String(nextId),
       ...data,
     });
 

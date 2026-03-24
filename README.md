@@ -56,6 +56,20 @@ Data behavior:
 - On first launch with empty Firestore, sample drivers are auto-seeded.
 - On each page load, drivers are loaded from Firestore in real time.
 
+## Storage rules for file uploads (admin/root)
+
+Project includes [storage.rules](storage.rules) to allow uploads under `driver-files/*` only for users with role `admin` or `root`.
+Role can be provided by either:
+
+- Firebase custom claim `request.auth.token.role`
+- Firestore document `user_roles/{email}` with field `role`
+
+Deploy rules to Firebase:
+
+1. Install Firebase CLI and login.
+2. Run: `firebase use <your-project-id>`
+3. Run: `firebase deploy --only storage`
+
 ## Deploy to Netlify
 
 1. Push this folder to GitHub.
