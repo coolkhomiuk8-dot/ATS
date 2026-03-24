@@ -3,15 +3,22 @@ import { getTodayPlus } from "../utils/date";
 export const FONT_URL = "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap";
 
 export const STAGES = [
-  { id: "new", label: "New Lead", color: "#6366f1", light: "#eef2ff" },
-  { id: "contact", label: "First Contact", color: "#3b82f6", light: "#eff6ff" },
-  { id: "qualified", label: "Qualified", color: "#8b5cf6", light: "#f5f3ff" },
-  { id: "application", label: "Application", color: "#f59e0b", light: "#fffbeb" },
-  { id: "docs", label: "Docs Review", color: "#f97316", light: "#fff7ed" },
-  { id: "offer", label: "Offer", color: "#10b981", light: "#ecfdf5" },
-  { id: "onboarding", label: "Onboarding", color: "#059669", light: "#ecfdf5" },
-  { id: "hired", label: "Hired", color: "#16a34a", light: "#f0fdf4" },
-  { id: "cold", label: "Cold", color: "#94a3b8", light: "#f8fafc" },
+  { id: "new",             label: "New Lead",                                    color: "#6366f1", light: "#eef2ff" },
+  { id: "call1",           label: "First call + SMS",                            color: "#3b82f6", light: "#eff6ff" },
+  { id: "call2",           label: "Second call + SMS",                           color: "#60a5fa", light: "#dbeafe" },
+  { id: "call3",           label: "Third call + SMS",                            color: "#818cf8", light: "#e0e7ff" },
+  { id: "video_sent",      label: "Video Sent",                                  color: "#a855f7", light: "#f3e8ff" },
+  { id: "trash",           label: "Trash / Cold",                                color: "#94a3b8", light: "#f1f5f9" },
+  { id: "ppw",             label: "Waiting for PPW",                             color: "#f59e0b", light: "#fffbeb" },
+  { id: "beenverified",    label: "BeenVerified Checked",                        color: "#f97316", light: "#fff7ed" },
+  { id: "videocall",       label: "Videocall planned",                           color: "#06b6d4", light: "#ecfeff" },
+  { id: "offer_sent",      label: "Offer Sent",                                  color: "#10b981", light: "#ecfdf5" },
+  { id: "offer_accepted",  label: "Offer Accepted",                              color: "#059669", light: "#d1fae5" },
+  { id: "drug_test",       label: "Pre-employment Drug Test (waiting result)",   color: "#eab308", light: "#fefce8" },
+  { id: "set_date",        label: "Need to set up date to arrive yard",          color: "#14b8a6", light: "#f0fdfa" },
+  { id: "yard",            label: "Waiting at the yard",                         color: "#0ea5e9", light: "#f0f9ff" },
+  { id: "hired",           label: "Hired",                                       color: "#16a34a", light: "#f0fdf4" },
+  { id: "fired",           label: "Fired",                                       color: "#ef4444", light: "#fef2f2" },
 ];
 
 export const DOC_LIST = [
