@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { SAMPLE_DRIVERS } from "../constants/data";
 import { todayStr } from "../utils/date";
 import { db, ensureAuthReady, isFirebaseConfigured, storage } from "../lib/firebase";
 import {
@@ -13,7 +12,6 @@ import {
   query,
   setDoc,
   updateDoc,
-  writeBatch,
 } from "firebase/firestore";
 import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
@@ -86,18 +84,6 @@ function buildDriverFileDocId(name, phone) {
   return `${first}_${second}_${phonePart}`;
 }
 
-async function seedSampleDrivers() {
-  const batch = writeBatch(db);
-  SAMPLE_DRIVERS.forEach((driver) => {
-    const safeDriver = ensureDriverShape(driver);
-    batch.set(doc(db, "drivers", String(safeDriver.id)), {
-      ...safeDriver,
-      docId: String(safeDriver.id),
-    });
-  });
-  await batch.commit();
-}
-
 async function preflightFirestoreRead() {
   const probeQuery = query(collection(db, "drivers"), limit(1));
 
@@ -143,10 +129,10 @@ export const useDriversStore = create((set, get) => ({
 
     if (!isFirebaseConfigured || !db) {
       set({
-        drivers: SAMPLE_DRIVERS,
-        idCounter: Math.max(...SAMPLE_DRIVERS.map((driver) => driver.id), 20),
+        drivers: [],
+        idCounter: 20,
         isLoading: false,
-        syncError: "Firebase env is not configured. Showing local sample data.",
+        syncError: "Firebase env is not configured.",
       });
       return;
     }
@@ -162,7 +148,6 @@ export const useDriversStore = create((set, get) => ({
       return;
     }
 
-    let hasSeedAttempted = false;
     let isResolved = false;
 
     const loadingTimeout = window.setTimeout(() => {
@@ -176,14 +161,8 @@ export const useDriversStore = create((set, get) => ({
 
     const unsubscribe = onSnapshot(
       collection(db, "drivers"),
-      async (snapshot) => {
+      (snapshot) => {
         try {
-          if (snapshot.empty && !hasSeedAttempted) {
-            hasSeedAttempted = true;
-            await seedSampleDrivers();
-            return;
-          }
-
           const drivers = snapshot.docs
             .map((snap) =>
               ensureDriverShape({
