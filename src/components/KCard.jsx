@@ -1,5 +1,11 @@
-import { DOC_LIST } from "../constants/data";
+import { DOC_LIST, FLAGS_OPT } from "../constants/data";
 import { minutesUntil } from "../utils/date";
+
+const FLAG_STYLES = {
+  green: { background: "#dcfce7", color: "#15803d", border: "1px solid #bbf7d0" },
+  red:   { background: "#fee2e2", color: "#b91c1c", border: "1px solid #fecaca" },
+  default: { background: "#f8fafc", color: "#64748b", border: "1px solid #e2e8f0" },
+};
 
 export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragging }) {
   const mins = minutesUntil(driver);
@@ -35,11 +41,15 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
 
       {(driver.flags || []).length > 0 && (
         <div className="driver-card__flags">
-          {(driver.flags || []).map((flag, idx) => (
-            <span key={idx} className="driver-card__flag">
-              {flag}
-            </span>
-          ))}
+          {(driver.flags || []).map((flag, idx) => {
+            const type = FLAGS_OPT.find((f) => f.label === flag)?.type || "default";
+            const style = FLAG_STYLES[type] || FLAG_STYLES.default;
+            return (
+              <span key={idx} className="driver-card__flag" style={style}>
+                {flag}
+              </span>
+            );
+          })}
         </div>
       )}
 
