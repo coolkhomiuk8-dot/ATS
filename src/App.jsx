@@ -5,6 +5,8 @@ import { STAGES } from "./constants/data";
 import { nextActionTs, todayStr } from "./utils/date";
 import { useDriversStore } from "./store/useDriversStore";
 import { SPill } from "./components/UiBits";
+import { useDriverAlerts } from "./hooks/useDriverAlerts";
+import DriverAlertsPanel from "./components/DriverAlertsPanel";
 import PipelineView from "./components/PipelineView";
 import DashboardView from "./views/DashboardView";
 import TemplatesView from "./views/TemplatesView";
@@ -134,6 +136,16 @@ export default function App() {
   const total = drivers.filter((d) => d.stage !== "trash").length;
   const finalStepStages = ["offer_accepted", "drug_test_sched", "drug_test", "set_date", "yard", "hired"];
   const finalStep = drivers.filter((d) => finalStepStages.includes(d.stage)).length;
+
+  const { activeAlerts, dismissAlert } = useDriverAlerts(drivers);
+
+  function handleAlertReschedule(driverId, newDate, newTime) {
+    upd(driverId, { nextAction: newDate, nextActionTime: newTime });
+  }
+
+  function handleAlertDone(driverId, toStage) {
+    requestStageChange(driverId, toStage);
+  }
 
   function copyTpl(text, id) {
     navigator.clipboard.writeText(text).catch(() => {});
@@ -590,6 +602,13 @@ export default function App() {
           onAssignRole={handleAssignRole}
         />
       )}
+
+      <DriverAlertsPanel
+        alerts={activeAlerts}
+        onReschedule={handleAlertReschedule}
+        onDone={handleAlertDone}
+        onDismiss={dismissAlert}
+      />
     </div>
   );
 }
