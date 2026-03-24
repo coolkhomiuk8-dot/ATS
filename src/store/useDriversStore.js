@@ -34,6 +34,7 @@ function ensureDriverShape(driver) {
     flags: [],
     interest: "Warm",
     lastContact: null,
+    createdAt: null,
     ...driver,
   };
 }
@@ -402,6 +403,7 @@ export const useDriversStore = create((set, get) => ({
     const newDriver = ensureDriverShape({
       id: nextId,
       docId: String(nextId),
+      createdAt: todayStr(),
       ...data,
     });
 

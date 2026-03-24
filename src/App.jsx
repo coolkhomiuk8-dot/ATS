@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { STAGES } from "./constants/data";
-import { minutesUntil, nextActionTs, todayStr } from "./utils/date";
+import { nextActionTs, todayStr } from "./utils/date";
 import { useDriversStore } from "./store/useDriversStore";
 import { SPill } from "./components/UiBits";
 import PipelineView from "./components/PipelineView";
@@ -124,23 +124,16 @@ export default function App() {
     return [...list].sort((a, b) => nextActionTs(a) - nextActionTs(b));
   }, [drivers, filterStage]);
 
-  const overdue = drivers.filter((driver) => {
-    const mins = minutesUntil(driver);
-    return mins !== null && mins < 0 && !["hired", "cold"].includes(driver.stage);
-  }).length;
+  const today = todayStr();
+  const yesterdayDate = new Date();
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterday = yesterdayDate.toISOString().split("T")[0];
 
-  const stale = drivers.filter(
-    (driver) =>
-      driver.lastContact &&
-      (new Date(todayStr()) - new Date(driver.lastContact)) / 86400000 >= 3 &&
-      !["hired", "cold"].includes(driver.stage),
-  ).length;
-
-  const hot = drivers.filter(
-    (driver) => driver.interest === "Hot" && !["hired", "cold"].includes(driver.stage),
-  ).length;
-
-  const hired = drivers.filter((driver) => driver.stage === "hired").length;
+  const addedToday = drivers.filter((d) => d.createdAt === today).length;
+  const addedYesterday = drivers.filter((d) => d.createdAt === yesterday).length;
+  const total = drivers.filter((d) => d.stage !== "trash").length;
+  const finalStepStages = ["offer_accepted", "drug_test_sched", "drug_test", "set_date", "yard", "hired"];
+  const finalStep = drivers.filter((d) => finalStepStages.includes(d.stage)).length;
 
   function copyTpl(text, id) {
     navigator.clipboard.writeText(text).catch(() => {});
@@ -447,11 +440,10 @@ export default function App() {
           </select>
 
           <div style={{ display: "flex", gap: 6 }}>
-            <SPill n={drivers.length} l="Total" c="#6366f1" bg="#eef2ff" />
-            {overdue > 0 && <SPill n={overdue} l="Overdue" c="#dc2626" bg="#fef2f2" />}
-            {stale > 0 && <SPill n={stale} l="Stale" c="#d97706" bg="#fffbeb" />}
-            <SPill n={hot} l="Hot" c="#059669" bg="#ecfdf5" />
-            <SPill n={hired} l="Hired" c="#2563eb" bg="#eff6ff" />
+            <SPill n={addedToday} l="Added today" c="#2563eb" bg="#eff6ff" />
+            <SPill n={addedYesterday} l="Added yesterday" c="#7c3aed" bg="#f5f3ff" />
+            <SPill n={total} l="Total" c="#6366f1" bg="#eef2ff" />
+            <SPill n={finalStep} l="Final step" c="#059669" bg="#ecfdf5" />
           </div>
 
           <button
