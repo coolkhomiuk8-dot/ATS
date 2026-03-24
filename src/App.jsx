@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { STAGES } from "./constants/data";
 import { minutesUntil, nextActionTs, todayStr } from "./utils/date";
 import { useDriversStore } from "./store/useDriversStore";
@@ -11,7 +12,8 @@ import DriverDrawer from "./components/DriverDrawer";
 import AddModal from "./components/AddModal";
 import StageModal from "./components/StageModal";
 import FirebaseAuthGate from "./components/FirebaseAuthGate";
-import { auth, isFirebaseConfigured } from "./lib/firebase";
+import RoleManagerModal from "./components/RoleManagerModal";
+import { auth, db, isFirebaseConfigured } from "./lib/firebase";
 
 export default function App() {
   const { drivers, upd, addNote, addFile, addDriver, initDrivers, stopDriversSync, isLoading, syncError } = useDriversStore();
@@ -26,6 +28,11 @@ export default function App() {
   const [searchFocus, setSearchFocus] = useState(false);
   const [copiedTpl, setCopiedTpl] = useState(null);
   const [stageModal, setStageModal] = useState(null);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [currentRole, setCurrentRole] = useState("user");
+  const [roleLoading, setRoleLoading] = useState(true);
+
+  const canManageRoles = currentRole === "root";
 
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) {
@@ -40,6 +47,42 @@ export default function App() {
 
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    if (!firebaseUser || !db) {
+      setCurrentRole("user");
+      setRoleLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadRole() {
+      setRoleLoading(true);
+
+      try {
+        const email = String(firebaseUser.email || "").trim().toLowerCase();
+        if (!email) {
+          if (isMounted) setCurrentRole("user");
+          return;
+        }
+
+        const roleSnap = await getDoc(doc(db, "user_roles", email));
+        const role = roleSnap.exists() ? String(roleSnap.data()?.role || "user") : "user";
+        if (isMounted) setCurrentRole(role);
+      } catch {
+        if (isMounted) setCurrentRole("user");
+      } finally {
+        if (isMounted) setRoleLoading(false);
+      }
+    }
+
+    loadRole();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [firebaseUser]);
 
   useEffect(() => {
     if (isFirebaseConfigured && !firebaseUser) {
@@ -142,6 +185,25 @@ export default function App() {
     }
   }
 
+  async function handleAssignRole(emailInput, role) {
+    if (!db || !firebaseUser) throw new Error("Firebase is not ready.");
+
+    const normalizedEmail = String(emailInput || "").trim().toLowerCase();
+    if (!normalizedEmail) throw new Error("Email is required.");
+    if (!["user", "admin"].includes(role)) throw new Error("Role must be user or admin.");
+
+    await setDoc(
+      doc(db, "user_roles", normalizedEmail),
+      {
+        email: normalizedEmail,
+        role,
+        updatedBy: String(firebaseUser.email || "unknown"),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  }
+
   const selected = selectedId ? drivers.find((driver) => driver.id === selectedId) : null;
 
   if (isFirebaseConfigured && (authLoading || !firebaseUser)) {
@@ -228,6 +290,10 @@ export default function App() {
           <div style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", marginRight: 4, letterSpacing: "-.3px", flexShrink: 0 }}>
             Driver CRM
           </div>
+
+          <span className={`role-badge role-badge--${currentRole}`}>
+            {roleLoading ? "role..." : currentRole}
+          </span>
 
           <div style={{ position: "relative", flex: "0 0 300px" }}>
             <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontSize: 13, pointerEvents: "none" }}>S</span>
@@ -429,6 +495,26 @@ export default function App() {
               Logout
             </button>
           )}
+
+          {canManageRoles && (
+            <button
+              onClick={() => setShowRoleModal(true)}
+              className="btn-g"
+              style={{
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                color: "#334155",
+                padding: "8px 12px",
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+                flexShrink: 0,
+              }}
+            >
+              Roles
+            </button>
+          )}
         </header>
 
         {isLoading && (
@@ -502,6 +588,13 @@ export default function App() {
           modal={stageModal}
           onConfirm={confirmStageChange}
           onCancel={() => setStageModal(null)}
+        />
+      )}
+
+      {showRoleModal && canManageRoles && (
+        <RoleManagerModal
+          onClose={() => setShowRoleModal(false)}
+          onAssignRole={handleAssignRole}
         />
       )}
     </div>

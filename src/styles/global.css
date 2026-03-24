@@ -574,3 +574,146 @@ button {
 .auth-google:hover {
   background: #f8fafc;
 }
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  padding: 4px 9px;
+  border: 1px solid transparent;
+  min-width: 62px;
+}
+
+.role-badge--root {
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: #fdba74;
+}
+
+.role-badge--admin {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #93c5fd;
+}
+
+.role-badge--user {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+.role-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.role-modal {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.18);
+  padding: 20px;
+}
+
+.role-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.role-modal__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.role-modal__subtitle {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.role-modal__close {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  cursor: pointer;
+}
+
+.role-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.role-modal__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.role-modal__input,
+.role-modal__select {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #f8fafc;
+  color: #0f172a;
+  padding: 9px 11px;
+  font-size: 13px;
+  outline: none;
+}
+
+.role-modal__input:focus,
+.role-modal__select:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.12);
+}
+
+.role-modal__error {
+  font-size: 12px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+  padding: 8px 10px;
+}
+
+.role-modal__success {
+  font-size: 12px;
+  border-radius: 8px;
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+  padding: 8px 10px;
+}
+
+.role-modal__submit {
+  margin-top: 2px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 9px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
