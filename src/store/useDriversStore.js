@@ -1,11 +1,14 @@
 import { create } from "zustand";
 import { SAMPLE_DRIVERS } from "../constants/data";
 import { todayStr } from "../utils/date";
-import { db, isFirebaseConfigured, storage } from "../lib/firebase";
+import { db, ensureAuthReady, isFirebaseConfigured, storage } from "../lib/firebase";
 import {
   collection,
   doc,
+  getDocs,
+  limit,
   onSnapshot,
+  query,
   setDoc,
   updateDoc,
   writeBatch,
@@ -14,6 +17,17 @@ import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage
 
 function ensureDriverShape(driver) {
   return {
+    id: Date.now(),
+    name: "",
+    phone: "",
+    email: "",
+    city: "",
+    cdl: "A",
+    exp: 0,
+    source: "Other",
+    stage: "new",
+    nextAction: null,
+    nextActionTime: "10:00",
     notes: [],
     files: [],
     docs: {},
@@ -51,6 +65,18 @@ async function seedSampleDrivers() {
   await batch.commit();
 }
 
+async function preflightFirestoreRead() {
+  const probeQuery = query(collection(db, "drivers"), limit(1));
+
+  const timeoutPromise = new Promise((_, reject) => {
+    window.setTimeout(() => {
+      reject(new Error("Firestore preflight timeout. Verify Firestore is enabled and rules allow reads."));
+    }, 8000);
+  });
+
+  await Promise.race([getDocs(probeQuery), timeoutPromise]);
+}
+
 async function uploadDriverFile(driverId, fileObj) {
   if (!storage || !fileObj.rawFile) {
     return sanitizeFileForDb(fileObj);
@@ -77,8 +103,10 @@ export const useDriversStore = create((set, get) => ({
   syncError: null,
   unsubscribeDrivers: null,
 
-  initDrivers: () => {
+  initDrivers: async () => {
     if (get().unsubscribeDrivers) return;
+
+    set({ isLoading: true, syncError: null });
 
     if (!isFirebaseConfigured || !db) {
       set({
@@ -90,33 +118,68 @@ export const useDriversStore = create((set, get) => ({
       return;
     }
 
+    try {
+      await ensureAuthReady();
+      await preflightFirestoreRead();
+    } catch (error) {
+      set({
+        isLoading: false,
+        syncError: error.message || "Firebase auth/database check failed.",
+      });
+      return;
+    }
+
     let hasSeedAttempted = false;
+    let isResolved = false;
+
+    const loadingTimeout = window.setTimeout(() => {
+      if (isResolved) return;
+      set({
+        isLoading: false,
+        syncError:
+          "Firebase sync timeout. Check Firestore rules, Authentication provider, and network.",
+      });
+    }, 12000);
 
     const unsubscribe = onSnapshot(
       collection(db, "drivers"),
       async (snapshot) => {
-        if (snapshot.empty && !hasSeedAttempted) {
-          hasSeedAttempted = true;
-          await seedSampleDrivers();
-          return;
+        try {
+          if (snapshot.empty && !hasSeedAttempted) {
+            hasSeedAttempted = true;
+            await seedSampleDrivers();
+            return;
+          }
+
+          const drivers = snapshot.docs
+            .map((snap) => ensureDriverShape(snap.data()))
+            .sort((a, b) => Number(b.id) - Number(a.id));
+
+          const idCounter = drivers.length
+            ? Math.max(...drivers.map((driver) => Number(driver.id) || 0), 20)
+            : 20;
+
+          isResolved = true;
+          window.clearTimeout(loadingTimeout);
+
+          set({
+            drivers,
+            idCounter,
+            isLoading: false,
+            syncError: null,
+          });
+        } catch (error) {
+          isResolved = true;
+          window.clearTimeout(loadingTimeout);
+          set({
+            isLoading: false,
+            syncError: error.message || "Failed while processing Firebase snapshot.",
+          });
         }
-
-        const drivers = snapshot.docs
-          .map((snap) => ensureDriverShape(snap.data()))
-          .sort((a, b) => Number(b.id) - Number(a.id));
-
-        const idCounter = drivers.length
-          ? Math.max(...drivers.map((driver) => Number(driver.id) || 0), 20)
-          : 20;
-
-        set({
-          drivers,
-          idCounter,
-          isLoading: false,
-          syncError: null,
-        });
       },
       (error) => {
+        isResolved = true;
+        window.clearTimeout(loadingTimeout);
         set({ isLoading: false, syncError: error.message || "Failed to sync drivers." });
       },
     );
@@ -140,6 +203,7 @@ export const useDriversStore = create((set, get) => ({
     if (!isFirebaseConfigured || !db) return;
 
     try {
+      await ensureAuthReady();
       await updateDoc(doc(db, "drivers", String(id)), safePatch);
     } catch (error) {
       set({ syncError: error.message || "Failed to update driver." });
@@ -174,6 +238,7 @@ export const useDriversStore = create((set, get) => ({
     if (!isFirebaseConfigured || !db) return;
 
     try {
+      await ensureAuthReady();
       await updateDoc(doc(db, "drivers", String(id)), {
         notes: nextNotes,
         lastContact,
@@ -210,6 +275,7 @@ export const useDriversStore = create((set, get) => ({
     if (!isFirebaseConfigured || !db) return;
 
     try {
+      await ensureAuthReady();
       await updateDoc(doc(db, "drivers", String(id)), { files: nextFiles });
     } catch (error) {
       set({ syncError: error.message || "Failed to save file metadata." });
@@ -231,6 +297,7 @@ export const useDriversStore = create((set, get) => ({
     if (!isFirebaseConfigured || !db) return;
 
     try {
+      await ensureAuthReady();
       await setDoc(doc(db, "drivers", String(nextId)), stripUndefined(newDriver));
     } catch (error) {
       set({ syncError: error.message || "Failed to create driver." });

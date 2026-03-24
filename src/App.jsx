@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
 import { STAGES } from "./constants/data";
 import { minutesUntil, nextActionTs, todayStr } from "./utils/date";
 import { useDriversStore } from "./store/useDriversStore";
@@ -9,9 +10,13 @@ import TemplatesView from "./views/TemplatesView";
 import DriverDrawer from "./components/DriverDrawer";
 import AddModal from "./components/AddModal";
 import StageModal from "./components/StageModal";
+import FirebaseAuthGate from "./components/FirebaseAuthGate";
+import { auth, isFirebaseConfigured } from "./lib/firebase";
 
 export default function App() {
   const { drivers, upd, addNote, addFile, addDriver, initDrivers, stopDriversSync, isLoading, syncError } = useDriversStore();
+  const [firebaseUser, setFirebaseUser] = useState(() => auth?.currentUser || null);
+  const [authLoading, setAuthLoading] = useState(isFirebaseConfigured);
 
   const [view, setView] = useState("pipeline");
   const [selectedId, setSelectedId] = useState(null);
@@ -23,9 +28,28 @@ export default function App() {
   const [stageModal, setStageModal] = useState(null);
 
   useEffect(() => {
+    if (!isFirebaseConfigured || !auth) {
+      setAuthLoading(false);
+      return undefined;
+    }
+
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setFirebaseUser(user);
+      setAuthLoading(false);
+    });
+
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    if (isFirebaseConfigured && !firebaseUser) {
+      stopDriversSync();
+      return undefined;
+    }
+
     initDrivers();
     return () => stopDriversSync();
-  }, [initDrivers, stopDriversSync]);
+  }, [firebaseUser, initDrivers, stopDriversSync]);
 
   const searchResults = useMemo(() => {
     if (!search.trim()) return [];
@@ -35,13 +59,15 @@ export default function App() {
 
     return drivers
       .filter((driver) => {
-        const nameLower = driver.name.toLowerCase();
-        const phoneDigits = driver.phone.replace(/\D/g, "");
+        const driverName = String(driver.name || "");
+        const driverPhone = String(driver.phone || "");
+        const nameLower = driverName.toLowerCase();
+        const phoneDigits = driverPhone.replace(/\D/g, "");
 
         return (
           nameLower.includes(query) ||
           nameLower.split(" ").some((part) => part.startsWith(query)) ||
-          driver.phone.toLowerCase().includes(query) ||
+          driverPhone.toLowerCase().includes(query) ||
           (digits.length >= 3 && phoneDigits.includes(digits))
         );
       })
@@ -105,6 +131,10 @@ export default function App() {
   }
 
   const selected = selectedId ? drivers.find((driver) => driver.id === selectedId) : null;
+
+  if (isFirebaseConfigured && (authLoading || !firebaseUser)) {
+    return <FirebaseAuthGate />;
+  }
 
   return (
     <div style={{ display: "flex", height: "100vh", background: "#f1f5f9", overflow: "hidden" }}>
