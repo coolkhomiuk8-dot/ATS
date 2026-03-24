@@ -1,5 +1,6 @@
 import { DOC_LIST, FLAGS_OPT } from "../constants/data";
 import { minutesUntil } from "../utils/date";
+import { useTick } from "../hooks/useTick";
 
 const FLAG_STYLES = {
   green: { background: "#dcfce7", color: "#15803d", border: "1px solid #bbf7d0" },
@@ -8,6 +9,8 @@ const FLAG_STYLES = {
 };
 
 export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragging }) {
+  useTick(); // підписується на один глобальний інтервал
+
   const mins = minutesUntil(driver);
   const over = mins !== null && mins < 0;
   const soon = mins !== null && mins >= 0 && mins <= 90;
