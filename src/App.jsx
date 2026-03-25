@@ -28,6 +28,7 @@ export default function App() {
   const [filterStage, setFilterStage] = useState("all");
   const [search, setSearch] = useState("");
   const [searchFocus, setSearchFocus] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [copiedTpl, setCopiedTpl] = useState(null);
   const [stageModal, setStageModal] = useState(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
@@ -230,35 +231,31 @@ export default function App() {
     <div style={{ display: "flex", height: "100vh", background: "#f1f5f9", overflow: "hidden" }}>
       <aside
         style={{
-          width: 58,
+          width: sidebarExpanded ? 200 : 58,
           background: "#fff",
           borderRight: "1px solid #e2e8f0",
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
+          alignItems: sidebarExpanded ? "flex-start" : "center",
           padding: "14px 0",
           gap: 4,
           flexShrink: 0,
+          transition: "width .2s ease",
+          overflow: "hidden",
         }}
       >
-        <div
-          style={{
-            width: 34,
-            height: 34,
-            background: "#2563eb",
-            borderRadius: 9,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: 14,
-            fontSize: 12,
-            color: "#fff",
-            fontWeight: 700,
-          }}
-        >
-          CRM
+        {/* Logo + toggle */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: sidebarExpanded ? "0 10px" : "0", marginBottom: 14, justifyContent: sidebarExpanded ? "space-between" : "center" }}>
+          <div style={{ width: 34, height: 34, background: "#2563eb", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#fff", fontWeight: 700, flexShrink: 0 }}>
+            CRM
+          </div>
+          {sidebarExpanded && <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>Driver CRM</span>}
+          <button onClick={() => setSidebarExpanded(v => !v)} title={sidebarExpanded ? "Collapse" : "Expand"} style={{ width: 26, height: 26, border: "1px solid #e2e8f0", borderRadius: 6, background: "#f8fafc", cursor: "pointer", color: "#64748b", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {sidebarExpanded ? "←" : "→"}
+          </button>
         </div>
 
+        {/* Nav items */}
         {[
           { id: "pipeline", icon: "PL", title: "Pipeline" },
           { id: "dashboard", icon: "DB", title: "Dashboard" },
@@ -270,8 +267,9 @@ export default function App() {
             title={item.title}
             onClick={() => setView(item.id)}
             style={{
-              width: 38,
+              width: sidebarExpanded ? "calc(100% - 16px)" : 38,
               height: 38,
+              margin: sidebarExpanded ? "0 8px" : "0",
               border: "none",
               borderRadius: 9,
               background: view === item.id ? "#eff6ff" : "transparent",
@@ -281,13 +279,54 @@ export default function App() {
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent: sidebarExpanded ? "flex-start" : "center",
+              gap: 8,
+              padding: sidebarExpanded ? "0 10px" : "0",
               transition: "all .15s",
+              whiteSpace: "nowrap",
             }}
           >
-            {item.icon}
+            <span>{item.icon}</span>
+            {sidebarExpanded && <span style={{ fontSize: 13 }}>{item.title}</span>}
           </button>
         ))}
+
+        {/* Stage navigator — тільки коли expanded і pipeline */}
+        {sidebarExpanded && view === "pipeline" && (
+          <div style={{ width: "100%", marginTop: 12, borderTop: "1px solid #f1f5f9", paddingTop: 10 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", letterSpacing: ".06em", textTransform: "uppercase", padding: "0 14px", marginBottom: 6 }}>Columns</div>
+            <div style={{ overflowY: "auto", maxHeight: "calc(100vh - 280px)" }}>
+              {STAGES.map((stage) => {
+                const count = drivers.filter(d => d.stage === stage.id).length;
+                return (
+                  <button
+                    key={stage.id}
+                    onClick={() => {
+                      const col = document.querySelector(`[data-stage-id="${stage.id}"]`);
+                      if (col) col.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+                    }}
+                    style={{
+                      width: "100%",
+                      padding: "6px 14px",
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 7,
+                      textAlign: "left",
+                      borderRadius: 0,
+                    }}
+                  >
+                    <div style={{ width: 7, height: 7, borderRadius: "50%", background: stage.color, flexShrink: 0 }} />
+                    <span style={{ fontSize: 12, color: "#374151", flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{stage.label}</span>
+                    {count > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: stage.color, borderRadius: 10, padding: "1px 6px", flexShrink: 0 }}>{count}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </aside>
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
