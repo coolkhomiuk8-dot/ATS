@@ -21,15 +21,13 @@ export const STAGES = [
 ];
 
 export const DOC_LIST = [
-  "CDL Copy",
-  "MVR Report",
-  "PSP Report",
-  "Drug Test Consent",
-  "Employment Application",
-  "Prev. Employment Verification",
-  "Medical Certificate (DOT)",
-  "SSN / Work Authorization",
-  "Background Check",
+  { name: "Driver License",         required: true },
+  { name: "MVR Report",             required: true },
+  { name: "SSN / Work Authorization", required: true },
+  { name: "W-9 form",               required: true },
+  { name: "Offer",                  required: true },
+  { name: "Drug test Result",       required: false },
+  { name: "Medical certificate DOT", required: false },
 ];
 
 export const SOURCES = ["Indeed", "CDLjobs", "Referral", "LinkedIn", "Cold Call", "Other"];

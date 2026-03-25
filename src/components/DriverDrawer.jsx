@@ -605,9 +605,9 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                   />
                 </div>
                 <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
-                  {DOC_LIST.map((doc, idx) => (
+                  {DOC_LIST.map((docItem, idx) => (
                     <label
-                      key={doc}
+                      key={docItem.name}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -615,7 +615,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                         padding: "10px 14px",
                         borderBottom: idx < DOC_LIST.length - 1 ? "1px solid #f8fafc" : "none",
                         cursor: "pointer",
-                        background: driver.docs?.[doc] ? "#f0fdf4" : "#fff",
+                        background: driver.docs?.[docItem.name] ? "#f0fdf4" : docItem.required ? "#fffbeb" : "#fff",
                         transition: "background .12s",
                       }}
                     >
@@ -624,8 +624,8 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                           width: 18,
                           height: 18,
                           borderRadius: 5,
-                          border: `2px solid ${driver.docs?.[doc] ? "#10b981" : "#d1d5db"}`,
-                          background: driver.docs?.[doc] ? "#10b981" : "transparent",
+                          border: `2px solid ${driver.docs?.[docItem.name] ? "#10b981" : docItem.required ? "#f59e0b" : "#d1d5db"}`,
+                          background: driver.docs?.[docItem.name] ? "#10b981" : "transparent",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -633,11 +633,16 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                           transition: "all .15s",
                         }}
                       >
-                        {driver.docs?.[doc] && <span style={{ color: "#fff", fontSize: 10, fontWeight: 700 }}>v</span>}
+                        {driver.docs?.[docItem.name] && <span style={{ color: "#fff", fontSize: 10, fontWeight: 700 }}>v</span>}
                       </div>
-                      <input type="checkbox" checked={!!driver.docs?.[doc]} onChange={() => toggleDoc(doc)} style={{ display: "none" }} />
-                      <span style={{ fontSize: 13, color: driver.docs?.[doc] ? "#166534" : "#374151", flex: 1 }}>{doc}</span>
-                      {driver.docs?.[doc] && <span style={{ fontSize: 10, color: "#10b981", fontWeight: 600 }}>Received</span>}
+                      <input type="checkbox" checked={!!driver.docs?.[docItem.name]} onChange={() => toggleDoc(docItem.name)} style={{ display: "none" }} />
+                      <span style={{ fontSize: 13, color: driver.docs?.[docItem.name] ? "#166534" : "#374151", flex: 1 }}>
+                        {docItem.name}
+                      </span>
+                      {docItem.required && !driver.docs?.[docItem.name] && (
+                        <span style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", background: "#fef3c7", borderRadius: 5, padding: "2px 6px" }}>Required</span>
+                      )}
+                      {driver.docs?.[docItem.name] && <span style={{ fontSize: 10, color: "#10b981", fontWeight: 600 }}>Received</span>}
                     </label>
                   ))}
                 </div>
@@ -829,15 +834,15 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                         Skip (no checklist link)
                       </button>
 
-                      {DOC_LIST.map((doc) => {
-                        const isReceived = Boolean(driver.docs?.[doc]);
-                        const isSelected = file.linkedDoc === doc;
+                      {DOC_LIST.map((docItem) => {
+                        const isReceived = Boolean(driver.docs?.[docItem.name]);
+                        const isSelected = file.linkedDoc === docItem.name;
 
                         return (
                           <button
-                            key={doc}
+                            key={docItem.name}
                             type="button"
-                            onClick={() => setPendingFileDoc(idx, doc)}
+                            onClick={() => setPendingFileDoc(idx, docItem.name)}
                             style={{
                               width: "100%",
                               textAlign: "left",
@@ -854,7 +859,8 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                               gap: 8,
                             }}
                           >
-                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc}</span>
+                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{docItem.name}</span>
+                            {docItem.required && <span style={{ fontSize: 10, color: "#f59e0b", fontWeight: 700, flexShrink: 0 }}>★</span>}
                             {isReceived && (
                               <span style={{ color: "#10b981", fontSize: 11, fontWeight: 600 }}>✔</span>
                             )}
