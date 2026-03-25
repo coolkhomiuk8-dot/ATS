@@ -106,6 +106,23 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
         )}
         <span className="driver-card__docs-count">{docs}/{DOC_LIST.length}</span>
       </div>
+
+      {/* Trained by badge — тільки для Hired */}
+      {driver.stage === "hired" && driver.trainedBy && (
+        <div style={{ marginTop: 6 }}>
+          <span style={{
+            fontSize: 10,
+            fontWeight: 600,
+            padding: "2px 8px",
+            borderRadius: 5,
+            background: driver.trainedBy === "Trained by Bogdan" ? "#dcfce7" : "#fee2e2",
+            color: driver.trainedBy === "Trained by Bogdan" ? "#15803d" : "#b91c1c",
+            border: `1px solid ${driver.trainedBy === "Trained by Bogdan" ? "#bbf7d0" : "#fecaca"}`,
+          }}>
+            {driver.trainedBy}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

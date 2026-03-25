@@ -161,12 +161,19 @@ export default function App() {
     setStageModal({ driverId, fromStage: driver.stage, toStage });
   }
 
-  function confirmStageChange({ driverId, toStage, nextAction, nextActionTime, comment }) {
+  function confirmStageChange({ driverId, toStage, nextAction, nextActionTime, comment, trainedBy }) {
     const patch = { stage: toStage };
 
     if (nextAction) {
       patch.nextAction = nextAction;
       patch.nextActionTime = nextActionTime || "10:00";
+    }
+
+    // зберігаємо trainedBy при переміщенні в hired, очищаємо при виході
+    if (toStage === "hired" && trainedBy) {
+      patch.trainedBy = trainedBy;
+    } else {
+      patch.trainedBy = null;
     }
 
     upd(driverId, patch);
