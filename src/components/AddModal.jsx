@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SOURCES, STAGES } from "../constants/data";
+import { AVAILABILITY_OPTIONS, SOURCES, STAGES, TRUCK_TYPES } from "../constants/data";
 import { getTodayPlus } from "../utils/date";
 import { FL } from "./UiBits";
 
@@ -12,6 +12,8 @@ export default function AddModal({ onClose, onAdd }) {
     cdl: "A",
     exp: "",
     source: "Indeed",
+    startDate: "TBD",
+    truckTypes: [],
     stage: "new",
     nextAction: getTodayPlus(1),
     nextActionTime: "10:00",
@@ -98,18 +100,7 @@ export default function AddModal({ onClose, onAdd }) {
             ))}
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-            <div>
-              <FL t="CDL" />
-              <select
-                value={form.cdl}
-                onChange={(event) => setField("cdl", event.target.value)}
-                style={{ width: "100%", padding: "9px 10px", fontSize: 13, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, color: "#374151", outline: "none" }}
-              >
-                <option>A</option>
-                <option>B</option>
-              </select>
-            </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <div>
               <FL t="Exp (yrs)" />
               <input
@@ -132,6 +123,50 @@ export default function AddModal({ onClose, onAdd }) {
                   <option key={source}>{source}</option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          <div>
+            <FL t="Available" />
+            <select
+              value={form.startDate}
+              onChange={(event) => setField("startDate", event.target.value)}
+              style={{ width: "100%", padding: "9px 10px", fontSize: 13, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, color: "#374151", outline: "none" }}
+            >
+              {AVAILABILITY_OPTIONS.map((opt) => (
+                <option key={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <FL t="Truck Type" />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+              {TRUCK_TYPES.map((type) => {
+                const checked = (form.truckTypes || []).includes(type);
+                return (
+                  <label key={type} style={{
+                    display: "flex", alignItems: "center", gap: 5,
+                    padding: "5px 10px", borderRadius: 6, cursor: "pointer",
+                    fontSize: 12, fontWeight: 500,
+                    background: checked ? "#dbeafe" : "#f8fafc",
+                    border: `1px solid ${checked ? "#93c5fd" : "#e2e8f0"}`,
+                    color: checked ? "#1d4ed8" : "#64748b",
+                    transition: "all .12s",
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      style={{ display: "none" }}
+                      onChange={() => {
+                        const prev = form.truckTypes || [];
+                        setField("truckTypes", checked ? prev.filter((t) => t !== type) : [...prev, type]);
+                      }}
+                    />
+                    {checked ? "✓ " : ""}{type}
+                  </label>
+                );
+              })}
             </div>
           </div>
 

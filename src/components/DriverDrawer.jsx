@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { DOC_LIST, FLAGS_OPT, SOURCES, STAGES } from "../constants/data";
+import { AVAILABILITY_OPTIONS, DOC_LIST, FLAGS_OPT, SOURCES, STAGES, TRUCK_TYPES } from "../constants/data";
 import { fmtDate, minutesUntil } from "../utils/date";
 import { fmtSize } from "../utils/file";
 import { Btn, FL } from "./UiBits";
@@ -294,18 +294,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                     ))}
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-                    <div>
-                      <FL t="CDL" />
-                      <select
-                        value={editData.cdl}
-                        onChange={(event) => setEditData((prev) => ({ ...prev, cdl: event.target.value }))}
-                        style={{ width: "100%", padding: "8px 10px", fontSize: 13, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 7, color: "#374151", outline: "none" }}
-                      >
-                        <option>A</option>
-                        <option>B</option>
-                      </select>
-                    </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     <div>
                       <FL t="Exp (yrs)" />
                       <input
@@ -329,6 +318,53 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                     </div>
                   </div>
 
+                  <div>
+                    <FL t="Available" />
+                    <select
+                      value={editData.startDate || "TBD"}
+                      onChange={(event) => setEditData((prev) => ({ ...prev, startDate: event.target.value }))}
+                      style={{ width: "100%", padding: "8px 10px", fontSize: 13, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 7, color: "#374151", outline: "none" }}
+                    >
+                      {AVAILABILITY_OPTIONS.map((opt) => (
+                        <option key={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <FL t="Truck Type" />
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+                      {TRUCK_TYPES.map((type) => {
+                        const checked = (editData.truckTypes || []).includes(type);
+                        return (
+                          <label key={type} style={{
+                            display: "flex", alignItems: "center", gap: 5,
+                            padding: "5px 10px", borderRadius: 6, cursor: "pointer",
+                            fontSize: 12, fontWeight: 500,
+                            background: checked ? "#dbeafe" : "#f8fafc",
+                            border: `1px solid ${checked ? "#93c5fd" : "#e2e8f0"}`,
+                            color: checked ? "#1d4ed8" : "#64748b",
+                            transition: "all .12s",
+                          }}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              style={{ display: "none" }}
+                              onChange={() => {
+                                const prev = editData.truckTypes || [];
+                                setEditData((d) => ({
+                                  ...d,
+                                  truckTypes: checked ? prev.filter((t) => t !== type) : [...prev, type],
+                                }));
+                              }}
+                            />
+                            {checked ? "✓ " : ""}{type}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <div style={{ display: "flex", gap: 8 }}>
                     <Btn label="Save" onClick={saveInfo} primary />
                     <Btn label="Cancel" onClick={() => setEditing(false)} />
@@ -341,7 +377,6 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                       ["Phone", driver.phone],
                       ["Email", driver.email],
                       ["City", driver.city],
-                      ["CDL", `Class ${driver.cdl}`],
                       ["Experience", `${driver.exp} years`],
                       ["Source", driver.source],
                       ["Available", driver.startDate || "TBD"],
@@ -352,6 +387,17 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                         <div style={{ fontSize: 13, color: "#0f172a" }}>{value}</div>
                       </div>
                     ))}
+                    <div style={{ gridColumn: "1 / -1", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 11px" }}>
+                      <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 5, fontWeight: 500 }}>Truck Type</div>
+                      {(driver.truckTypes || []).length === 0
+                        ? <span style={{ fontSize: 13, color: "#cbd5e1" }}>—</span>
+                        : <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                            {(driver.truckTypes || []).map((t) => (
+                              <span key={t} style={{ fontSize: 12, fontWeight: 500, padding: "3px 8px", borderRadius: 5, background: "#dbeafe", color: "#1d4ed8", border: "1px solid #93c5fd" }}>{t}</span>
+                            ))}
+                          </div>
+                      }
+                    </div>
                   </div>
                   <Btn label="Edit Info" onClick={() => { setEditData({ ...driver }); setEditing(true); }} />
                 </>
