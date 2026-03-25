@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AVAILABILITY_OPTIONS, SOURCES, STAGES, TRUCK_TYPES } from "../constants/data";
+import { AVAILABILITY_OPTIONS, FLAGS_OPT, SOURCES, STAGES, TRUCK_TYPES } from "../constants/data";
 import { getTodayPlus } from "../utils/date";
 import { FL } from "./UiBits";
 
@@ -14,10 +14,13 @@ export default function AddModal({ onClose, onAdd }) {
     source: "Indeed",
     startDate: "TBD",
     truckTypes: [],
+    flags: [],
+    notes: [],
     stage: "new",
     nextAction: getTodayPlus(1),
     nextActionTime: "10:00",
   });
+  const [noteText, setNoteText] = useState("");
 
   const setField = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
@@ -199,6 +202,80 @@ export default function AddModal({ onClose, onAdd }) {
                   style={{ padding: "9px 8px", fontSize: 12, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, color: "#374151", outline: "none" }}
                 />
               </div>
+            </div>
+          </div>
+
+          {/* ── LOG ── */}
+          <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14, marginTop: 2 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 8 }}>
+              Log <span style={{ fontWeight: 400, color: "#94a3b8" }}>({form.notes.length})</span>
+            </div>
+            <textarea
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              placeholder="Log a call, text, email or note"
+              rows={3}
+              style={{ width: "100%", padding: "9px 11px", fontSize: 13, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, resize: "vertical", lineHeight: 1.6, color: "#0f172a", outline: "none" }}
+            />
+            <button
+              onClick={() => {
+                if (!noteText.trim()) return;
+                const entry = { text: noteText.trim(), date: new Date().toLocaleString() };
+                setForm((prev) => ({ ...prev, notes: [entry, ...prev.notes] }));
+                setNoteText("");
+              }}
+              style={{ marginTop: 6, padding: "7px 14px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+            >
+              Add Entry
+            </button>
+            {form.notes.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
+                {form.notes.map((n, i) => (
+                  <div key={i} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 11px" }}>
+                    <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 3 }}>{n.date}</div>
+                    <div style={{ fontSize: 13, color: "#374151", whiteSpace: "pre-wrap" }}>{n.text}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── FLAGS ── */}
+          <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14, marginTop: 2 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 8 }}>Flags</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {FLAGS_OPT.map((flag) => {
+                const active = form.flags.includes(flag.label);
+                const isGreen = flag.type === "green";
+                return (
+                  <label
+                    key={flag.label}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      padding: "9px 12px", borderRadius: 8, cursor: "pointer",
+                      background: active ? (isGreen ? "#f0fdf4" : "#fef2f2") : "#f8fafc",
+                      border: `1px solid ${active ? (isGreen ? "#86efac" : "#fca5a5") : "#e2e8f0"}`,
+                      transition: "all .12s",
+                    }}
+                  >
+                    <div style={{
+                      width: 15, height: 15, borderRadius: 4, flexShrink: 0,
+                      border: `2px solid ${active ? (isGreen ? "#22c55e" : "#ef4444") : "#d1d5db"}`,
+                      background: active ? (isGreen ? "#22c55e" : "#ef4444") : "transparent",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      {active && <span style={{ color: "#fff", fontSize: 9, fontWeight: 700 }}>✓</span>}
+                    </div>
+                    <input type="checkbox" style={{ display: "none" }} checked={active} onChange={() => {
+                      setForm((prev) => ({
+                        ...prev,
+                        flags: active ? prev.flags.filter((f) => f !== flag.label) : [...prev.flags, flag.label],
+                      }));
+                    }} />
+                    <span style={{ fontSize: 13, color: active ? (isGreen ? "#15803d" : "#dc2626") : "#374151", fontWeight: active ? 600 : 400 }}>{flag.label}</span>
+                  </label>
+                );
+              })}
             </div>
           </div>
 
