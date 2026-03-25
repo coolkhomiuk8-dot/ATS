@@ -112,8 +112,12 @@ export async function ensureRootFolder(drive) {
 
     return explicitRootFolderId;
   } catch (error) {
+    const details = String(
+      error?.message || error?.response?.data?.error?.message || "unknown error"
+    );
     const err = new Error(
-      "Invalid GOOGLE_DRIVE_ROOT_FOLDER_ID or no access for service account. Share that folder (or Shared Drive) with the service-account email and use the folder ID from its URL."
+      "Invalid GOOGLE_DRIVE_ROOT_FOLDER_ID or no access for service account. Share that folder (or Shared Drive) with the service-account email and use the folder ID from its URL. Details: " +
+        details
     );
     err.statusCode = 400;
     throw err;

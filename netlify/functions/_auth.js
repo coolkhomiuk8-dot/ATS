@@ -44,7 +44,16 @@ export async function requireAdminOrRoot(authHeader) {
   }
 
   const db = getDb();
-  const decoded = await admin.auth().verifyIdToken(idToken);
+  let decoded;
+  try {
+    decoded = await admin.auth().verifyIdToken(idToken);
+  } catch {
+    const err = new Error(
+      "Invalid Firebase ID token for this project. Ensure FIREBASE_SERVICE_ACCOUNT_JSON matches VITE_FIREBASE_PROJECT_ID and sign in again."
+    );
+    err.statusCode = 401;
+    throw err;
+  }
   const email = String(decoded.email || "").trim().toLowerCase();
   if (!email) {
     const err = new Error("Authenticated user does not have email.");

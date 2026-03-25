@@ -103,13 +103,10 @@ function normalizeDriverKeyPart(value) {
 }
 
 function buildDriverFileDocId(name, phone) {
-  const tokens = normalizeDriverKeyPart(name).split("_").filter(Boolean);
-
-  const first = tokens[0] || "driver";
-  const second = tokens[1] || tokens[0] || "driver";
+  const fullNamePart = normalizeDriverKeyPart(name) || "driver";
   const phonePart = String(phone || "").replace(/\D/g, "") || "0000000000";
 
-  return `${first}_${second}_${phonePart}`;
+  return `${fullNamePart}_${phonePart}`;
 }
 
 async function preflightFirestoreRead() {
@@ -404,7 +401,7 @@ export const useDriversStore = create((set, get) => ({
           const targetSnap = await getDoc(targetRef);
 
           if (targetSnap.exists() && Number(targetSnap.data()?.id) !== Number(currentDriver.id)) {
-            throw new Error("Another driver already uses this name_surname_phonenumber key.");
+            throw new Error("Another driver already uses this fullname_phonenumber key.");
           }
 
           await setDoc(
