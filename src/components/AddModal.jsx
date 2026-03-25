@@ -23,8 +23,19 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
   });
   const [noteText, setNoteText] = useState("");
 
+  const formatPhone = (raw) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 10);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  };
+
   const setField = (field, value) => {
-    if (field === "phone") setDupDriver(null);
+    if (field === "phone") {
+      setDupDriver(null);
+      setForm((prev) => ({ ...prev, phone: formatPhone(value) }));
+      return;
+    }
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -296,7 +307,9 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
             onClick={() => {
               if (!form.name.trim() || !form.phone.trim()) return;
               const normalized = form.phone.replace(/\D/g, "");
-              const dup = drivers.find(d => d.phone.replace(/\D/g, "") === normalized);
+              const dup = normalized.length >= 7
+                ? drivers.find(d => (d.phone || "").replace(/\D/g, "") === normalized)
+                : null;
               if (dup) { setDupDriver(dup); return; }
               setDupDriver(null);
               onAdd({ ...form, exp: +form.exp || 0 });

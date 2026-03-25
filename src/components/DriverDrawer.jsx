@@ -358,7 +358,16 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                         <FL t={label} />
                         <input
                           value={editData[key] || ""}
-                          onChange={(event) => setEditData((prev) => ({ ...prev, [key]: event.target.value }))}
+                          onChange={(event) => {
+                            let val = event.target.value;
+                            if (key === "phone") {
+                              const d = val.replace(/\D/g, "").slice(0, 10);
+                              if (d.length <= 3) val = d;
+                              else if (d.length <= 6) val = `(${d.slice(0,3)}) ${d.slice(3)}`;
+                              else val = `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+                            }
+                            setEditData((prev) => ({ ...prev, [key]: val }));
+                          }}
                           style={{
                             width: "100%",
                             padding: "8px 10px",
