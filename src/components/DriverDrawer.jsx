@@ -4,11 +4,14 @@ import { fmtDate, minutesUntil } from "../utils/date";
 import { fmtSize } from "../utils/file";
 import { Btn, FL } from "./UiBits";
 
-export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, onDeleteFile, onStageChange, canManageFiles }) {
+export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, onDeleteFile, onStageChange, onDelete, canManageFiles }) {
   const [tab, setTab] = useState("info");
   const [note, setNote] = useState("");
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({ ...driver });
+  const [editingName, setEditingName] = useState(false);
+  const [nameVal, setNameVal] = useState(driver.name);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [pendingFiles, setPendingFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
@@ -133,12 +136,42 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
       >
         <div style={{ padding: "18px 22px 14px", borderBottom: "1px solid #f1f5f9", flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-            <div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#0f172a" }}>{driver.name}</div>
+            <div style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
+              {editingName ? (
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <input
+                    autoFocus
+                    value={nameVal}
+                    onChange={(e) => setNameVal(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") { onUpd(driver.id, { name: nameVal }); setEditingName(false); }
+                      if (e.key === "Escape") { setNameVal(driver.name); setEditingName(false); }
+                    }}
+                    style={{ fontSize: 18, fontWeight: 700, border: "1.5px solid #3b82f6", borderRadius: 7, padding: "3px 8px", outline: "none", width: "100%" }}
+                  />
+                  <button onClick={() => { onUpd(driver.id, { name: nameVal }); setEditingName(false); }}
+                    style={{ padding: "4px 10px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 7, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Save</button>
+                  <button onClick={() => { setNameVal(driver.name); setEditingName(false); }}
+                    style={{ padding: "4px 8px", background: "#f1f5f9", color: "#64748b", border: "none", borderRadius: 7, cursor: "pointer", fontSize: 12 }}>✕</button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: "#0f172a" }}>{driver.name}</div>
+                  <button onClick={() => { setNameVal(driver.name); setEditingName(true); }}
+                    title="Edit name"
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: 13, padding: "2px 4px", borderRadius: 5 }}>✏️</button>
+                </div>
+              )}
               <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>
                 {driver.city} · CDL {driver.cdl} · {driver.exp} yrs · {driver.source}
               </div>
             </div>
+            <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
+              <button
+                onClick={() => setConfirmDelete(true)}
+                title="Delete driver"
+                style={{ background: "#fff0f0", border: "1px solid #fecaca", borderRadius: 8, width: 32, height: 32, cursor: "pointer", color: "#ef4444", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}
+              >🗑</button>
             <button
               onClick={onClose}
               style={{
@@ -157,7 +190,30 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
             >
               x
             </button>
+            </div>
           </div>
+
+          {/* Confirm delete modal */}
+          {confirmDelete && (
+            <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 3000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ background: "#fff", borderRadius: 14, padding: 28, width: 340, boxShadow: "0 16px 48px rgba(0,0,0,.2)" }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Delete driver?</div>
+                <div style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>
+                  Are you sure you want to permanently delete <b>{driver.name}</b>? This action cannot be undone.
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => setConfirmDelete(false)}
+                    style={{ flex: 1, padding: "9px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>
+                    Cancel
+                  </button>
+                  <button onClick={() => { onDelete(driver.id); onClose(); }}
+                    style={{ flex: 1, padding: "9px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
             <select

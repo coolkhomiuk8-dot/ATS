@@ -495,6 +495,25 @@ export const useDriversStore = create((set, get) => ({
     }
   },
 
+  deleteDriver: async (id) => {
+    const current = get().drivers.find((d) => d.id === id);
+    if (!current) return;
+
+    set((state) => ({
+      drivers: state.drivers.filter((d) => d.id !== id),
+    }));
+
+    if (!isFirebaseConfigured || !db) return;
+
+    try {
+      await ensureAuthReady();
+      const docId = getDriverDocId(current);
+      await deleteDoc(doc(db, "drivers", docId));
+    } catch (error) {
+      set({ syncError: error.message || "Failed to delete driver." });
+    }
+  },
+
   addDriver: async (data) => {
     const nextId = get().idCounter + 1;
     const newDriver = ensureDriverShape({
