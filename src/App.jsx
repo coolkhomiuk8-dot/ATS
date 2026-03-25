@@ -35,6 +35,7 @@ export default function App() {
   const [roleLoading, setRoleLoading] = useState(true);
 
   const canManageRoles = currentRole === "root";
+  const canManageFiles = currentRole === "root" || currentRole === "admin";
 
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) {
@@ -176,6 +177,16 @@ export default function App() {
     }
 
     setStageModal(null);
+  }
+
+  function handleAddFile(driverId, fileObj) {
+    if (!canManageFiles) return;
+    addFile(driverId, fileObj);
+  }
+
+  function handleDeleteFile(driverId, fileIdx) {
+    if (!canManageFiles) return;
+    removeFile(driverId, fileIdx);
   }
 
   async function handleLogout() {
@@ -572,8 +583,9 @@ export default function App() {
           onClose={() => setSelectedId(null)}
           onUpd={upd}
           onNote={addNote}
-          onFile={addFile}
-          onDeleteFile={removeFile}
+          onFile={handleAddFile}
+          onDeleteFile={handleDeleteFile}
+          canManageFiles={canManageFiles}
           onStageChange={requestStageChange}
         />
       )}

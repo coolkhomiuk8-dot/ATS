@@ -4,7 +4,7 @@ import { fmtDate, minutesUntil } from "../utils/date";
 import { fmtSize } from "../utils/file";
 import { Btn, FL } from "./UiBits";
 
-export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, onDeleteFile, onStageChange }) {
+export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, onDeleteFile, onStageChange, canManageFiles }) {
   const [tab, setTab] = useState("info");
   const [note, setNote] = useState("");
   const [editing, setEditing] = useState(false);
@@ -42,6 +42,8 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
   }
 
   function handleFiles(files) {
+    if (!canManageFiles) return;
+
     Array.from(files).forEach((file) => {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -67,6 +69,10 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
 
   function confirmPendingFile(linkedDoc) {
     if (!pendingFile) return;
+    if (!canManageFiles) {
+      setPendingFile(null);
+      return;
+    }
 
     onFile(driver.id, { ...pendingFile, linkedDoc });
     if (linkedDoc) {
@@ -76,6 +82,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
   }
 
   function deleteFile(fileIdx) {
+    if (!canManageFiles) return;
     const file = (driver.files || [])[fileIdx];
     if (!file) return;
     setDeleteModal({ idx: fileIdx, name: file.name || "file" });
@@ -522,30 +529,46 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                     {(driver.files || []).length} file{(driver.files || []).length !== 1 ? "s" : ""}
                   </span>
                 </div>
-                <div
-                  className="file-zone"
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    handleFiles(event.dataTransfer.files);
-                  }}
-                  onClick={() => fileRef.current?.click()}
-                  style={{
-                    border: "2px dashed #e2e8f0",
-                    borderRadius: 10,
-                    padding: "18px 16px",
-                    textAlign: "center",
-                    cursor: "pointer",
-                    transition: "all .15s",
-                    background: "#fafafa",
-                    marginBottom: 12,
-                  }}
-                >
-                  <div style={{ fontSize: 22, marginBottom: 6 }}>Upload</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 3 }}>Drop files or click to upload</div>
-                  <div style={{ fontSize: 11, color: "#94a3b8" }}>PDF, images, docs, spreadsheets</div>
-                  <input ref={fileRef} type="file" multiple onChange={(event) => handleFiles(event.target.files)} style={{ display: "none" }} />
-                </div>
+                {canManageFiles ? (
+                  <div
+                    className="file-zone"
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      handleFiles(event.dataTransfer.files);
+                    }}
+                    onClick={() => fileRef.current?.click()}
+                    style={{
+                      border: "2px dashed #e2e8f0",
+                      borderRadius: 10,
+                      padding: "18px 16px",
+                      textAlign: "center",
+                      cursor: "pointer",
+                      transition: "all .15s",
+                      background: "#fafafa",
+                      marginBottom: 12,
+                    }}
+                  >
+                    <div style={{ fontSize: 22, marginBottom: 6 }}>Upload</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 3 }}>Drop files or click to upload</div>
+                    <div style={{ fontSize: 11, color: "#94a3b8" }}>PDF, images, docs, spreadsheets</div>
+                    <input ref={fileRef} type="file" multiple onChange={(event) => handleFiles(event.target.files)} style={{ display: "none" }} />
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      border: "1px solid #e2e8f0",
+                      borderRadius: 10,
+                      padding: "12px 14px",
+                      fontSize: 12,
+                      color: "#64748b",
+                      background: "#f8fafc",
+                      marginBottom: 12,
+                    }}
+                  >
+                    View only: only admin/root can upload or delete files.
+                  </div>
+                )}
 
                 {(driver.files || []).length === 0 ? (
                   <div style={{ textAlign: "center", padding: "14px 0", fontSize: 13, color: "#cbd5e1" }}>No files uploaded yet</div>
@@ -553,39 +576,22 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                   <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                     {(driver.files || []).map((file, idx) => (
                       <div key={idx} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 9, overflow: "hidden" }}>
-                        {file.type === "image" ? (
-                          <>
-                            <img src={file.url || file.data} alt={file.name} style={{ width: "100%", maxHeight: 160, objectFit: "cover", display: "block" }} />
-                            <div style={{ padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <div>
-                                <div style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>{file.name}</div>
-                                <div style={{ fontSize: 10, color: "#94a3b8" }}>
-                                  {fmtSize(file.size)} · {file.date}
-                                  {file.linkedDoc && <span style={{ marginLeft: 6, color: "#10b981", fontWeight: 600 }}>· {file.linkedDoc}</span>}
-                                </div>
-                              </div>
-                              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                                <a href={file.url || file.data} download={file.name} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "#2563eb", textDecoration: "none", fontWeight: 600 }}>Save</a>
-                                <button onClick={() => deleteFile(idx)} style={{ background: "none", border: "none", color: "#dc2626", fontSize: 12, cursor: "pointer" }}>Delete</button>
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <div style={{ padding: "11px 14px", display: "flex", alignItems: "center", gap: 12 }}>
-                            <div style={{ width: 34, height: 34, background: "#eff6ff", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, flexShrink: 0 }}>FILE</div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{file.name}</div>
-                              <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>
-                                {fmtSize(file.size)} · {file.date}
-                                {file.linkedDoc && <span style={{ marginLeft: 6, color: "#10b981", fontWeight: 600 }}>· {file.linkedDoc}</span>}
-                              </div>
-                            </div>
-                            <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-                              <a href={file.url || file.data} download={file.name} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "#2563eb", textDecoration: "none", fontWeight: 600 }}>Save</a>
-                              <button onClick={() => deleteFile(idx)} style={{ background: "none", border: "none", color: "#dc2626", fontSize: 12, cursor: "pointer" }}>Delete</button>
+                        <div style={{ padding: "11px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{ width: 34, height: 34, background: "#eff6ff", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, flexShrink: 0 }}>
+                            {file.type === "image" ? "IMG" : "FILE"}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{file.name}</div>
+                            <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>
+                              {fmtSize(file.size)} · {file.date}
+                              {file.linkedDoc && <span style={{ marginLeft: 6, color: "#10b981", fontWeight: 600 }}>· {file.linkedDoc}</span>}
                             </div>
                           </div>
-                        )}
+                          <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+                            <a href={file.url || file.data} download={file.name} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "#2563eb", textDecoration: "none", fontWeight: 600 }}>Save</a>
+                            {canManageFiles && <button onClick={() => deleteFile(idx)} style={{ background: "none", border: "none", color: "#dc2626", fontSize: 12, cursor: "pointer" }}>Delete</button>}
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -714,7 +720,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
               >
                 {deleteModal.name}
               </span>{" "}
-              will be permanently removed from the driver profile and cloud storage.
+              will be permanently removed from the driver profile and Google Drive.
             </div>
 
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>

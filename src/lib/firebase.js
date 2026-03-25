@@ -1,18 +1,11 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
-
-function normalizeStorageBucket(bucket) {
-  if (!bucket) return bucket;
-  return bucket.startsWith("gs://") ? bucket.replace("gs://", "") : bucket;
-}
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: normalizeStorageBucket(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET),
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
@@ -21,7 +14,6 @@ const requiredConfigKeys = [
   "apiKey",
   "authDomain",
   "projectId",
-  "storageBucket",
   "messagingSenderId",
   "appId",
 ];
@@ -30,14 +22,12 @@ export const isFirebaseConfigured = requiredConfigKeys.every((key) => Boolean(fi
 
 let app = null;
 let db = null;
-let storage = null;
 let auth = null;
 let ensureAuthReady = async () => {};
 
 if (isFirebaseConfigured) {
   app = initializeApp(firebaseConfig);
   db = getFirestore(app);
-  storage = getStorage(app);
   auth = getAuth(app);
 
   ensureAuthReady = async () => {
@@ -50,4 +40,4 @@ if (isFirebaseConfigured) {
   console.warn("Firebase config is incomplete. Fill .env values to enable cloud sync.");
 }
 
-export { app, auth, db, ensureAuthReady, storage };
+export { app, auth, db, ensureAuthReady };

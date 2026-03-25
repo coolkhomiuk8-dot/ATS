@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { todayStr } from "../utils/date";
-import { db, ensureAuthReady, isFirebaseConfigured, storage } from "../lib/firebase";
+import { auth, db, ensureAuthReady, isFirebaseConfigured } from "../lib/firebase";
 import {
   collection,
   deleteDoc,
@@ -13,7 +13,9 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
-import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
+
+const driveUploadEndpoint = import.meta.env.VITE_DRIVE_UPLOAD_ENDPOINT || "/.netlify/functions/driveUpload";
+const driveDeleteEndpoint = import.meta.env.VITE_DRIVE_DELETE_ENDPOINT || "/.netlify/functions/driveDelete";
 
 function ensureDriverShape(driver) {
   return {
@@ -72,14 +74,10 @@ function normalizeDriverKeyPart(value) {
 }
 
 function buildDriverFileDocId(name, phone) {
-  const tokens = String(name || "")
-    .trim()
-    .split(/\s+/)
-    .map(normalizeDriverKeyPart)
-    .filter(Boolean);
+  const tokens = normalizeDriverKeyPart(name).split("_").filter(Boolean);
 
   const first = tokens[0] || "driver";
-  const second = tokens[1] || "unknown";
+  const second = tokens[1] || tokens[0] || "driver";
   const phonePart = String(phone || "").replace(/\D/g, "") || "0000000000";
 
   return `${first}_${second}_${phonePart}`;
@@ -98,22 +96,80 @@ async function preflightFirestoreRead() {
 }
 
 async function uploadDriverFile(driverId, fileObj) {
-  if (!storage || !fileObj.rawFile) {
+  if (!fileObj.rawFile) {
     return sanitizeFileForDb(fileObj);
   }
 
-  const safeName = fileObj.name.replace(/\s+/g, "_");
-  const storagePath = `driver-files/${driverId}/${Date.now()}-${safeName}`;
-  const storageRef = ref(storage, storagePath);
-  await uploadBytes(storageRef, fileObj.rawFile);
-  const downloadURL = await getDownloadURL(storageRef);
+  if (!driveUploadEndpoint) {
+    throw new Error("Google Drive upload endpoint is not configured. Set VITE_DRIVE_UPLOAD_ENDPOINT.");
+  }
+
+  if (!auth?.currentUser) {
+    throw new Error("Not authenticated in Firebase. Sign in again.");
+  }
+
+  const idToken = await auth.currentUser.getIdToken();
+  const formData = new FormData();
+  formData.append("file", fileObj.rawFile, fileObj.name);
+  formData.append("driverId", String(driverId));
+
+  const response = await fetch(driveUploadEndpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `Google Drive upload failed (${response.status}).`);
+  }
+
+  const payload = await response.json().catch(() => ({}));
+  const viewUrl = payload.webViewLink || payload.url || "";
+  const contentUrl = payload.webContentLink || "";
+  const driveUrl = fileObj.type === "image" ? contentUrl || viewUrl : viewUrl || contentUrl;
+
+  if (!driveUrl) {
+    throw new Error("Drive upload succeeded, but response did not include a file URL.");
+  }
 
   return sanitizeFileForDb({
     ...fileObj,
-    url: downloadURL,
-    data: downloadURL,
-    storagePath,
+    url: driveUrl,
+    data: driveUrl,
+    viewUrl,
+    contentUrl,
+    driveFileId: payload.id || payload.fileId || null,
   });
+}
+
+async function deleteDriverFileFromDrive(fileObj) {
+  if (!fileObj?.driveFileId) return;
+
+  if (!driveDeleteEndpoint) {
+    throw new Error("Google Drive delete endpoint is not configured. Set VITE_DRIVE_DELETE_ENDPOINT.");
+  }
+
+  if (!auth?.currentUser) {
+    throw new Error("Not authenticated in Firebase. Sign in again.");
+  }
+
+  const idToken = await auth.currentUser.getIdToken();
+  const response = await fetch(driveDeleteEndpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ fileId: fileObj.driveFileId }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `Google Drive delete failed (${response.status}).`);
+  }
 }
 
 export const useDriversStore = create((set, get) => ({
@@ -310,15 +366,8 @@ export const useDriversStore = create((set, get) => ({
         savedFile = await uploadDriverFile(resolvedDocId, fileObj);
       }
     } catch (error) {
-      const message = String(error?.message || "");
-      const isStorageUnauthorized =
-        message.includes("storage/unauthorized") ||
-        message.includes("does not have permission to access");
-
       set({
-        syncError: isStorageUnauthorized
-          ? "Upload blocked by Firebase Storage rules. Grant write access to role admin/root for path driver-files/{driverKey}/{fileName}."
-          : error.message || "Failed to upload file.",
+        syncError: error.message || "Failed to upload file to Google Drive.",
       });
       return;
     }
@@ -363,38 +412,28 @@ export const useDriversStore = create((set, get) => ({
       if (!stillLinked) nextDocs[fileToDelete.linkedDoc] = false;
     }
 
-    set((state) => ({
-      drivers: state.drivers.map((driver) =>
-        driver.id === id
-          ? { ...driver, files: nextFiles, docs: nextDocs }
-          : driver,
-      ),
-    }));
-
     if (!isFirebaseConfigured || !db) return;
 
     try {
       await ensureAuthReady();
+      await deleteDriverFileFromDrive(fileToDelete);
+
       const current = get().drivers.find((driver) => driver.id === id) || currentDriver;
       const docId = getDriverDocId(current || { id });
       await updateDoc(doc(db, "drivers", docId), {
         files: nextFiles,
         docs: nextDocs,
       });
-    } catch (error) {
-      set({ syncError: error.message || "Failed to remove file from driver." });
-      return;
-    }
 
-    if (!storage || !fileToDelete.storagePath) return;
-
-    try {
-      await deleteObject(ref(storage, fileToDelete.storagePath));
+      set((state) => ({
+        drivers: state.drivers.map((driver) =>
+          driver.id === id
+            ? { ...driver, files: nextFiles, docs: nextDocs }
+            : driver,
+        ),
+      }));
     } catch (error) {
-      set({
-        syncError:
-          error?.message || "File metadata removed, but failed to delete physical file from Storage.",
-      });
+      set({ syncError: error.message || "Failed to remove file from Google Drive." });
     }
   },
 

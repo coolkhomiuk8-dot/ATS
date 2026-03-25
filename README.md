@@ -6,7 +6,8 @@ This project was split from a single-file prototype into a modular React archite
 
 - React 18
 - Zustand (state management)
-- Firebase Firestore + Storage (drivers data + documents)
+- Firebase Firestore + Auth (drivers data + roles)
+- Google Drive (documents storage via backend endpoint)
 - Vite (build/dev server)
 - Netlify (deployment)
 
@@ -45,29 +46,80 @@ Required `.env` keys:
 - VITE_FIREBASE_API_KEY
 - VITE_FIREBASE_AUTH_DOMAIN
 - VITE_FIREBASE_PROJECT_ID
-- VITE_FIREBASE_STORAGE_BUCKET
 - VITE_FIREBASE_MESSAGING_SENDER_ID
 - VITE_FIREBASE_APP_ID
+- VITE_DRIVE_UPLOAD_ENDPOINT
+- VITE_DRIVE_DELETE_ENDPOINT
 
 Data behavior:
 
 - Driver profiles, stage, notes, flags, docs checklist are stored in Firestore collection `drivers`.
-- Uploaded files are stored in Firebase Storage under `driver-files/{driverId}/...`.
+- Files are uploaded to Google Drive through a secure backend endpoint.
+- Firestore stores only file metadata (URL, name, size, driveFileId).
 - On each page load, drivers are loaded from Firestore in real time.
 
-## Storage rules for file uploads (admin/root)
+## Roles for files
 
-Project includes [storage.rules](storage.rules) to allow uploads under `driver-files/*` only for users with role `admin` or `root`.
-Role can be provided by either:
+Only `admin` and `root` can upload or delete files.
+`user` can only view and open file links.
 
-- Firebase custom claim `request.auth.token.role`
+Role source:
+
 - Firestore document `user_roles/{email}` with field `role`
 
-Deploy rules to Firebase:
+## Google Drive backend requirements
 
-1. Install Firebase CLI and login.
-2. Run: `firebase use <your-project-id>`
-3. Run: `firebase deploy --only storage`
+This repo already includes serverless backend in `netlify/functions`:
+
+- `driveUpload` uploads file to Google Drive
+- `driveDelete` deletes file from Google Drive
+- both endpoints verify Firebase ID token and allow only `admin`/`root`
+
+By default frontend calls:
+
+- `/.netlify/functions/driveUpload`
+- `/.netlify/functions/driveDelete`
+
+No separate backend service is required.
+
+## Where to store JSON keys
+
+Never store JSON keys in git.
+
+Store both JSON keys in Netlify Site Settings -> Environment variables:
+
+- `FIREBASE_SERVICE_ACCOUNT_JSON`
+- `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON`
+
+Additional variables:
+
+- `GOOGLE_DRIVE_ROOT_FOLDER_NAME=ats-storage`
+- `GOOGLE_DRIVE_ROOT_PARENT_ID=root`
+
+## Google Drive folder structure
+
+Files are uploaded into:
+
+- `ats-storage/{name_surname_phonenumber}/file.ext`
+
+The `{name_surname_phonenumber}` key matches the driver document key used in Firestore.
+
+## How to create Google Drive key
+
+1. Open Google Cloud Console.
+2. Enable Google Drive API in your project.
+3. Go to IAM & Admin -> Service Accounts.
+4. Create a new Service Account.
+5. Open it -> Keys -> Add key -> Create new key -> JSON.
+6. Copy JSON content into Netlify env var `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON`.
+7. In Google Drive, create folder `ats-storage`.
+8. Share folder `ats-storage` with service account email (Editor).
+
+## How to create Firebase Admin key
+
+1. Firebase Console -> Project Settings -> Service accounts.
+2. Generate new private key (JSON).
+3. Copy JSON content into Netlify env var `FIREBASE_SERVICE_ACCOUNT_JSON`.
 
 ## Deploy to Netlify
 

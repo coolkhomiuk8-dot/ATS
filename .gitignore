@@ -19,6 +19,9 @@ pnpm-debug.log*
 # Firebase admin keys
 serviceAccountKey.json
 *.service-account.json
+google_keys.json
+firebase-admin.json
+firebase-adminsdk-*.json
 
 # Editor/IDE
 .vscode/*
@@ -37,3 +40,6 @@ coverage/
 # Cache files
 .eslintcache
 *.tsbuildinfo
+
+# Local Netlify folder
+.netlify
