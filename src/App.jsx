@@ -291,6 +291,44 @@ export default function App() {
           </button>
         ))}
 
+        {/* Quick links */}
+        {[
+          { icon: "📄", title: "Send Offer", url: "https://docs.google.com/document/d/1Rul2ihq6Pih4HnZVnYRAK03rDjUmmhciMRSGCmSNrOY/edit?tab=t.0" },
+          { icon: "📁", title: "Driver Docs", url: "https://drive.google.com/drive/u/0/folders/1PyX6wwLcVwBQCZDqpUQb3sIN8ISerkRV" },
+        ].map((link) => (
+          <a
+            key={link.title}
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={link.title}
+            style={{
+              width: sidebarExpanded ? "calc(100% - 16px)" : 38,
+              height: 38,
+              margin: sidebarExpanded ? "2px 8px" : "2px 0",
+              border: "1px solid #e2e8f0",
+              borderRadius: 9,
+              background: "#f8fafc",
+              color: "#475569",
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: sidebarExpanded ? "flex-start" : "center",
+              gap: 8,
+              padding: sidebarExpanded ? "0 10px" : "0",
+              textDecoration: "none",
+              transition: "all .15s",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+            }}
+          >
+            <span style={{ fontSize: 15 }}>{link.icon}</span>
+            {sidebarExpanded && <span style={{ fontSize: 12 }}>{link.title}</span>}
+          </a>
+        ))}
+
         {/* Stage navigator — тільки коли expanded і pipeline */}
         {sidebarExpanded && view === "pipeline" && (
           <div style={{ width: "100%", marginTop: 12, borderTop: "1px solid #f1f5f9", paddingTop: 10 }}>
