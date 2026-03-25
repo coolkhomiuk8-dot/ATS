@@ -11,9 +11,10 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
   const [editData, setEditData] = useState({ ...driver });
   const [pendingFiles, setPendingFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
+  const [openDocPickerIndex, setOpenDocPickerIndex] = useState(null);
   const [deleteModal, setDeleteModal] = useState(null);
   const fileRef = useRef(null);
-  const pendingFile = pendingFiles[0] || null;
 
   const stage = STAGES.find((item) => item.id === driver.stage) || STAGES[0];
   const mins = minutesUntil(driver);
@@ -44,7 +45,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
   }
 
   function handleFiles(files) {
-    if (!canManageFiles) return;
+    if (!canManageFiles || isUploading) return;
 
     const queuedFiles = Array.from(files).map((file) => ({
       name: file.name,
@@ -66,25 +67,39 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
     if (fileRef.current) fileRef.current.value = "";
   }
 
-  async function confirmPendingFile(linkedDoc) {
-    const current = pendingFiles[0];
-    if (!current) return;
-    if (!canManageFiles) {
-      setPendingFiles([]);
-      return;
-    }
+  function setPendingFileDoc(index, linkedDoc) {
+    setPendingFiles((prev) =>
+      prev.map((file, idx) => (idx === index ? { ...file, linkedDoc: linkedDoc || null } : file)),
+    );
+    setOpenDocPickerIndex(null);
+  }
 
+  async function startUploadBatch() {
+    if (!canManageFiles || isUploading || pendingFiles.length === 0) return;
+
+    const queue = pendingFiles.map((file) => ({ ...file }));
+    const nextDocs = { ...(driver.docs || {}) };
+
+    setPendingFiles([]);
     setIsUploading(true);
+    setUploadProgress({ current: 0, total: queue.length });
+
     try {
-      await Promise.resolve(onFile(driver.id, { ...current, linkedDoc }));
+      for (let i = 0; i < queue.length; i += 1) {
+        const file = queue[i];
+        setUploadProgress({ current: i + 1, total: queue.length });
+        await Promise.resolve(onFile(driver.id, file));
+        if (file.linkedDoc) nextDocs[file.linkedDoc] = true;
+      }
+
+      const hasLinkedDocs = queue.some((file) => Boolean(file.linkedDoc));
+      if (hasLinkedDocs) {
+        onUpd(driver.id, { docs: nextDocs });
+      }
     } finally {
       setIsUploading(false);
+      setUploadProgress({ current: 0, total: 0 });
     }
-
-    if (linkedDoc) {
-      onUpd(driver.id, { docs: { ...driver.docs, [linkedDoc]: true } });
-    }
-    setPendingFiles((prev) => prev.slice(1));
   }
 
   function deleteFile(fileIdx) {
@@ -610,7 +625,9 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                   >
                     <div style={{ fontSize: 22, marginBottom: 6 }}>{isUploading ? "⏳" : "Upload"}</div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 3 }}>
-                      {isUploading ? "Uploading file..." : "Drop files or click to upload"}
+                      {isUploading
+                        ? `Uploading ${uploadProgress.current}/${uploadProgress.total || 1}...`
+                        : "Drop files or click to upload"}
                     </div>
                     <div style={{ fontSize: 11, color: "#94a3b8" }}>PDF, images, docs, spreadsheets</div>
                     <input ref={fileRef} type="file" multiple disabled={isUploading} onChange={(event) => handleFiles(event.target.files)} style={{ display: "none" }} />
@@ -664,7 +681,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
         </div>
       </div>
 
-      {pendingFile && (
+      {pendingFiles.length > 0 && !isUploading && (
         <div
           style={{
             position: "fixed",
@@ -691,51 +708,141 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
           >
             <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>What document is this?</div>
             <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>
-              <span style={{ fontWeight: 600, color: "#374151" }}>{pendingFile.name}</span> - select a type to auto-check the list, or skip.
+              Choose required document type for each file first. Upload starts after you click Start upload.
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14, maxHeight: 320, overflowY: "auto" }}>
-              {DOC_LIST.map((doc) => (
-                <button
-                  key={doc}
-                  onClick={() => confirmPendingFile(doc)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "10px 14px",
-                    background: driver.docs?.[doc] ? "#f0fdf4" : "#f8fafc",
-                    border: `1px solid ${driver.docs?.[doc] ? "#6ee7b7" : "#e2e8f0"}`,
-                    borderRadius: 8,
-                    cursor: "pointer",
-                    fontSize: 13,
-                    color: "#374151",
-                    textAlign: "left",
-                  }}
-                >
-                  <span>{doc}</span>
-                  {driver.docs?.[doc] ? (
-                    <span style={{ fontSize: 11, color: "#10b981", fontWeight: 600 }}>Already received</span>
-                  ) : (
-                    <span style={{ fontSize: 11, color: "#94a3b8" }}>Mark as received</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14, maxHeight: 320, overflowY: "auto" }}>
+              {pendingFiles.map((file, idx) => (
+                <div key={`${file.name}-${idx}`} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", background: "#f8fafc", position: "relative" }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {file.name}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setOpenDocPickerIndex((prev) => (prev === idx ? null : idx))}
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      fontSize: 12,
+                      border: "1px solid #cbd5e1",
+                      borderRadius: 7,
+                      background: "#fff",
+                      color: "#334155",
+                      outline: "none",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <span>{file.linkedDoc || "Skip (no checklist link)"}</span>
+                    <span style={{ color: "#94a3b8", fontSize: 11 }}>{openDocPickerIndex === idx ? "▲" : "▼"}</span>
+                  </button>
+
+                  {openDocPickerIndex === idx && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: 12,
+                        right: 12,
+                        top: 64,
+                        zIndex: 10,
+                        border: "1px solid #e2e8f0",
+                        borderRadius: 8,
+                        background: "#fff",
+                        boxShadow: "0 10px 24px rgba(2,6,23,.12)",
+                        maxHeight: 220,
+                        overflowY: "auto",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setPendingFileDoc(idx, null)}
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "9px 10px",
+                          border: "none",
+                          borderBottom: "1px solid #f1f5f9",
+                          background: file.linkedDoc ? "#fff" : "#eff6ff",
+                          color: "#334155",
+                          cursor: "pointer",
+                          fontSize: 12,
+                        }}
+                      >
+                        Skip (no checklist link)
+                      </button>
+
+                      {DOC_LIST.map((doc) => {
+                        const isReceived = Boolean(driver.docs?.[doc]);
+                        const isSelected = file.linkedDoc === doc;
+
+                        return (
+                          <button
+                            key={doc}
+                            type="button"
+                            onClick={() => setPendingFileDoc(idx, doc)}
+                            style={{
+                              width: "100%",
+                              textAlign: "left",
+                              padding: "9px 10px",
+                              border: "none",
+                              borderTop: "1px solid #f8fafc",
+                              background: isSelected ? "#eff6ff" : "#fff",
+                              color: "#334155",
+                              cursor: "pointer",
+                              fontSize: 12,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: 8,
+                            }}
+                          >
+                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc}</span>
+                            {isReceived && (
+                              <span style={{ color: "#10b981", fontSize: 11, fontWeight: 600 }}>✔</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
                   )}
-                </button>
+                </div>
               ))}
             </div>
-            <button
-              onClick={() => confirmPendingFile(null)}
-              style={{
-                width: "100%",
-                padding: "10px",
-                background: "#f8fafc",
-                border: "1px solid #e2e8f0",
-                borderRadius: 8,
-                fontSize: 13,
-                color: "#64748b",
-                cursor: "pointer",
-              }}
-            >
-              Skip - upload without linking to checklist
-            </button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => setPendingFiles([])}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  background: "#fff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 8,
+                  fontSize: 13,
+                  color: "#64748b",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={startUploadBatch}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  background: "#2563eb",
+                  border: "1px solid #2563eb",
+                  borderRadius: 8,
+                  fontSize: 13,
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                Start upload ({pendingFiles.length})
+              </button>
+            </div>
           </div>
         </div>
       )}
