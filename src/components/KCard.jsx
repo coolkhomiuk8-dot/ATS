@@ -44,7 +44,7 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
         <div className="driver-card__interest-dot" style={{ background: intC }} title={driver.interest} />
       </div>
       <div className="driver-card__meta">
-        {driver.city} · CDL {driver.cdl} · {driver.exp}yr
+        {driver.city} · {driver.exp}yr exp
       </div>
 
       {(driver.flags || []).length > 0 && (

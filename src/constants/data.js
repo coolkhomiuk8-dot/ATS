@@ -34,6 +34,29 @@ export const DOC_LIST = [
 
 export const SOURCES = ["Indeed", "CDLjobs", "Referral", "LinkedIn", "Cold Call", "Other"];
 
+export const TRUCK_TYPES = [
+  "Dry Van",
+  "Flatbed",
+  "Reefer",
+  "Tanker",
+  "Step Deck",
+  "Lowboy",
+  "Car Hauler",
+  "Dump Truck",
+  "Box Truck",
+  "Cargo Van",
+  "Other",
+];
+
+export const AVAILABILITY_OPTIONS = [
+  "TBD",
+  "ASAP",
+  "In 2-3 Days",
+  "In 3-7 days",
+  "In 1-2 weeks",
+  "More than 2 weeks",
+];
+
 export const TEXT_TEMPLATES = [
   {
     label: "First Contact",
