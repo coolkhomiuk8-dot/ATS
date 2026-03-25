@@ -3,7 +3,8 @@ import { AVAILABILITY_OPTIONS, FLAGS_OPT, SOURCES, STAGES, TRUCK_TYPES } from ".
 import { getTodayPlus } from "../utils/date";
 import { FL } from "./UiBits";
 
-export default function AddModal({ onClose, onAdd }) {
+export default function AddModal({ onClose, onAdd, drivers = [] }) {
+  const [dupDriver, setDupDriver] = useState(null);
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -22,7 +23,10 @@ export default function AddModal({ onClose, onAdd }) {
   });
   const [noteText, setNoteText] = useState("");
 
-  const setField = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+  const setField = (field, value) => {
+    if (field === "phone") setDupDriver(null);
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
 
   return (
     <div
@@ -279,9 +283,22 @@ export default function AddModal({ onClose, onAdd }) {
             </div>
           </div>
 
+          {dupDriver && (
+            <div style={{
+              background: "#fef2f2", border: "1.5px solid #fca5a5", borderRadius: 10,
+              padding: "12px 14px", marginBottom: 10, fontSize: 13, color: "#991b1b",
+            }}>
+              ⚠️ Водій з таким номером телефону вже є в системі:<br />
+              <b>{dupDriver.name}</b> · {dupDriver.phone} · <span style={{ color: "#64748b" }}>{dupDriver.stage}</span>
+            </div>
+          )}
           <button
             onClick={() => {
               if (!form.name.trim() || !form.phone.trim()) return;
+              const normalized = form.phone.replace(/\D/g, "");
+              const dup = drivers.find(d => d.phone.replace(/\D/g, "") === normalized);
+              if (dup) { setDupDriver(dup); return; }
+              setDupDriver(null);
               onAdd({ ...form, exp: +form.exp || 0 });
             }}
             className="btn-p"

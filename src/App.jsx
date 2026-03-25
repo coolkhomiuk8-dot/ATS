@@ -676,6 +676,7 @@ export default function App() {
 
       {showAdd && (
         <AddModal
+          drivers={drivers}
           onClose={() => setShowAdd(false)}
           onAdd={(data) => {
             addDriver(data);
