@@ -10,6 +10,7 @@ export default function StageModal({ modal, onConfirm, onCancel }) {
 
   const from = STAGES.find((item) => item.id === modal.fromStage);
   const to = STAGES.find((item) => item.id === modal.toStage);
+  const isDeadEnd = modal.toStage === "trash" || modal.toStage === "fired";
 
   return (
     <div
@@ -71,6 +72,7 @@ export default function StageModal({ modal, onConfirm, onCancel }) {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {!isDeadEnd && (
           <div>
             <FL t="When is the next contact?" />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -112,6 +114,7 @@ export default function StageModal({ modal, onConfirm, onCancel }) {
               </div>
             </div>
           </div>
+          )}
 
           <div>
             <FL t="Comment (optional - saved to notes)" />
