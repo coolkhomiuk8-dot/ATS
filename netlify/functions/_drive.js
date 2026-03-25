@@ -1,9 +1,13 @@
 import { google } from "googleapis";
 
 function getDriveServiceAccount() {
-  const raw = process.env.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON;
+  const raw =
+    process.env.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON ||
+    process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   if (!raw) {
-    throw new Error("Missing GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON environment variable.");
+    throw new Error(
+      "Missing Google service account JSON. Set GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON or reuse FIREBASE_SERVICE_ACCOUNT_JSON."
+    );
   }
   return JSON.parse(raw);
 }

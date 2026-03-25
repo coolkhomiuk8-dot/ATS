@@ -18,6 +18,35 @@ const driveUploadEndpoint = import.meta.env.VITE_DRIVE_UPLOAD_ENDPOINT || "/.net
 const driveDeleteEndpoint = import.meta.env.VITE_DRIVE_DELETE_ENDPOINT || "/.netlify/functions/driveDelete";
 
 function ensureDriverShape(driver) {
+  const files = Array.isArray(driver?.files)
+    ? driver.files.map((file) => {
+        const directId = String(file?.driveFileId || "").trim();
+        const urlCandidates = [file?.viewUrl, file?.contentUrl, file?.url, file?.data]
+          .map((value) => String(value || ""))
+          .filter(Boolean);
+
+        let derivedId = "";
+        for (const candidate of urlCandidates) {
+          const byPath = candidate.match(/\/d\/([^/]+)/);
+          if (byPath?.[1]) {
+            derivedId = byPath[1];
+            break;
+          }
+
+          const byQuery = candidate.match(/[?&]id=([^&]+)/);
+          if (byQuery?.[1]) {
+            derivedId = byQuery[1];
+            break;
+          }
+        }
+
+        return {
+          ...file,
+          driveFileId: directId || derivedId || null,
+        };
+      })
+    : [];
+
   return {
     id: Date.now(),
     name: "",
@@ -31,7 +60,7 @@ function ensureDriverShape(driver) {
     nextAction: null,
     nextActionTime: "10:00",
     notes: [],
-    files: [],
+    files,
     docs: {},
     flags: [],
     interest: "Warm",
@@ -142,11 +171,37 @@ async function uploadDriverFile(driverId, fileObj) {
     viewUrl,
     contentUrl,
     driveFileId: payload.id || payload.fileId || null,
+    folderId: payload.folderId || null,
+    folderName: payload.folderName || null,
   });
 }
 
-async function deleteDriverFileFromDrive(fileObj) {
-  if (!fileObj?.driveFileId) return;
+async function deleteDriverFileFromDrive(fileObj, driverDocId) {
+  const directId = String(fileObj?.driveFileId || "").trim();
+  const urlCandidates = [fileObj?.viewUrl, fileObj?.contentUrl, fileObj?.url, fileObj?.data]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+
+  let derivedId = "";
+  for (const candidate of urlCandidates) {
+    const byPath = candidate.match(/\/d\/([^/]+)/);
+    if (byPath?.[1]) {
+      derivedId = byPath[1];
+      break;
+    }
+
+    const byQuery = candidate.match(/[?&]id=([^&]+)/);
+    if (byQuery?.[1]) {
+      derivedId = byQuery[1];
+      break;
+    }
+  }
+
+  const fileId = directId || derivedId;
+
+  if (!fileId && !(driverDocId && fileObj?.name)) {
+    throw new Error("Cannot delete from Google Drive: missing fileId and fallback metadata.");
+  }
 
   if (!driveDeleteEndpoint) {
     throw new Error("Google Drive delete endpoint is not configured. Set VITE_DRIVE_DELETE_ENDPOINT.");
@@ -163,7 +218,12 @@ async function deleteDriverFileFromDrive(fileObj) {
       Authorization: `Bearer ${idToken}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ fileId: fileObj.driveFileId }),
+    body: JSON.stringify({
+      fileId,
+      driverId: String(driverDocId || ""),
+      fileName: String(fileObj?.name || ""),
+      folderId: String(fileObj?.folderId || ""),
+    }),
   });
 
   if (!response.ok) {
@@ -416,10 +476,11 @@ export const useDriversStore = create((set, get) => ({
 
     try {
       await ensureAuthReady();
-      await deleteDriverFileFromDrive(fileToDelete);
-
       const current = get().drivers.find((driver) => driver.id === id) || currentDriver;
       const docId = getDriverDocId(current || { id });
+
+      await deleteDriverFileFromDrive(fileToDelete, docId);
+
       await updateDoc(doc(db, "drivers", docId), {
         files: nextFiles,
         docs: nextDocs,

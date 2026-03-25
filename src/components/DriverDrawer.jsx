@@ -9,9 +9,11 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
   const [note, setNote] = useState("");
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({ ...driver });
-  const [pendingFile, setPendingFile] = useState(null);
+  const [pendingFiles, setPendingFiles] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [deleteModal, setDeleteModal] = useState(null);
   const fileRef = useRef(null);
+  const pendingFile = pendingFiles[0] || null;
 
   const stage = STAGES.find((item) => item.id === driver.stage) || STAGES[0];
   const mins = minutesUntil(driver);
@@ -44,41 +46,45 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
   function handleFiles(files) {
     if (!canManageFiles) return;
 
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setPendingFile({
-          name: file.name,
-          type: file.type.startsWith("image/") ? "image" : "file",
-          mime: file.type,
-          data: event.target.result,
-          rawFile: file,
-          size: file.size,
-          date: new Date().toLocaleString("en-US", {
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          linkedDoc: null,
-        });
-      };
-      reader.readAsDataURL(file);
-    });
+    const queuedFiles = Array.from(files).map((file) => ({
+      name: file.name,
+      type: file.type.startsWith("image/") ? "image" : "file",
+      mime: file.type,
+      data: null,
+      rawFile: file,
+      size: file.size,
+      date: new Date().toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      linkedDoc: null,
+    }));
+
+    setPendingFiles((prev) => [...prev, ...queuedFiles]);
+    if (fileRef.current) fileRef.current.value = "";
   }
 
-  function confirmPendingFile(linkedDoc) {
-    if (!pendingFile) return;
+  async function confirmPendingFile(linkedDoc) {
+    const current = pendingFiles[0];
+    if (!current) return;
     if (!canManageFiles) {
-      setPendingFile(null);
+      setPendingFiles([]);
       return;
     }
 
-    onFile(driver.id, { ...pendingFile, linkedDoc });
+    setIsUploading(true);
+    try {
+      await Promise.resolve(onFile(driver.id, { ...current, linkedDoc }));
+    } finally {
+      setIsUploading(false);
+    }
+
     if (linkedDoc) {
       onUpd(driver.id, { docs: { ...driver.docs, [linkedDoc]: true } });
     }
-    setPendingFile(null);
+    setPendingFiles((prev) => prev.slice(1));
   }
 
   function deleteFile(fileIdx) {
@@ -578,27 +584,36 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                 {canManageFiles ? (
                   <div
                     className="file-zone"
-                    onDragOver={(event) => event.preventDefault()}
+                    onDragOver={(event) => {
+                      if (isUploading) return;
+                      event.preventDefault();
+                    }}
                     onDrop={(event) => {
+                      if (isUploading) return;
                       event.preventDefault();
                       handleFiles(event.dataTransfer.files);
                     }}
-                    onClick={() => fileRef.current?.click()}
+                    onClick={() => {
+                      if (isUploading) return;
+                      fileRef.current?.click();
+                    }}
                     style={{
-                      border: "2px dashed #e2e8f0",
+                      border: `2px dashed ${isUploading ? "#93c5fd" : "#e2e8f0"}`,
                       borderRadius: 10,
                       padding: "18px 16px",
                       textAlign: "center",
-                      cursor: "pointer",
+                      cursor: isUploading ? "wait" : "pointer",
                       transition: "all .15s",
-                      background: "#fafafa",
+                      background: isUploading ? "#eff6ff" : "#fafafa",
                       marginBottom: 12,
                     }}
                   >
-                    <div style={{ fontSize: 22, marginBottom: 6 }}>Upload</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 3 }}>Drop files or click to upload</div>
+                    <div style={{ fontSize: 22, marginBottom: 6 }}>{isUploading ? "⏳" : "Upload"}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 3 }}>
+                      {isUploading ? "Uploading file..." : "Drop files or click to upload"}
+                    </div>
                     <div style={{ fontSize: 11, color: "#94a3b8" }}>PDF, images, docs, spreadsheets</div>
-                    <input ref={fileRef} type="file" multiple onChange={(event) => handleFiles(event.target.files)} style={{ display: "none" }} />
+                    <input ref={fileRef} type="file" multiple disabled={isUploading} onChange={(event) => handleFiles(event.target.files)} style={{ display: "none" }} />
                   </div>
                 ) : (
                   <div
@@ -661,7 +676,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
             justifyContent: "center",
             padding: 20,
           }}
-          onClick={() => setPendingFile(null)}
+          onClick={() => setPendingFiles([])}
         >
           <div
             onClick={(event) => event.stopPropagation()}

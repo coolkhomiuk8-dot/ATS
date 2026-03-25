@@ -181,7 +181,7 @@ export default function App() {
 
   function handleAddFile(driverId, fileObj) {
     if (!canManageFiles) return;
-    addFile(driverId, fileObj);
+    return addFile(driverId, fileObj);
   }
 
   function handleDeleteFile(driverId, fileIdx) {

@@ -3,9 +3,13 @@ import admin from "firebase-admin";
 let initialized = false;
 
 function getServiceAccount() {
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  const raw =
+    process.env.FIREBASE_SERVICE_ACCOUNT_JSON ||
+    process.env.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON;
   if (!raw) {
-    throw new Error("Missing FIREBASE_SERVICE_ACCOUNT_JSON environment variable.");
+    throw new Error(
+      "Missing Firebase Admin service account JSON. Set FIREBASE_SERVICE_ACCOUNT_JSON or reuse GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON."
+    );
   }
   return JSON.parse(raw);
 }

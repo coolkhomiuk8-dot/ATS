@@ -20,8 +20,10 @@ pnpm-debug.log*
 serviceAccountKey.json
 *.service-account.json
 google_keys.json
+google_keys*.json
 firebase-admin.json
 firebase-adminsdk-*.json
+tmp_drive_*.cjs
 
 # Editor/IDE
 .vscode/*
