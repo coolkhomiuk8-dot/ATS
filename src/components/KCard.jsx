@@ -16,14 +16,19 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
   const soon = mins !== null && mins >= 0 && mins <= 90;
   const docs = Object.values(driver.docs || {}).filter(Boolean).length;
   const intC =
-    driver.interest === "Hot" ? "#10b981" : driver.interest === "Warm" ? "#f59e0b" : "#94a3b8";
+    driver.interest === "Hot" ? "#ef4444" : driver.interest === "Warm" ? "#f59e0b" : "#94a3b8";
 
   let naLabel = null;
   let naTimeLabel = null;
+  let naDayBadge = null;
   if (driver.nextAction) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
     const dt = new Date(`${driver.nextAction}T00:00:00`);
     naLabel = dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     naTimeLabel = driver.nextActionTime || null;
+    if (dt.getTime() === today.getTime())    naDayBadge = "Today";
+    else if (dt.getTime() === tomorrow.getTime()) naDayBadge = "Tomorrow";
   }
 
   return (
@@ -73,12 +78,26 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
               <span
                 className="driver-card__next-action-time"
                 style={{
-                  color: soon ? "#d97706" : "#94a3b8",
-                  background: soon ? "#fffbeb" : "#f8fafc",
-                  border: `1px solid ${soon ? "#fde68a" : "#e2e8f0"}`,
+                  color: soon ? "#92400e" : "#334155",
+                  background: soon ? "#fde68a" : "#e2e8f0",
+                  border: `1px solid ${soon ? "#f59e0b" : "#cbd5e1"}`,
+                  fontWeight: 700,
                 }}
               >
                 {naTimeLabel}
+              </span>
+            )}
+            {naDayBadge && !over && (
+              <span style={{
+                fontSize: 10,
+                fontWeight: 600,
+                padding: "2px 6px",
+                borderRadius: 5,
+                background: naDayBadge === "Today" ? "#dbeafe" : "#f3e8ff",
+                color:      naDayBadge === "Today" ? "#1d4ed8" : "#7c3aed",
+                border:     `1px solid ${naDayBadge === "Today" ? "#bfdbfe" : "#e9d5ff"}`,
+              }}>
+                {naDayBadge}
               </span>
             )}
           </div>
