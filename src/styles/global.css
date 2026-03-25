@@ -394,6 +394,21 @@ button {
   animation: fUp 0.18s ease forwards;
 }
 
+@keyframes stagePulse {
+  0%    { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.0); background: transparent; }
+  16%   { box-shadow: 0 0 0 7px rgba(99, 102, 241, 0.22); background: rgba(99, 102, 241, 0.07); }
+  33%   { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.0); background: transparent; }
+  50%   { box-shadow: 0 0 0 7px rgba(99, 102, 241, 0.22); background: rgba(99, 102, 241, 0.07); }
+  66%   { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.0); background: transparent; }
+  83%   { box-shadow: 0 0 0 7px rgba(99, 102, 241, 0.22); background: rgba(99, 102, 241, 0.07); }
+  100%  { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.0); background: transparent; }
+}
+
+.stage-pulse {
+  animation: stagePulse 1.5s ease;
+  border-radius: 12px;
+}
+
 .auth-page {
   position: relative;
   min-height: 100vh;

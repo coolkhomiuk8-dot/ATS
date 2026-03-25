@@ -341,7 +341,13 @@ export default function App() {
                     key={stage.id}
                     onClick={() => {
                       const col = document.querySelector(`[data-stage-id="${stage.id}"]`);
-                      if (col) col.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+                      if (col) {
+                        col.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+                        col.classList.remove("stage-pulse");
+                        void col.offsetWidth; // reflow to restart animation
+                        col.classList.add("stage-pulse");
+                        setTimeout(() => col.classList.remove("stage-pulse"), 1500);
+                      }
                     }}
                     style={{
                       width: "100%",
