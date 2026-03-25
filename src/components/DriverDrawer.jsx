@@ -22,6 +22,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
   const stage = STAGES.find((item) => item.id === driver.stage) || STAGES[0];
   const mins = minutesUntil(driver);
   const over = mins !== null && mins < 0;
+  const isDeadEnd = driver.stage === "trash" || driver.stage === "fired";
   const docs = Object.values(driver.docs || {}).filter(Boolean).length;
 
   function saveInfo() {
@@ -253,6 +254,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
             </select>
           </div>
 
+          {!isDeadEnd && (
           <div
             style={{
               background: over ? "#fef2f2" : "#f8fafc",
@@ -306,6 +308,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
               )}
             </div>
           </div>
+          )}
         </div>
 
         <div style={{ display: "flex", borderBottom: "1px solid #f1f5f9", padding: "0 22px", flexShrink: 0 }}>
