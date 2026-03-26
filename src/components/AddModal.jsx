@@ -44,7 +44,7 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(15,23,42,.45)",
+        background: "var(--overlay)",
         zIndex: 200,
         display: "flex",
         alignItems: "center",
@@ -57,28 +57,29 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
         className="f-up"
         onClick={(event) => event.stopPropagation()}
         style={{
-          background: "#fff",
+          background: "var(--bg-surface)",
           borderRadius: 16,
           width: "100%",
           maxWidth: 480,
           padding: 26,
-          boxShadow: "0 20px 60px rgba(0,0,0,.18)",
+          boxShadow: "var(--shadow-lg)",
+          border: "1px solid var(--border)",
           maxHeight: "90vh",
           overflowY: "auto",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: "#0f172a" }}>Add New Driver</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>Add New Driver</div>
           <button
             onClick={onClose}
             style={{
-              background: "#f8fafc",
-              border: "1px solid #e2e8f0",
+              background: "var(--bg-raised)",
+              border: "1px solid var(--border)",
               borderRadius: 7,
               width: 30,
               height: 30,
               cursor: "pointer",
-              color: "#64748b",
+              color: "var(--text-muted)",
               fontSize: 14,
               display: "flex",
               alignItems: "center",
@@ -107,10 +108,10 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
                     width: "100%",
                     padding: "9px 11px",
                     fontSize: 13,
-                    background: "#f8fafc",
-                    border: "1px solid #e2e8f0",
+                    background: "var(--bg-raised)",
+                    border: "1px solid var(--border)",
                     borderRadius: 8,
-                    color: "#0f172a",
+                    color: "var(--text-primary)",
                     outline: "none",
                   }}
                 />
@@ -127,7 +128,7 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
                 onChange={(event) => setField("exp", event.target.value)}
                 placeholder="0"
                 min="0"
-                style={{ width: "100%", padding: "9px 10px", fontSize: 13, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, color: "#0f172a", outline: "none" }}
+                style={{ width: "100%", padding: "9px 10px", fontSize: 13, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-primary)", outline: "none" }}
               />
             </div>
             <div>
@@ -135,7 +136,7 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
               <select
                 value={form.source}
                 onChange={(event) => setField("source", event.target.value)}
-                style={{ width: "100%", padding: "9px 10px", fontSize: 13, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, color: "#374151", outline: "none" }}
+                style={{ width: "100%", padding: "9px 10px", fontSize: 13, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-secondary)", outline: "none" }}
               >
                 {SOURCES.map((source) => (
                   <option key={source}>{source}</option>
@@ -149,7 +150,7 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
             <select
               value={form.startDate}
               onChange={(event) => setField("startDate", event.target.value)}
-              style={{ width: "100%", padding: "9px 10px", fontSize: 13, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, color: "#374151", outline: "none" }}
+              style={{ width: "100%", padding: "9px 10px", fontSize: 13, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-secondary)", outline: "none" }}
             >
               {AVAILABILITY_OPTIONS.map((opt) => (
                 <option key={opt}>{opt}</option>
@@ -167,9 +168,9 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
                     display: "flex", alignItems: "center", gap: 5,
                     padding: "5px 10px", borderRadius: 6, cursor: "pointer",
                     fontSize: 12, fontWeight: 500,
-                    background: checked ? "#dbeafe" : "#f8fafc",
-                    border: `1px solid ${checked ? "#93c5fd" : "#e2e8f0"}`,
-                    color: checked ? "#1d4ed8" : "#64748b",
+                    background: checked ? "var(--color-primary-light)" : "var(--bg-raised)",
+                    border: `1px solid ${checked ? "var(--color-primary-border)" : "var(--border)"}`,
+                    color: checked ? "var(--color-primary-dark)" : "var(--text-muted)",
                     transition: "all .12s",
                   }}>
                     <input
@@ -194,7 +195,7 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
               <select
                 value={form.stage}
                 onChange={(event) => setField("stage", event.target.value)}
-                style={{ width: "100%", padding: "9px 10px", fontSize: 13, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, color: "#374151", outline: "none" }}
+                style={{ width: "100%", padding: "9px 10px", fontSize: 13, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-secondary)", outline: "none" }}
               >
                 {STAGES.map((stage) => (
                   <option key={stage.id} value={stage.id}>{stage.label}</option>
@@ -208,29 +209,29 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
                   type="date"
                   value={form.nextAction}
                   onChange={(event) => setField("nextAction", event.target.value)}
-                  style={{ padding: "9px 8px", fontSize: 12, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, color: "#374151", outline: "none" }}
+                  style={{ padding: "9px 8px", fontSize: 12, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-secondary)", outline: "none" }}
                 />
                 <input
                   type="time"
                   value={form.nextActionTime}
                   onChange={(event) => setField("nextActionTime", event.target.value)}
-                  style={{ padding: "9px 8px", fontSize: 12, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, color: "#374151", outline: "none" }}
+                  style={{ padding: "9px 8px", fontSize: 12, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-secondary)", outline: "none" }}
                 />
               </div>
             </div>
           </div>
 
           {/* ── LOG ── */}
-          <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14, marginTop: 2 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 8 }}>
-              Log <span style={{ fontWeight: 400, color: "#94a3b8" }}>({form.notes.length})</span>
+          <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, marginTop: 2 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 8 }}>
+              Log <span style={{ fontWeight: 400, color: "var(--text-faint)" }}>({form.notes.length})</span>
             </div>
             <textarea
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
               placeholder="Log a call, text, email or note"
               rows={3}
-              style={{ width: "100%", padding: "9px 11px", fontSize: 13, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, resize: "vertical", lineHeight: 1.6, color: "#0f172a", outline: "none" }}
+              style={{ width: "100%", padding: "9px 11px", fontSize: 13, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, resize: "vertical", lineHeight: 1.6, color: "var(--text-primary)", outline: "none" }}
             />
             <button
               onClick={() => {
@@ -239,16 +240,16 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
                 setForm((prev) => ({ ...prev, notes: [entry, ...prev.notes] }));
                 setNoteText("");
               }}
-              style={{ marginTop: 6, padding: "7px 14px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+              style={{ marginTop: 6, padding: "7px 14px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
             >
               Add Entry
             </button>
             {form.notes.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
                 {form.notes.map((n, i) => (
-                  <div key={i} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 11px" }}>
-                    <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 3 }}>{n.date}</div>
-                    <div style={{ fontSize: 13, color: "#374151", whiteSpace: "pre-wrap" }}>{n.text}</div>
+                  <div key={i} style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 11px" }}>
+                    <div style={{ fontSize: 10, color: "var(--text-faint)", marginBottom: 3 }}>{n.date}</div>
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)", whiteSpace: "pre-wrap" }}>{n.text}</div>
                   </div>
                 ))}
               </div>
@@ -256,8 +257,8 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
           </div>
 
           {/* ── FLAGS ── */}
-          <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14, marginTop: 2 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 8 }}>Flags</div>
+          <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, marginTop: 2 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 8 }}>Flags</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {FLAGS_OPT.map((flag) => {
                 const active = form.flags.includes(flag.label);
@@ -268,15 +269,15 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
                     style={{
                       display: "flex", alignItems: "center", gap: 10,
                       padding: "9px 12px", borderRadius: 8, cursor: "pointer",
-                      background: active ? (isGreen ? "#f0fdf4" : "#fef2f2") : "#f8fafc",
-                      border: `1px solid ${active ? (isGreen ? "#86efac" : "#fca5a5") : "#e2e8f0"}`,
+                      background: active ? (isGreen ? "var(--color-success-bg)" : "var(--color-danger-bg)") : "var(--bg-raised)",
+                      border: `1px solid ${active ? (isGreen ? "var(--color-success-border)" : "var(--color-danger-border)") : "var(--border)"}`,
                       transition: "all .12s",
                     }}
                   >
                     <div style={{
                       width: 15, height: 15, borderRadius: 4, flexShrink: 0,
-                      border: `2px solid ${active ? (isGreen ? "#22c55e" : "#ef4444") : "#d1d5db"}`,
-                      background: active ? (isGreen ? "#22c55e" : "#ef4444") : "transparent",
+                      border: `2px solid ${active ? (isGreen ? "var(--color-success)" : "var(--color-danger)") : "var(--text-disabled)"}`,
+                      background: active ? (isGreen ? "var(--color-success)" : "var(--color-danger)") : "transparent",
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
                       {active && <span style={{ color: "#fff", fontSize: 9, fontWeight: 700 }}>✓</span>}
@@ -287,7 +288,7 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
                         flags: active ? prev.flags.filter((f) => f !== flag.label) : [...prev.flags, flag.label],
                       }));
                     }} />
-                    <span style={{ fontSize: 13, color: active ? (isGreen ? "#15803d" : "#dc2626") : "#374151", fontWeight: active ? 600 : 400 }}>{flag.label}</span>
+                    <span style={{ fontSize: 13, color: active ? (isGreen ? "var(--color-success-text)" : "var(--color-danger-text)") : "var(--text-secondary)", fontWeight: active ? 600 : 400 }}>{flag.label}</span>
                   </label>
                 );
               })}
@@ -296,11 +297,11 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
 
           {dupDriver && (
             <div style={{
-              background: "#fef2f2", border: "1.5px solid #fca5a5", borderRadius: 10,
-              padding: "12px 14px", marginBottom: 10, fontSize: 13, color: "#991b1b",
+              background: "var(--color-danger-bg)", border: "1.5px solid var(--color-danger-border)", borderRadius: 10,
+              padding: "12px 14px", marginBottom: 10, fontSize: 13, color: "var(--color-danger-text)",
             }}>
               ⚠️ Водій з таким номером телефону вже є в системі:<br />
-              <b>{dupDriver.name}</b> · {dupDriver.phone} · <span style={{ color: "#64748b" }}>{dupDriver.stage}</span>
+              <b>{dupDriver.name}</b> · {dupDriver.phone} · <span style={{ color: "var(--text-muted)" }}>{dupDriver.stage}</span>
             </div>
           )}
           <button
@@ -316,7 +317,7 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
             }}
             className="btn-p"
             style={{
-              background: "#2563eb",
+              background: "var(--color-primary)",
               border: "none",
               color: "#fff",
               padding: "11px",

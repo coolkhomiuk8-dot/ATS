@@ -3,13 +3,13 @@ import { minutesUntil } from "../utils/date";
 import { useTick } from "../hooks/useTick";
 
 const FLAG_STYLES = {
-  green: { background: "#dcfce7", color: "#15803d", border: "1px solid #bbf7d0" },
-  red:   { background: "#fee2e2", color: "#b91c1c", border: "1px solid #fecaca" },
-  default: { background: "#f8fafc", color: "#64748b", border: "1px solid #e2e8f0" },
+  green: { background: "var(--color-success-bg)", color: "var(--color-success-text)", border: "1px solid var(--color-success-border)" },
+  red:   { background: "var(--color-danger-bg)", color: "var(--color-danger-text)", border: "1px solid var(--color-danger-border)" },
+  default: { background: "var(--bg-raised)", color: "var(--text-muted)", border: "1px solid var(--border)" },
 };
 
 export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragging }) {
-  useTick(); // підписується на один глобальний інтервал
+  useTick();
 
   const mins = minutesUntil(driver);
   const over = mins !== null && mins < 0;
@@ -66,7 +66,7 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
           <div className="driver-card__next-action-wrap">
             <span
               className="driver-card__next-action-label"
-              style={{ color: over ? "#dc2626" : soon ? "#d97706" : "#64748b", fontWeight: over || soon ? 600 : 400 }}
+              style={{ color: over ? "var(--color-danger)" : soon ? "var(--color-warning)" : "var(--text-muted)", fontWeight: over || soon ? 600 : 400 }}
             >
               {over
                 ? `Overdue ${Math.abs(Math.round(mins / 60)) < 48 ? `${Math.abs(Math.round(mins / 60))}h` : `${Math.abs(Math.round(mins / 1440))}d`}`
@@ -78,9 +78,9 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
               <span
                 className="driver-card__next-action-time"
                 style={{
-                  color: soon ? "#92400e" : "#334155",
-                  background: soon ? "#fde68a" : "#e2e8f0",
-                  border: `1px solid ${soon ? "#f59e0b" : "#cbd5e1"}`,
+                  color: soon ? "var(--color-warning-text)" : "var(--text-secondary)",
+                  background: soon ? "var(--color-warning-border)" : "var(--border)",
+                  border: `1px solid ${soon ? "var(--color-warning)" : "var(--border-strong)"}`,
                   fontWeight: 700,
                 }}
               >
@@ -93,9 +93,9 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
                 fontWeight: 600,
                 padding: "2px 6px",
                 borderRadius: 5,
-                background: naDayBadge === "Today" ? "#dbeafe" : "#f3e8ff",
-                color:      naDayBadge === "Today" ? "#1d4ed8" : "#7c3aed",
-                border:     `1px solid ${naDayBadge === "Today" ? "#bfdbfe" : "#e9d5ff"}`,
+                background: naDayBadge === "Today" ? "var(--color-today-bg)" : "var(--color-tomorrow-bg)",
+                color:      naDayBadge === "Today" ? "var(--color-today-text)" : "var(--color-tomorrow-text)",
+                border:     `1px solid ${naDayBadge === "Today" ? "var(--color-today-border)" : "var(--color-tomorrow-border)"}`,
               }}>
                 {naDayBadge}
               </span>
@@ -107,7 +107,7 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
         <span className="driver-card__docs-count">{docs}/{DOC_LIST.length}</span>
       </div>
 
-      {/* Trained by badge — тільки для Hired */}
+      {/* Trained by badge — only for Hired */}
       {driver.stage === "hired" && driver.trainedBy && (
         <div style={{ marginTop: 6 }}>
           <span style={{
@@ -115,9 +115,9 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
             fontWeight: 600,
             padding: "2px 8px",
             borderRadius: 5,
-            background: driver.trainedBy === "Trained by Bogdan" ? "#dcfce7" : "#fee2e2",
-            color: driver.trainedBy === "Trained by Bogdan" ? "#15803d" : "#b91c1c",
-            border: `1px solid ${driver.trainedBy === "Trained by Bogdan" ? "#bbf7d0" : "#fecaca"}`,
+            background: driver.trainedBy === "Trained by Bogdan" ? "var(--color-success-bg)" : "var(--color-danger-bg)",
+            color: driver.trainedBy === "Trained by Bogdan" ? "var(--color-success-text)" : "var(--color-danger-text)",
+            border: `1px solid ${driver.trainedBy === "Trained by Bogdan" ? "var(--color-success-border)" : "var(--color-danger-border)"}`,
           }}>
             {driver.trainedBy}
           </span>

@@ -57,10 +57,10 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
           bottom: 24,
           right: 24,
           width: 340,
-          background: "#fff",
-          border: "1.5px solid #fde68a",
+          background: "var(--bg-surface)",
+          border: "1.5px solid var(--color-warning-border)",
           borderRadius: 14,
-          boxShadow: "0 8px 36px rgba(0,0,0,.16)",
+          boxShadow: "var(--shadow-md)",
           zIndex: 1000,
           overflow: "hidden",
         }}
@@ -72,8 +72,8 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
             alignItems: "center",
             justifyContent: "space-between",
             padding: "11px 14px",
-            background: "#fffbeb",
-            borderBottom: minimized ? "none" : "1px solid #fde68a",
+            background: "var(--color-warning-bg)",
+            borderBottom: minimized ? "none" : "1px solid var(--color-warning-border)",
             cursor: "pointer",
             userSelect: "none",
           }}
@@ -81,14 +81,14 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 16 }}>⏰</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#92400e" }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-warning-text)" }}>
               Alerts
             </span>
             <span
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                background: "#f59e0b",
+                background: "var(--color-warning)",
                 color: "#fff",
                 borderRadius: 20,
                 padding: "1px 8px",
@@ -99,7 +99,7 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
               {alerts.length}
             </span>
           </div>
-          <span style={{ fontSize: 13, color: "#92400e", fontWeight: 600 }}>
+          <span style={{ fontSize: 13, color: "var(--color-warning-text)", fontWeight: 600 }}>
             {minimized ? "▲" : "▼"}
           </span>
         </div>
@@ -115,8 +115,8 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
                 <div
                   key={alert.key}
                   style={{
-                    borderBottom: idx < alerts.length - 1 ? "1px solid #f1f5f9" : "none",
-                    background: isExpanded ? "#fffbeb" : "#fff",
+                    borderBottom: idx < alerts.length - 1 ? "1px solid var(--border)" : "none",
+                    background: isExpanded ? "var(--color-warning-bg)" : "var(--bg-surface)",
                     transition: "background .15s",
                   }}
                 >
@@ -137,7 +137,7 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
                           width: 7,
                           height: 7,
                           borderRadius: "50%",
-                          background: "#f59e0b",
+                          background: "var(--color-warning)",
                           flexShrink: 0,
                         }}
                       />
@@ -146,7 +146,7 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
                           style={{
                             fontSize: 13,
                             fontWeight: 600,
-                            color: "#0f172a",
+                            color: "var(--text-primary)",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap",
@@ -154,12 +154,12 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
                         >
                           {alert.driver.name}
                         </div>
-                        <div style={{ fontSize: 11, color: "#94a3b8" }}>
+                        <div style={{ fontSize: 11, color: "var(--text-faint)" }}>
                           {alert.driver.nextAction} · {alert.driver.nextActionTime}
                         </div>
                       </div>
                     </div>
-                    <span style={{ fontSize: 11, color: "#94a3b8", flexShrink: 0, marginLeft: 8 }}>
+                    <span style={{ fontSize: 11, color: "var(--text-faint)", flexShrink: 0, marginLeft: 8 }}>
                       {isExpanded ? "▲" : "▼"}
                     </span>
                   </div>
@@ -177,11 +177,12 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
                               style={{
                                 flex: 1,
                                 padding: "7px 8px",
-                                border: "1px solid #e2e8f0",
+                                border: "1px solid var(--border)",
                                 borderRadius: 7,
                                 fontSize: 12,
                                 outline: "none",
-                                background: "#f8fafc",
+                                background: "var(--bg-raised)",
+                                color: "var(--text-primary)",
                               }}
                             />
                             <input
@@ -191,11 +192,12 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
                               style={{
                                 width: 95,
                                 padding: "7px 8px",
-                                border: "1px solid #e2e8f0",
+                                border: "1px solid var(--border)",
                                 borderRadius: 7,
                                 fontSize: 12,
                                 outline: "none",
-                                background: "#f8fafc",
+                                background: "var(--bg-raised)",
+                                color: "var(--text-primary)",
                               }}
                             />
                           </div>
@@ -205,7 +207,7 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
                               style={{
                                 flex: 1,
                                 padding: "7px",
-                                background: "#2563eb",
+                                background: "var(--color-primary)",
                                 color: "#fff",
                                 border: "none",
                                 borderRadius: 7,
@@ -221,9 +223,9 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
                               style={{
                                 flex: 1,
                                 padding: "7px",
-                                background: "#f1f5f9",
-                                color: "#475569",
-                                border: "1px solid #e2e8f0",
+                                background: "var(--bg-hover)",
+                                color: "var(--text-muted)",
+                                border: "1px solid var(--border)",
                                 borderRadius: 7,
                                 fontSize: 12,
                                 cursor: "pointer",
@@ -240,9 +242,9 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
                             style={{
                               flex: 1,
                               padding: "8px",
-                              background: "#f8fafc",
-                              color: "#475569",
-                              border: "1px solid #e2e8f0",
+                              background: "var(--bg-hover)",
+                              color: "var(--text-muted)",
+                              border: "1px solid var(--border)",
                               borderRadius: 8,
                               fontSize: 12,
                               fontWeight: 600,
@@ -256,7 +258,7 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
                             style={{
                               flex: 1,
                               padding: "8px",
-                              background: "#10b981",
+                              background: "var(--color-success)",
                               color: "#fff",
                               border: "none",
                               borderRadius: 8,
@@ -284,7 +286,7 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(15,23,42,.45)",
+            background: "var(--overlay)",
             zIndex: 2000,
             display: "flex",
             alignItems: "center",
@@ -293,26 +295,26 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
         >
           <div
             style={{
-              background: "#fff",
+              background: "var(--bg-surface)",
               borderRadius: 16,
               padding: 28,
               width: 380,
-              boxShadow: "0 20px 60px rgba(0,0,0,.22)",
+              boxShadow: "var(--shadow-lg)",
             }}
           >
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>
               Move to next stage?
             </div>
-            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 18 }}>
+            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 18 }}>
               Where would you like to move{" "}
-              <span style={{ fontWeight: 600, color: "#0f172a" }}>{doneAlert.driver.name}</span>?
+              <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{doneAlert.driver.name}</span>?
             </div>
 
             <label
               style={{
                 fontSize: 11,
                 fontWeight: 600,
-                color: "#64748b",
+                color: "var(--text-muted)",
                 textTransform: "uppercase",
                 letterSpacing: ".06em",
               }}
@@ -325,13 +327,13 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
               style={{
                 width: "100%",
                 padding: "10px 12px",
-                border: "1px solid #e2e8f0",
+                border: "1px solid var(--border)",
                 borderRadius: 9,
                 fontSize: 13,
                 marginTop: 6,
                 marginBottom: 20,
-                background: "#f8fafc",
-                color: "#0f172a",
+                background: "var(--bg-raised)",
+                color: "var(--text-primary)",
                 outline: "none",
               }}
             >
@@ -348,9 +350,9 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
                 style={{
                   flex: 1,
                   padding: "10px",
-                  background: "#f1f5f9",
-                  color: "#475569",
-                  border: "1px solid #e2e8f0",
+                  background: "var(--bg-hover)",
+                  color: "var(--text-muted)",
+                  border: "1px solid var(--border)",
                   borderRadius: 9,
                   fontSize: 13,
                   fontWeight: 600,
@@ -364,7 +366,7 @@ export default function DriverAlertsPanel({ alerts, onReschedule, onDone, onDism
                 style={{
                   flex: 2,
                   padding: "10px",
-                  background: "#2563eb",
+                  background: "var(--color-primary)",
                   color: "#fff",
                   border: "none",
                   borderRadius: 9,

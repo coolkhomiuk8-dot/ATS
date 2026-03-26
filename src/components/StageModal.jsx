@@ -21,7 +21,7 @@ export default function StageModal({ modal, onConfirm, onCancel }) {
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(15,23,42,.5)",
+        background: "var(--overlay)",
         zIndex: 400,
         display: "flex",
         alignItems: "center",
@@ -34,22 +34,22 @@ export default function StageModal({ modal, onConfirm, onCancel }) {
         className="f-up"
         onClick={(event) => event.stopPropagation()}
         style={{
-          background: "#fff",
+          background: "var(--bg-surface)",
           borderRadius: 16,
           width: "100%",
           maxWidth: 440,
           padding: 26,
-          boxShadow: "0 20px 60px rgba(0,0,0,.2)",
+          boxShadow: "var(--shadow-lg)",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
           <div>
-            <div style={{ fontSize: 17, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Stage change</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>Stage change</div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 12, background: from?.light, color: from?.color, borderRadius: 20, padding: "3px 10px", fontWeight: 600 }}>
                 {from?.label}
               </span>
-              <span style={{ color: "#94a3b8", fontSize: 14 }}>to</span>
+              <span style={{ color: "var(--text-faint)", fontSize: 14 }}>to</span>
               <span style={{ fontSize: 12, background: to?.light, color: to?.color, borderRadius: 20, padding: "3px 10px", fontWeight: 600 }}>
                 {to?.label}
               </span>
@@ -58,13 +58,13 @@ export default function StageModal({ modal, onConfirm, onCancel }) {
           <button
             onClick={onCancel}
             style={{
-              background: "#f8fafc",
-              border: "1px solid #e2e8f0",
+              background: "var(--bg-raised)",
+              border: "1px solid var(--border)",
               borderRadius: 7,
               width: 30,
               height: 30,
               cursor: "pointer",
-              color: "#64748b",
+              color: "var(--text-muted)",
               fontSize: 14,
               display: "flex",
               alignItems: "center",
@@ -81,7 +81,7 @@ export default function StageModal({ modal, onConfirm, onCancel }) {
               <FL t="When is the next contact?" />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <div>
-                  <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 3 }}>Date</div>
+                  <div style={{ fontSize: 10, color: "var(--text-faint)", marginBottom: 3 }}>Date</div>
                   <input
                     type="date"
                     value={nextDate}
@@ -90,16 +90,16 @@ export default function StageModal({ modal, onConfirm, onCancel }) {
                       width: "100%",
                       padding: "9px 10px",
                       fontSize: 13,
-                      background: "#f8fafc",
-                      border: "1px solid #e2e8f0",
+                      background: "var(--bg-raised)",
+                      border: "1px solid var(--border)",
                       borderRadius: 8,
-                      color: "#0f172a",
+                      color: "var(--text-primary)",
                       outline: "none",
                     }}
                   />
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 3 }}>Time</div>
+                  <div style={{ fontSize: 10, color: "var(--text-faint)", marginBottom: 3 }}>Time</div>
                   <input
                     type="time"
                     value={nextTime}
@@ -108,10 +108,10 @@ export default function StageModal({ modal, onConfirm, onCancel }) {
                       width: "100%",
                       padding: "9px 10px",
                       fontSize: 13,
-                      background: "#f8fafc",
-                      border: "1px solid #e2e8f0",
+                      background: "var(--bg-raised)",
+                      border: "1px solid var(--border)",
                       borderRadius: 8,
-                      color: "#0f172a",
+                      color: "var(--text-primary)",
                       outline: "none",
                     }}
                   />
@@ -120,7 +120,7 @@ export default function StageModal({ modal, onConfirm, onCancel }) {
             </div>
           )}
 
-          {/* ── Trained by (тільки при переміщенні в Hired) ── */}
+          {/* ── Trained by (only when moving to Hired) ── */}
           {isHired && (
             <div>
               <FL t="Trained by — required" />
@@ -135,9 +135,9 @@ export default function StageModal({ modal, onConfirm, onCancel }) {
                       fontSize: 13,
                       fontWeight: 600,
                       cursor: "pointer",
-                      border: `2px solid ${trainedBy === option ? "#2563eb" : "#e2e8f0"}`,
-                      background: trainedBy === option ? "#eff6ff" : "#f8fafc",
-                      color: trainedBy === option ? "#2563eb" : "#64748b",
+                      border: `2px solid ${trainedBy === option ? "var(--color-primary)" : "var(--border)"}`,
+                      background: trainedBy === option ? "var(--color-primary-light)" : "var(--bg-raised)",
+                      color: trainedBy === option ? "var(--color-primary)" : "var(--text-muted)",
                       transition: "all .15s",
                     }}
                   >
@@ -146,7 +146,7 @@ export default function StageModal({ modal, onConfirm, onCancel }) {
                 ))}
               </div>
               {trainedBy === null && (
-                <div style={{ fontSize: 11, color: "#ef4444", marginTop: 5 }}>
+                <div style={{ fontSize: 11, color: "var(--color-danger)", marginTop: 5 }}>
                   ⚠ Please select one option to continue
                 </div>
               )}
@@ -164,12 +164,12 @@ export default function StageModal({ modal, onConfirm, onCancel }) {
                 width: "100%",
                 padding: "10px 12px",
                 fontSize: 13,
-                background: "#f8fafc",
-                border: "1px solid #e2e8f0",
+                background: "var(--bg-raised)",
+                border: "1px solid var(--border)",
                 borderRadius: 8,
                 resize: "none",
                 lineHeight: 1.6,
-                color: "#0f172a",
+                color: "var(--text-primary)",
                 outline: "none",
               }}
             />
@@ -191,7 +191,7 @@ export default function StageModal({ modal, onConfirm, onCancel }) {
               className="btn-p"
               style={{
                 flex: 1,
-                background: canConfirm ? "#2563eb" : "#94a3b8",
+                background: canConfirm ? "var(--color-primary)" : "var(--text-faint)",
                 border: "none",
                 color: "#fff",
                 padding: "11px",
@@ -208,9 +208,9 @@ export default function StageModal({ modal, onConfirm, onCancel }) {
               onClick={onCancel}
               className="btn-g"
               style={{
-                background: "#f8fafc",
-                border: "1px solid #e2e8f0",
-                color: "#374151",
+                background: "var(--bg-raised)",
+                border: "1px solid var(--border)",
+                color: "var(--text-secondary)",
                 padding: "11px 18px",
                 borderRadius: 9,
                 fontSize: 13,

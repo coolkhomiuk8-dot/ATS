@@ -24,9 +24,9 @@ export function Btn({ label, onClick, primary }) {
       className={primary ? "btn-p" : "btn-g"}
       onClick={onClick}
       style={{
-        background: primary ? "#2563eb" : "#f8fafc",
-        border: `1px solid ${primary ? "#2563eb" : "#e2e8f0"}`,
-        color: primary ? "#fff" : "#374151",
+        background: primary ? "var(--color-primary)" : "var(--bg-raised)",
+        border: `1px solid ${primary ? "var(--color-primary)" : "var(--border)"}`,
+        color: primary ? "#fff" : "var(--text-secondary)",
         padding: "8px 16px",
         borderRadius: 8,
         fontSize: 13,
@@ -41,14 +41,14 @@ export function Btn({ label, onClick, primary }) {
 }
 
 export function FL({ t }) {
-  return <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4, fontWeight: 500 }}>{t}</div>;
+  return <div style={{ fontSize: 11, color: "var(--text-faint)", marginBottom: 4, fontWeight: 500 }}>{t}</div>;
 }
 
 export function PTitle({ title, sub }) {
   return (
     <div style={{ marginBottom: 20 }}>
-      <div style={{ fontSize: 22, fontWeight: 700, color: "#0f172a" }}>{title}</div>
-      {sub && <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 2 }}>{sub}</div>}
+      <div style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)" }}>{title}</div>
+      {sub && <div style={{ fontSize: 13, color: "var(--text-faint)", marginTop: 2 }}>{sub}</div>}
     </div>
   );
 }
@@ -58,9 +58,9 @@ export function CBtn({ id, copied, onCopy }) {
     <button
       onClick={onCopy}
       style={{
-        background: copied === id ? "#ecfdf5" : "#eff6ff",
-        border: `1px solid ${copied === id ? "#6ee7b7" : "#bfdbfe"}`,
-        color: copied === id ? "#059669" : "#2563eb",
+        background: copied === id ? "var(--color-success-bg)" : "var(--color-primary-light)",
+        border: `1px solid ${copied === id ? "var(--color-success-border)" : "var(--color-primary-border)"}`,
+        color: copied === id ? "var(--color-success-text)" : "var(--color-primary)",
         padding: "4px 12px",
         borderRadius: 6,
         fontSize: 11,
