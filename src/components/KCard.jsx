@@ -11,7 +11,8 @@ const FLAG_STYLES = {
 export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragging }) {
   useTick();
 
-  const mins = minutesUntil(driver);
+  const isDeadEnd = driver.stage === "trash" || driver.stage === "fired";
+  const mins = !isDeadEnd ? minutesUntil(driver) : null;
   const over = mins !== null && mins < 0;
   const soon = mins !== null && mins >= 0 && mins <= 90;
   const docs = Object.values(driver.docs || {}).filter(Boolean).length;
@@ -62,7 +63,7 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
       )}
 
       <div className="driver-card__bottom-row">
-        {driver.nextAction ? (
+        {driver.nextAction && !isDeadEnd ? (
           <div className="driver-card__next-action-wrap">
             <span
               className="driver-card__next-action-label"
