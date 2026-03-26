@@ -11,15 +11,18 @@ import DriverAlertsPanel from "./components/DriverAlertsPanel";
 import PipelineView from "./components/PipelineView";
 import DashboardView from "./views/DashboardView";
 import TemplatesView from "./views/TemplatesView";
+import DispatchersView from "./views/DispatchersView";
 import DriverDrawer from "./components/DriverDrawer";
 import AddModal from "./components/AddModal";
 import StageModal from "./components/StageModal";
 import FirebaseAuthGate from "./components/FirebaseAuthGate";
 import RoleManagerModal from "./components/RoleManagerModal";
 import { auth, db, isFirebaseConfigured } from "./lib/firebase";
+import { useDispatchersStore } from "./store/useDispatchersStore";
 
 export default function App() {
   const { drivers, upd, addNote, addFile, removeFile, addDriver, deleteDriver, initDrivers, stopDriversSync, isLoading, syncError } = useDriversStore();
+  const { subscribe: subDispatchers, unsubscribe: unsubDispatchers } = useDispatchersStore();
   const [firebaseUser, setFirebaseUser] = useState(() => auth?.currentUser || null);
   const [authLoading, setAuthLoading] = useState(isFirebaseConfigured);
 
@@ -98,8 +101,9 @@ export default function App() {
     }
 
     initDrivers();
-    return () => stopDriversSync();
-  }, [firebaseUser, initDrivers, stopDriversSync]);
+    subDispatchers();
+    return () => { stopDriversSync(); unsubDispatchers(); };
+  }, [firebaseUser, initDrivers, stopDriversSync, subDispatchers, unsubDispatchers]);
 
   const searchResults = useMemo(() => {
     if (!search.trim()) return [];
@@ -267,6 +271,7 @@ export default function App() {
         {/* Nav items */}
         {[
           { id: "pipeline", icon: "PL", title: "Pipeline" },
+          { id: "dispatchers", icon: "DS", title: "Team Hire" },
           { id: "dashboard", icon: "DB", title: "Dashboard" },
           { id: "templates", icon: "TP", title: "Templates" },
         ].map((item) => (
@@ -687,6 +692,8 @@ export default function App() {
               onDropDriverToStage={requestStageChange}
             />
           )}
+
+          {view === "dispatchers" && <DispatchersView />}
 
           {view === "dashboard" && <DashboardView drivers={drivers} />}
 
