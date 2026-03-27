@@ -44,8 +44,13 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
         <div className="driver-card__name">{driver.name}</div>
         <div className="driver-card__interest-dot" style={{ background: intC }} title={driver.interest} />
       </div>
-      <div className="driver-card__meta">
-        {driver.city} · {driver.exp}yr exp
+      <div className="driver-card__meta" style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+        <span>{driver.city} · {driver.exp}yr exp</span>
+        {driver.source && driver.source !== "Other" && (
+          <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 3, background: driver.source === "Indeed" ? "#dbeafe" : "#ede9fe", color: driver.source === "Indeed" ? "#1d4ed8" : "#6d28d9", border: `1px solid ${driver.source === "Indeed" ? "#bfdbfe" : "#ddd6fe"}` }}>
+            {driver.source}
+          </span>
+        )}
       </div>
 
       {(driver.flags || []).length > 0 && (

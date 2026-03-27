@@ -593,6 +593,28 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                 </div>
               </div>
 
+              {/* ── INDEED QUALIFICATIONS ── */}
+              {(driver.qualifications || []).length > 0 && (
+                <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, marginTop: 4 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", marginBottom: 10, textTransform: "uppercase", display: "flex", alignItems: "center", gap: 7 }}>
+                    <span style={{ fontSize: 9, background: "#dbeafe", color: "#1d4ed8", padding: "2px 6px", borderRadius: 3, fontWeight: 700 }}>INDEED</span>
+                    Qualifications ({driver.qualifications.length})
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                    {driver.qualifications.map((q, idx) => (
+                      <div key={idx} style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px" }}>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 3 }}>{q.question}</div>
+                        <div style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 500, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                          {q.answer}
+                          {q.match === "Yes" && <span style={{ fontSize: 10, background: "#dcfce7", color: "#16a34a", padding: "1px 6px", borderRadius: 4, fontWeight: 600 }}>✓ Match</span>}
+                          {q.match === "No" && <span style={{ fontSize: 10, background: "#fee2e2", color: "#dc2626", padding: "1px 6px", borderRadius: 4, fontWeight: 600 }}>✗ No match</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
 

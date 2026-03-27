@@ -66,6 +66,7 @@ function ensureDriverShape(driver) {
     interest: "Warm",
     lastContact: null,
     createdAt: null,
+    qualifications: [],
     ...driver,
   };
 }

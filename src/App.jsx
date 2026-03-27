@@ -14,6 +14,7 @@ import TemplatesView from "./views/TemplatesView";
 import DispatchersView from "./views/DispatchersView";
 import DriverDrawer from "./components/DriverDrawer";
 import AddModal from "./components/AddModal";
+import ImportIndeedModal from "./components/ImportIndeedModal";
 import StageModal from "./components/StageModal";
 import FirebaseAuthGate from "./components/FirebaseAuthGate";
 import RoleManagerModal from "./components/RoleManagerModal";
@@ -29,6 +30,7 @@ export default function App() {
   const [view, setView] = useState("pipeline");
   const [selectedId, setSelectedId] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [showIndeed, setShowIndeed] = useState(false);
   const [filterStage, setFilterStage] = useState("all");
   const [search, setSearch] = useState("");
   const [searchFocus, setSearchFocus] = useState(false);
@@ -593,27 +595,45 @@ export default function App() {
             ))}
           </div>
 
-          <button
-            onClick={() => setShowAdd(true)}
-            className="btn-p"
-            style={{
-              marginLeft: "auto",
-              background: "var(--color-primary)",
-              border: "none",
-              color: "#fff",
-              padding: "8px 16px",
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              flexShrink: 0,
-            }}
-          >
-            Add Driver
-          </button>
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexShrink: 0 }}>
+            <button
+              onClick={() => setShowIndeed(true)}
+              style={{
+                background: "#eff6ff",
+                border: "1px solid #bfdbfe",
+                color: "#1d4ed8",
+                padding: "8px 14px",
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+              }}
+            >
+              📋 Import Indeed
+            </button>
+            <button
+              onClick={() => setShowAdd(true)}
+              className="btn-p"
+              style={{
+                background: "var(--color-primary)",
+                border: "none",
+                color: "#fff",
+                padding: "8px 16px",
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+              }}
+            >
+              Add Driver
+            </button>
+          </div>
 
           {isFirebaseConfigured && auth && (
             <button
@@ -724,6 +744,27 @@ export default function App() {
           onAdd={(data) => {
             addDriver(data);
             setShowAdd(false);
+          }}
+        />
+      )}
+
+      {showIndeed && (
+        <ImportIndeedModal
+          drivers={drivers}
+          onClose={() => setShowIndeed(false)}
+          onImport={async (leads, onProgress) => {
+            let done = 0;
+            let errors = 0;
+            for (const lead of leads) {
+              try {
+                await addDriver(lead);
+              } catch {
+                errors++;
+              }
+              done++;
+              onProgress(done);
+            }
+            return { errors };
           }}
         />
       )}
