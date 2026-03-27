@@ -309,6 +309,8 @@ export default function App() {
         {[
           { icon: "📄", title: "Send Offer", url: "https://docs.google.com/document/d/1Rul2ihq6Pih4HnZVnYRAK03rDjUmmhciMRSGCmSNrOY/edit?tab=t.0" },
           { icon: "📁", title: "Driver Docs", url: "https://drive.google.com/drive/u/0/folders/1PyX6wwLcVwBQCZDqpUQb3sIN8ISerkRV" },
+          { icon: "📝", title: "W-9 Request", url: "https://drive.google.com/file/d/1VViK6x1BxvRbMuIZhP5_H8y7iLlRMcWk/view?requestEsignature=true" },
+          { icon: "🏥", title: "Medstop", url: "https://employer.med-stop.com/dashboard" },
         ].map((link) => (
           <a
             key={link.title}
