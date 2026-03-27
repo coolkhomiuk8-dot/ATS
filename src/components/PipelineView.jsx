@@ -7,13 +7,6 @@ export default function PipelineView({ stages, filteredDrivers, onSelectDriver, 
   const [recentDropStageId, setRecentDropStageId] = useState(null);
   const boardRef = useRef(null);
 
-  function handleWheel(e) {
-    if (!boardRef.current) return;
-    // якщо скрол більше горизонтальний — не перехоплюємо
-    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-    e.preventDefault();
-    boardRef.current.scrollLeft += e.deltaY * 2;
-  }
 
   function handleDragStart(event, driverId) {
     event.dataTransfer.effectAllowed = "move";
@@ -44,7 +37,6 @@ export default function PipelineView({ stages, filteredDrivers, onSelectDriver, 
     <div
       ref={boardRef}
       className={`pipeline-board ${draggingDriverId ? "pipeline-board--dragging" : ""}`}
-      onWheel={handleWheel}
     >
       {stages.map((stage) => {
         const cards = filteredDrivers.filter((driver) => driver.stage === stage.id);
