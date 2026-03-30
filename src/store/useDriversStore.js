@@ -522,6 +522,7 @@ export const useDriversStore = create((set, get) => ({
       docId: String(nextId),
       createdAt: todayStr(),
       ...data,
+      createdAt: data.createdAt || todayStr(),
     });
 
     set((state) => ({
