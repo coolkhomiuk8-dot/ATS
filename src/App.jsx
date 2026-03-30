@@ -15,6 +15,7 @@ import DispatchersView from "./views/DispatchersView";
 import DriverDrawer from "./components/DriverDrawer";
 import AddModal from "./components/AddModal";
 import ImportIndeedModal from "./components/ImportIndeedModal";
+import DuplicatesModal from "./components/DuplicatesModal";
 import StageModal from "./components/StageModal";
 import FirebaseAuthGate from "./components/FirebaseAuthGate";
 import RoleManagerModal from "./components/RoleManagerModal";
@@ -31,6 +32,7 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showIndeed, setShowIndeed] = useState(false);
+  const [showDuplicates, setShowDuplicates] = useState(false);
   const [filterStage, setFilterStage] = useState("all");
   const [search, setSearch] = useState("");
   const [searchFocus, setSearchFocus] = useState(false);
@@ -597,6 +599,24 @@ export default function App() {
 
           <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexShrink: 0 }}>
             <button
+              onClick={() => setShowDuplicates(true)}
+              style={{
+                background: "#fff7ed",
+                border: "1px solid #fed7aa",
+                color: "#c2410c",
+                padding: "8px 14px",
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+              }}
+            >
+              🔍 Duplicates
+            </button>
+            <button
               onClick={() => setShowIndeed(true)}
               style={{
                 background: "#eff6ff",
@@ -766,6 +786,14 @@ export default function App() {
             }
             return { errors };
           }}
+        />
+      )}
+
+      {showDuplicates && (
+        <DuplicatesModal
+          drivers={drivers}
+          onDelete={deleteDriver}
+          onClose={() => setShowDuplicates(false)}
         />
       )}
 

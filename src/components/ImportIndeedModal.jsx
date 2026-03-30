@@ -158,10 +158,14 @@ export default function ImportIndeedModal({ drivers = [], onImport, onClose }) {
         const existingPhones = new Set(
           (drivers || []).map((d) => normalizePhone(d.phone || ""))
         );
-        const enriched = parsed.map((lead) => ({
-          ...lead,
-          _dup: existingPhones.has(normalizePhone(lead.phone || "")),
-        }));
+        // also track phones seen within this CSV to catch intra-file duplicates
+        const seenInFile = new Set();
+        const enriched = parsed.map((lead) => {
+          const norm = normalizePhone(lead.phone || "");
+          const isDup = existingPhones.has(norm) || seenInFile.has(norm);
+          if (norm) seenInFile.add(norm);
+          return { ...lead, _dup: isDup };
+        });
         setLeads(enriched);
         setSelected(new Set(enriched.filter((l) => !l._dup).map((_, i) => i)));
       } catch {
