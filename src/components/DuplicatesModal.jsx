@@ -21,9 +21,24 @@ export default function DuplicatesModal({ drivers = [], onDelete, onClose }) {
     return Object.values(map).filter((g) => g.length > 1);
   }, [drivers]);
 
-  // keepId[groupIdx] = driverId to keep (default = first one)
+  // Pick the best driver to keep in a group:
+  // 1. If any is "trash" — always keep that one (intentionally discarded)
+  // 2. Otherwise — keep the one furthest in the funnel (highest STAGES index)
+  function pickKeep(group) {
+    const trashDriver = group.find((d) => d.stage === "trash");
+    if (trashDriver) return trashDriver.id;
+    let best = group[0];
+    let bestIdx = STAGES.findIndex((s) => s.id === group[0].stage);
+    group.forEach((d) => {
+      const idx = STAGES.findIndex((s) => s.id === d.stage);
+      if (idx > bestIdx) { best = d; bestIdx = idx; }
+    });
+    return best.id;
+  }
+
+  // keepId[groupIdx] = driverId to keep
   const [keepId, setKeepId] = useState(() =>
-    Object.fromEntries(groups.map((g, i) => [i, g[0].id]))
+    Object.fromEntries(groups.map((g, i) => [i, pickKeep(g)]))
   );
 
   const [deleting, setDeleting] = useState(false);
@@ -97,6 +112,14 @@ export default function DuplicatesModal({ drivers = [], onDelete, onClose }) {
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {group.map((driver) => {
                   const isKeep = keepId[gi] === driver.id;
+                  const autoReason = (() => {
+                    if (!isKeep) return null;
+                    if (driver.stage === "trash") return { label: "Trash/Cold", tip: "Always kept" };
+                    const myIdx = STAGES.findIndex((s) => s.id === driver.stage);
+                    const maxIdx = Math.max(...group.map((d) => STAGES.findIndex((s) => s.id === d.stage)));
+                    if (myIdx === maxIdx && group.some((d) => d.id !== driver.id)) return { label: "Furthest in funnel", tip: "Auto-selected" };
+                    return null;
+                  })();
                   return (
                     <div
                       key={driver.id}
@@ -137,6 +160,11 @@ export default function DuplicatesModal({ drivers = [], onDelete, onClose }) {
                           )}
                           {isKeep && (
                             <span style={{ fontSize: 10, background: "#dcfce7", color: "#16a34a", padding: "1px 7px", borderRadius: 4, fontWeight: 700 }}>KEEP</span>
+                          )}
+                          {isKeep && autoReason && (
+                            <span style={{ fontSize: 10, background: "#e0f2fe", color: "#0369a1", padding: "1px 6px", borderRadius: 4, fontWeight: 600 }} title={autoReason.tip}>
+                              ✦ {autoReason.label}
+                            </span>
                           )}
                           {!isKeep && (
                             <span style={{ fontSize: 10, background: "#fee2e2", color: "#dc2626", padding: "1px 7px", borderRadius: 4, fontWeight: 700 }}>DELETE</span>
