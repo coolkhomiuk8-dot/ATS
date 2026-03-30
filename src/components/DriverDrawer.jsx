@@ -470,6 +470,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                       ["Source", driver.source],
                       ["Available", driver.startDate || "TBD"],
                       ["Last Contact", driver.lastContact ? fmtDate(driver.lastContact) : "-"],
+                      ...(driver.source === "Indeed" && driver.createdAt ? [["Applied on Indeed", fmtDate(driver.createdAt)]] : []),
                     ].map(([key, value]) => (
                       <div key={key} style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 11px" }}>
                         <div style={{ fontSize: 10, color: "var(--text-faint)", marginBottom: 3, fontWeight: 500 }}>{key}</div>

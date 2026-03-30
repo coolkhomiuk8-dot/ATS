@@ -22,8 +22,8 @@ export function minutesUntil(driver) {
 
 export function fmtDate(dateStr) {
   if (!dateStr) return "-";
-  return new Date(`${dateStr}T00:00:00`).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
+  const raw = String(dateStr).slice(0, 10);
+  const d = new Date(`${raw}T00:00:00`);
+  if (isNaN(d)) return "-";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }

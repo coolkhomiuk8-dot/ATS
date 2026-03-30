@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { auth, db, ensureAuthReady, isFirebaseConfigured } from "../lib/firebase";
 import {
-  collection, deleteDoc, doc, getDocs,
+  collection, deleteDoc, doc,
   onSnapshot, query, setDoc, updateDoc,
 } from "firebase/firestore";
 
@@ -22,9 +22,7 @@ function ensureShape(d) {
 }
 
 function colRef() {
-  const uid = auth?.currentUser?.uid;
-  if (!uid) throw new Error("Not authenticated");
-  return collection(db, "users", uid, "dispatchers");
+  return collection(db, "dispatchers");
 }
 
 export const useDispatchersStore = create((set, get) => ({

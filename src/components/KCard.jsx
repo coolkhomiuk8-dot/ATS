@@ -51,6 +51,12 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
             {driver.source}
           </span>
         )}
+        {driver.source === "Indeed" && driver.createdAt && (() => {
+          const raw = String(driver.createdAt).slice(0, 10);
+          const d = new Date(raw + "T00:00:00");
+          if (isNaN(d)) return null;
+          return <span style={{ fontSize: 9, color: "#94a3b8" }}>{d.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>;
+        })()}
       </div>
 
       {(driver.flags || []).length > 0 && (

@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function myEmail() {
+      return request.auth.token.email;
+    }
+
+    function myRole() {
+      return get(/databases/$(database)/documents/user_roles/$(myEmail())).data.role;
+    }
+
+    function isRoot() {
+      return signedIn() && myRole() == 'root';
+    }
+
+    function isAdmin() {
+      return signedIn() && (myRole() == 'admin' || myRole() == 'root');
+    }
+
+    function isUser() {
+      return signedIn() && (myRole() == 'user' || myRole() == 'admin' || myRole() == 'root');
+    }
+
+    match /user_roles/{emailDocId} {
+      // ТІЛЬКИ свій role-документ читати
+      allow read: if signedIn() && myEmail() == emailDocId;
+
+      // Root може створювати/міняти ролі будь-кому
+      allow create, update, delete: if isRoot();
+    }
+
+    match /drivers/{driverId} {
+      allow read: if isUser();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /dispatchers/{dispatcherId} {
+      allow read: if isUser();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
