@@ -1,8 +1,11 @@
 export const DISPATCHER_STAGES = [
-  { id: "new_lead",   label: "New Lead",               color: "#6366f1", light: "#eef2ff" },
-  { id: "no_answer",  label: "No Answer",               color: "#94a3b8", light: "#f1f5f9" },
-  { id: "interview",  label: "Interview Scheduled",     color: "#10b981", light: "#ecfdf5" },
-  { id: "rejected",   label: "Rejected",                color: "#ef4444", light: "#fef2f2" },
+  { id: "new_lead",       label: "New Lead",               color: "#6366f1", light: "#eef2ff" },
+  { id: "no_answer_1",    label: "Не додзвонився 1 раз",   color: "#f59e0b", light: "#fffbeb" },
+  { id: "no_answer_2",    label: "Не додзвонився 2 раз",   color: "#f97316", light: "#fff7ed" },
+  { id: "tg_sent",        label: "Написав в Telegram",     color: "#0ea5e9", light: "#f0f9ff" },
+  { id: "in_comms",       label: "Веду комунікацію",       color: "#10b981", light: "#ecfdf5" },
+  { id: "interview",      label: "Interview Scheduled",    color: "#8b5cf6", light: "#f5f3ff" },
+  { id: "rejected",       label: "Rejected",               color: "#ef4444", light: "#fef2f2" },
 ];
 
 export const DISPATCHER_ROLES = ["HR", "Tracker", "Dispatcher", "Fleet"];
