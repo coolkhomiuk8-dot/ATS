@@ -35,6 +35,7 @@ export default function App() {
   const [showIndeed, setShowIndeed] = useState(false);
   const [showDuplicates, setShowDuplicates] = useState(false);
   const [showDailyReport, setShowDailyReport] = useState(false);
+  const [showToolsMenu, setShowToolsMenu] = useState(false);
   const [filterStage, setFilterStage] = useState("all");
   const [search, setSearch] = useState("");
   const [searchFocus, setSearchFocus] = useState(false);
@@ -567,111 +568,102 @@ export default function App() {
             ))}
           </select>
 
-          <div style={{ display: "flex", gap: 6 }}>
-            <SPill n={addedToday} l="Added today" c="#2563eb" bg="#eff6ff" />
-            <SPill n={addedYesterday} l="Added yesterday" c="#7c3aed" bg="#f5f3ff" />
+          {/* Compact stats */}
+          <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+            <SPill n={addedToday} l="Today" c="#2563eb" bg="#eff6ff" />
             <SPill n={total} l="Total" c="#6366f1" bg="#eef2ff" />
-            <SPill n={finalStep} l="Final step" c="#059669" bg="#ecfdf5" />
+            <SPill n={finalStep} l="Final" c="#059669" bg="#ecfdf5" />
           </div>
 
-          {/* Theme switcher */}
+          {/* Theme switcher — icons only */}
           <div style={{ display: "flex", gap: 2, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, padding: 2, flexShrink: 0 }}>
-            {THEMES.map((t) => (
+            {THEMES.map((t) => {
+              const icon = t === "normal" ? "☀️" : t === "dark" ? "🌙" : "◑";
+              return (
+                <button
+                  key={t}
+                  onClick={() => setTheme(t)}
+                  title={t === "normal" ? "Normal" : t === "hc" ? "High Contrast" : "Dark"}
+                  style={{
+                    width: 28, height: 28,
+                    borderRadius: 6, border: "none", fontSize: 14,
+                    cursor: "pointer",
+                    background: theme === t ? "var(--color-primary)" : "transparent",
+                    transition: "all .15s", lineHeight: 1,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}
+                >
+                  {icon}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ marginLeft: "auto", display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
+
+            {/* Tools dropdown */}
+            <div style={{ position: "relative" }}>
               <button
-                key={t}
-                onClick={() => setTheme(t)}
-                title={t === "normal" ? "Normal" : t === "hc" ? "High Contrast" : "Dark"}
+                onClick={() => setShowToolsMenu(v => !v)}
+                onBlur={() => setTimeout(() => setShowToolsMenu(false), 150)}
                 style={{
-                  padding: "4px 8px",
-                  borderRadius: 6,
-                  border: "none",
-                  fontSize: 13,
-                  cursor: "pointer",
-                  background: theme === t ? "var(--color-primary)" : "transparent",
-                  color: theme === t ? "#fff" : "var(--text-muted)",
-                  fontWeight: theme === t ? 700 : 400,
-                  transition: "all .15s",
-                  lineHeight: 1,
+                  background: "var(--bg-raised)", border: "1px solid var(--border)",
+                  color: "var(--text-secondary)", padding: "7px 12px", borderRadius: 8,
+                  fontSize: 13, fontWeight: 600, cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 5,
                 }}
               >
-                {LABELS[t]}
+                ⚙ Tools ▾
               </button>
-            ))}
-          </div>
+              {showToolsMenu && (
+                <div style={{
+                  position: "absolute", top: "calc(100% + 4px)", right: 0,
+                  background: "var(--bg-surface)", border: "1px solid var(--border)",
+                  borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,.12)",
+                  zIndex: 300, minWidth: 170, overflow: "hidden",
+                }}>
+                  {[
+                    { icon: "📊", label: "Daily Report",  action: () => { setShowDailyReport(true); setShowToolsMenu(false); } },
+                    { icon: "🔍", label: "Find Duplicates", action: () => { setShowDuplicates(true); setShowToolsMenu(false); } },
+                  ].map(item => (
+                    <button key={item.label} onClick={item.action}
+                      style={{
+                        width: "100%", padding: "10px 14px", border: "none",
+                        background: "transparent", cursor: "pointer", textAlign: "left",
+                        fontSize: 13, color: "var(--text-primary)", display: "flex",
+                        alignItems: "center", gap: 8,
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--bg-hover)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >
+                      <span>{item.icon}</span> {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexShrink: 0 }}>
-            <button
-              onClick={() => setShowDailyReport(true)}
-              style={{
-                background: "#f0fdf4",
-                border: "1px solid #bbf7d0",
-                color: "#15803d",
-                padding: "8px 14px",
-                borderRadius: 8,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-              }}
-            >
-              📊 Daily Report
-            </button>
-            <button
-              onClick={() => setShowDuplicates(true)}
-              style={{
-                background: "#fff7ed",
-                border: "1px solid #fed7aa",
-                color: "#c2410c",
-                padding: "8px 14px",
-                borderRadius: 8,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-              }}
-            >
-              🔍 Duplicates
-            </button>
             <button
               onClick={() => setShowIndeed(true)}
               style={{
-                background: "#eff6ff",
-                border: "1px solid #bfdbfe",
-                color: "#1d4ed8",
-                padding: "8px 14px",
-                borderRadius: 8,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
+                background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1d4ed8",
+                padding: "7px 12px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+                cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
               }}
             >
-              📋 Import Indeed
+              📋 Import
             </button>
+
             <button
               onClick={() => setShowAdd(true)}
               className="btn-p"
               style={{
-                background: "var(--color-primary)",
-                border: "none",
-                color: "#fff",
-                padding: "8px 16px",
-                borderRadius: 8,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
+                background: "var(--color-primary)", border: "none", color: "#fff",
+                padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+                cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
               }}
             >
-              Add Driver
+              + Add Driver
             </button>
           </div>
 
@@ -679,19 +671,19 @@ export default function App() {
             <button
               onClick={handleLogout}
               className="btn-g"
+              title="Logout"
               style={{
                 background: "var(--bg-raised)",
                 border: "1px solid var(--border)",
                 color: "var(--text-muted)",
-                padding: "8px 12px",
+                padding: "7px 10px",
                 borderRadius: 8,
-                fontSize: 12,
-                fontWeight: 600,
+                fontSize: 16,
                 cursor: "pointer",
                 flexShrink: 0,
               }}
             >
-              Logout
+              ⏻
             </button>
           )}
 
