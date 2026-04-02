@@ -67,6 +67,7 @@ function ensureDriverShape(driver) {
     lastContact: null,
     createdAt: null,
     qualifications: [],
+    stageHistory: [],
     ...driver,
   };
 }
@@ -328,6 +329,15 @@ export const useDriversStore = create((set, get) => ({
   upd: async (id, patch) => {
     const safePatch = stripUndefined(patch);
 
+    // If stage is changing — append entry to stageHistory
+    if (safePatch.stage) {
+      const current = get().drivers.find((d) => d.id === id);
+      if (current && current.stage !== safePatch.stage) {
+        const entry = { stage: safePatch.stage, date: todayStr(), ts: Date.now() };
+        safePatch.stageHistory = [...(current.stageHistory || []), entry];
+      }
+    }
+
     set((state) => ({
       drivers: state.drivers.map((driver) => (driver.id === id ? { ...driver, ...safePatch } : driver)),
     }));
@@ -517,12 +527,17 @@ export const useDriversStore = create((set, get) => ({
 
   addDriver: async (data) => {
     const nextId = get().idCounter + 1;
+    const createdAt = data.createdAt || todayStr();
+    const initialStage = data.stage || "new";
+    const existingHistory = Array.isArray(data.stageHistory) ? data.stageHistory : [];
     const newDriver = ensureDriverShape({
       id: nextId,
       docId: String(nextId),
-      createdAt: todayStr(),
       ...data,
-      createdAt: data.createdAt || todayStr(),
+      createdAt,
+      stageHistory: existingHistory.length > 0
+        ? existingHistory
+        : [{ stage: initialStage, date: createdAt, ts: Date.now() }],
     });
 
     set((state) => ({
