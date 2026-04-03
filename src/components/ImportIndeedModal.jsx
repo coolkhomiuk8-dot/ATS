@@ -226,6 +226,36 @@ export default function ImportIndeedModal({ drivers = [], onImport, onClose }) {
         {/* Body */}
         <div style={{ flex: 1, overflowY: "auto", padding: "18px 22px" }}>
 
+          {/* Job Type selector — always visible */}
+          {!importing && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 8 }}>Job Type</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                {JOB_TYPES.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setJobType(jobType === t ? "" : t)}
+                    style={{
+                      padding: "5px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                      border: `1px solid ${jobType === t ? "#2563eb" : "#e2e8f0"}`,
+                      background: jobType === t ? "#2563eb" : "#f8fafc",
+                      color: jobType === t ? "#fff" : "#64748b",
+                      transition: "all .15s",
+                    }}
+                  >
+                    {t}
+                  </button>
+                ))}
+                <input
+                  placeholder="Custom…"
+                  value={JOB_TYPES.includes(jobType) ? "" : jobType}
+                  onChange={(e) => setJobType(e.target.value)}
+                  style={{ padding: "5px 10px", borderRadius: 20, fontSize: 12, border: "1px solid #e2e8f0", outline: "none", width: 90, color: "#0f172a" }}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Drop zone */}
           {leads.length === 0 && (
             <div
@@ -251,36 +281,6 @@ export default function ImportIndeedModal({ drivers = [], onImport, onClose }) {
               <div style={{ fontSize: 13, color: "#64748b", marginBottom: 14 }}>{progress} / {selCount}</div>
               <div style={{ background: "#f1f5f9", borderRadius: 99, height: 8, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${selCount ? (progress / selCount) * 100 : 0}%`, background: "#2563eb", borderRadius: 99, transition: "width .3s" }} />
-              </div>
-            </div>
-          )}
-
-          {/* Job Type selector */}
-          {!importing && leads.length > 0 && (
-            <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", flexShrink: 0 }}>Job Type:</span>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {JOB_TYPES.map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setJobType(jobType === t ? "" : t)}
-                    style={{
-                      padding: "4px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer",
-                      border: `1px solid ${jobType === t ? "#2563eb" : "#e2e8f0"}`,
-                      background: jobType === t ? "#2563eb" : "#f8fafc",
-                      color: jobType === t ? "#fff" : "#64748b",
-                      transition: "all .15s",
-                    }}
-                  >
-                    {t}
-                  </button>
-                ))}
-                <input
-                  placeholder="Custom…"
-                  value={JOB_TYPES.includes(jobType) ? "" : jobType}
-                  onChange={(e) => setJobType(e.target.value)}
-                  style={{ padding: "4px 10px", borderRadius: 20, fontSize: 12, border: "1px solid #e2e8f0", outline: "none", width: 90, color: "#0f172a" }}
-                />
               </div>
             </div>
           )}
