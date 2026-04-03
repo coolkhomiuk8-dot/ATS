@@ -136,7 +136,10 @@ function parseIndeedRow(headers, cols) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-const JOB_TYPES = ["Conestoga", "26 FT Box Truck", "Dry Van", "Flatbed", "Reefer", "Tanker", "Other"];
+const JOB_TYPES = [
+  { id: "Conestoga",      icon: "🚛", desc: "OTR Conestoga" },
+  { id: "26 FT Box Truck", icon: "📦", desc: "Non-CDL Box Truck" },
+];
 
 export default function ImportIndeedModal({ drivers = [], onImport, onClose }) {
   const [leads, setLeads]       = useState([]);
@@ -228,30 +231,30 @@ export default function ImportIndeedModal({ drivers = [], onImport, onClose }) {
 
           {/* Job Type selector — always visible */}
           {!importing && (
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 8 }}>Job Type</div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                {JOB_TYPES.map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setJobType(jobType === t ? "" : t)}
-                    style={{
-                      padding: "5px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer",
-                      border: `1px solid ${jobType === t ? "#2563eb" : "#e2e8f0"}`,
-                      background: jobType === t ? "#2563eb" : "#f8fafc",
-                      color: jobType === t ? "#fff" : "#64748b",
-                      transition: "all .15s",
-                    }}
-                  >
-                    {t}
-                  </button>
-                ))}
-                <input
-                  placeholder="Custom…"
-                  value={JOB_TYPES.includes(jobType) ? "" : jobType}
-                  onChange={(e) => setJobType(e.target.value)}
-                  style={{ padding: "5px 10px", borderRadius: 20, fontSize: 12, border: "1px solid #e2e8f0", outline: "none", width: 90, color: "#0f172a" }}
-                />
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 10 }}>Select Job Type</div>
+              <div style={{ display: "flex", gap: 10 }}>
+                {JOB_TYPES.map((t) => {
+                  const active = jobType === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => setJobType(active ? "" : t.id)}
+                      style={{
+                        flex: 1, padding: "18px 12px", borderRadius: 12, cursor: "pointer",
+                        border: `2px solid ${active ? "#2563eb" : "#e2e8f0"}`,
+                        background: active ? "#eff6ff" : "#f8fafc",
+                        transition: "all .15s",
+                        display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                      }}
+                    >
+                      <span style={{ fontSize: 28 }}>{t.icon}</span>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: active ? "#1d4ed8" : "#0f172a" }}>{t.id}</span>
+                      <span style={{ fontSize: 11, color: active ? "#3b82f6" : "#94a3b8" }}>{t.desc}</span>
+                      {active && <span style={{ fontSize: 10, background: "#2563eb", color: "#fff", padding: "2px 8px", borderRadius: 10, fontWeight: 700 }}>Selected</span>}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
