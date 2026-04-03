@@ -625,6 +625,16 @@ export default function App() {
                   {[
                     { icon: "📊", label: "Daily Report",  action: () => { setShowDailyReport(true); setShowToolsMenu(false); } },
                     { icon: "🔍", label: "Find Duplicates", action: () => { setShowDuplicates(true); setShowToolsMenu(false); } },
+                    ...(currentRole === "root" || currentRole === "admin" ? [{
+                      icon: "🚛", label: "Set all → Conestoga",
+                      action: async () => {
+                        setShowToolsMenu(false);
+                        if (!window.confirm("Set jobType = 'Conestoga' for all drivers that don't have a job type yet?")) return;
+                        const toUpdate = drivers.filter(d => !d.jobType);
+                        for (const d of toUpdate) await upd(d.id, { jobType: "Conestoga" });
+                        alert(`Done! ${toUpdate.length} drivers updated.`);
+                      }
+                    }] : []),
                   ].map(item => (
                     <button key={item.label} onClick={item.action}
                       style={{

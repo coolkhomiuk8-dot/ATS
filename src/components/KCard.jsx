@@ -51,6 +51,11 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
             {driver.source}
           </span>
         )}
+        {driver.jobType && (
+          <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 3, background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0" }}>
+            {driver.jobType}
+          </span>
+        )}
         {driver.source === "Indeed" && driver.createdAt && (() => {
           const raw = String(driver.createdAt).slice(0, 10);
           const d = new Date(raw + "T00:00:00");

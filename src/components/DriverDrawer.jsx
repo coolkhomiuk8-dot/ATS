@@ -468,6 +468,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                       ["City", driver.city],
                       ["Experience", `${driver.exp} years`],
                       ["Source", driver.source],
+                      ...(driver.jobType ? [["Job Type", driver.jobType]] : []),
                       ["Available", driver.startDate || "TBD"],
                       ["Last Contact", driver.lastContact ? fmtDate(driver.lastContact) : "-"],
                       ...(driver.source === "Indeed" && driver.createdAt ? [["Applied on Indeed", fmtDate(driver.createdAt)]] : []),
