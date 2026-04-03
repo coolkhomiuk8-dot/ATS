@@ -35,6 +35,7 @@ export default function DispatchersView() {
     setImportProgress((p) => ({ ...p, saved }));
     setTimeout(() => setImportDone(false), 4000);
   }
+  const [search, setSearch] = useState("");
   const [form, setForm] = useState({ name: "", telegram: "", phone: "", note: "", role: "", stage: "new_lead" });
 
   const selectedDispatcher = dispatchers.find((d) => d.id === selected);
@@ -56,12 +57,31 @@ export default function DispatchersView() {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--bg-base, #f1f5f9)" }}>
       {/* Top bar */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", background: "#fff", borderBottom: "1px solid #e2e8f0" }}>
-        <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", background: "#fff", borderBottom: "1px solid #e2e8f0" }}>
+        <div style={{ flexShrink: 0 }}>
           <div style={{ fontSize: 16, fontWeight: 800, color: "#0f172a" }}>Team Recruitment</div>
           <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 1 }}>{dispatchers.length} candidates</div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+
+        {/* Search */}
+        <div style={{ position: "relative", flex: "0 0 260px" }}>
+          <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontSize: 13, pointerEvents: "none" }}>🔍</span>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Ім'я, Telegram, телефон…"
+            style={{
+              width: "100%", padding: "8px 28px 8px 32px", fontSize: 13,
+              background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 9,
+              color: "#0f172a", outline: "none",
+            }}
+          />
+          {search && (
+            <button onClick={() => setSearch("")} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#94a3b8", fontSize: 15, cursor: "pointer", padding: 0, lineHeight: 1 }}>✕</button>
+          )}
+        </div>
+
+        <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
           <button onClick={() => setShowImport(true)} style={{
             background: "#f0f9ff", color: "#0369a1", border: "1px solid #bae6fd",
             borderRadius: 9, padding: "9px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
@@ -80,7 +100,20 @@ export default function DispatchersView() {
       {/* Kanban board */}
       <div style={{ flex: 1, overflowX: "auto", display: "flex", gap: 14, padding: 20 }}>
         {DISPATCHER_STAGES.map((stage) => {
-          const cards = dispatchers.filter((d) => d.stage === stage.id);
+          const q = search.trim().toLowerCase();
+          const cards = dispatchers.filter((d) => {
+            if (d.stage !== stage.id) return false;
+            if (!q) return true;
+            const tg = String(d.telegram || "").toLowerCase().replace(/^@/, "");
+            const name = String(d.name || "").toLowerCase();
+            const phone = String(d.phone || "").replace(/\D/g, "");
+            const qDigits = q.replace(/\D/g, "");
+            return (
+              name.includes(q) ||
+              tg.includes(q.replace(/^@/, "")) ||
+              (qDigits.length >= 3 && phone.includes(qDigits))
+            );
+          });
           const isOver = dragOverStage === stage.id;
           return (
             <div

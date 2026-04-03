@@ -52,7 +52,7 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
           </span>
         )}
         {driver.jobType && (
-          <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 3, background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0" }}>
+          <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 3, background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa" }}>
             {driver.jobType}
           </span>
         )}
