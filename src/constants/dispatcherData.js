@@ -5,6 +5,7 @@ export const DISPATCHER_STAGES = [
   { id: "tg_sent",        label: "Написав в Telegram",     color: "#0ea5e9", light: "#f0f9ff" },
   { id: "in_comms",       label: "Веду комунікацію",       color: "#10b981", light: "#ecfdf5" },
   { id: "interview",      label: "Interview Scheduled",    color: "#8b5cf6", light: "#f5f3ff" },
+  { id: "on_hold",        label: "❄️ На паузі",            color: "#64748b", light: "#f1f5f9" },
   { id: "rejected",       label: "Rejected",               color: "#ef4444", light: "#fef2f2" },
 ];
 
