@@ -59,10 +59,13 @@ export const useDispatchersStore = create((set, get) => ({
 
   async upd(id, patch) {
     await ensureAuthReady();
+    const finalPatch = patch.stage !== undefined
+      ? { ...patch, stageChangedAt: new Date().toISOString() }
+      : patch;
     set((s) => ({
-      dispatchers: s.dispatchers.map((d) => d.id === id ? { ...d, ...patch } : d),
+      dispatchers: s.dispatchers.map((d) => d.id === id ? { ...d, ...finalPatch } : d),
     }));
-    await updateDoc(doc(colRef(), id), patch);
+    await updateDoc(doc(colRef(), id), finalPatch);
   },
 
   async remove(id) {

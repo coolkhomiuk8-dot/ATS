@@ -121,6 +121,20 @@ export default function DispatcherDrawer({ dispatcher, onClose, onUpd, onRemove 
                 style={inputStyle} placeholder="(555) 000-0000" />
             </div>
 
+            {/* Next Action */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <div>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Next Action Date</div>
+                <input type="date" value={form.nextActionDate || ""} onChange={(e) => set("nextActionDate", e.target.value)}
+                  style={inputStyle} />
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Time</div>
+                <input type="time" value={form.nextActionTime || ""} onChange={(e) => set("nextActionTime", e.target.value)}
+                  style={inputStyle} />
+              </div>
+            </div>
+
             {/* Note */}
             <div>
               <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Note</div>
@@ -187,6 +201,16 @@ export default function DispatcherDrawer({ dispatcher, onClose, onUpd, onRemove 
                 })}
               </div>
             </div>
+
+            {/* Next Action */}
+            {dispatcher.nextActionDate && (
+              <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 9, padding: "10px 14px" }}>
+                <div style={{ fontSize: 10, color: "#3b82f6", fontWeight: 700, marginBottom: 4, textTransform: "uppercase", letterSpacing: ".06em" }}>Next Action</div>
+                <div style={{ fontSize: 13, color: "#1e40af", fontWeight: 600 }}>
+                  {dispatcher.nextActionDate}{dispatcher.nextActionTime ? ` о ${dispatcher.nextActionTime}` : ""}
+                </div>
+              </div>
+            )}
 
             {/* Note */}
             <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 9, padding: "12px 14px" }}>
