@@ -10,6 +10,7 @@ export const STAGES = [
   { id: "ppw",             label: "Waiting for PPW",                             color: "#f59e0b", light: "#fffbeb" },
   { id: "beenverified",    label: "BeenVerified Checked",                        color: "#f97316", light: "#fff7ed" },
   { id: "videocall",       label: "Videocall planned",                           color: "#06b6d4", light: "#ecfeff" },
+  { id: "on_hold",         label: "❄️ На паузі",                                 color: "#64748b", light: "#f1f5f9" },
   { id: "offer_sent",      label: "Offer Sent",                                  color: "#10b981", light: "#ecfdf5" },
   { id: "offer_accepted",  label: "Offer Accepted",                              color: "#059669", light: "#d1fae5" },
   { id: "drug_test_sched", label: "Drug Test (SCHEDULED)",                       color: "#f97316", light: "#fff7ed" },
