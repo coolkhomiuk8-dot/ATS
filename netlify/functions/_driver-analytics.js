@@ -122,12 +122,13 @@ export async function buildDriverDigest(label, isPM = false) {
   });
 
   // ── Productivity (PM only) ────────────────────────────────────────────────
-  let stageChanges = 0;
+  let stageChanges = 0;        // raw count for display (integer)
+  let stageChangesScore = 0;   // weighted score for grade (call1/2/3 = 0.5)
 
   if (isPM) {
     for (const d of drivers) {
 
-      // Stage changes today: call1/call2/call3 = 0.5, everything else = 1
+      // Stage changes today: count raw + weighted separately
       if (Array.isArray(d.stageHistory)) {
         for (const entry of d.stageHistory) {
           const entryDate = entry.ts
@@ -135,7 +136,8 @@ export async function buildDriverDigest(label, isPM = false) {
             : (entry.date || "").slice(0, 10);
           if (entryDate !== today) continue;
           const stage = entry.stage || entry.to || "";
-          stageChanges += ["call1", "call2", "call3"].includes(stage) ? 0.5 : 1;
+          stageChanges += 1;
+          stageChangesScore += ["call1", "call2", "call3"].includes(stage) ? 0.5 : 1;
         }
       }
     }
@@ -188,18 +190,19 @@ export async function buildDriverDigest(label, isPM = false) {
 
   // Productivity block (evening only)
   if (isPM) {
-    const totalActions = stageChanges + newToday.length;
-    const grade = productivityGrade(totalActions);
+    const totalActions = stageChanges + newToday.length;           // for display
+    const totalScore = stageChangesScore + newToday.length;         // for grade
+    const grade = productivityGrade(totalScore);
 
     // RingCentral call stats for Emma (ext. 106)
     const rcStats = await getEmmaCallStats();
 
     msg += `\n━━━━━━━━━━━━━━━━━━\n`;
     msg += `📈 <b>Продуктивність HR за день</b>\n`;
-    msg += `  🔄 Змін стадій: <b>${Number.isInteger(stageChanges) ? stageChanges : stageChanges.toFixed(1)}</b>\n`;
+    msg += `  🔄 Змін стадій: <b>${stageChanges}</b>\n`;
     msg += `  🆕 Нових лідів: <b>${newToday.length}</b>\n`;
     msg += `  ───\n`;
-    msg += `  Всього дій: <b>${Number.isInteger(totalActions) ? totalActions : totalActions.toFixed(1)}</b>\n`;
+    msg += `  Всього дій: <b>${totalActions}</b>\n`;
     msg += `  Оцінка: ${grade.icon} <b>${grade.label}</b>\n`;
 
     if (rcStats) {
