@@ -94,6 +94,12 @@ export async function buildDriverDigest(label, isPM = false) {
   );
 
   // ── Overdue next actions ─────────────────────────────────────────────────
+  // Active drivers with no next action date — highest priority
+  const noDate = drivers.filter(
+    (d) => ACTIVE_STAGES.has(d.stage) && !d.nextActionDate
+  );
+
+  // Active drivers with a past-due next action date
   const overdue = drivers.filter((d) => {
     if (!d.nextActionDate || !ACTIVE_STAGES.has(d.stage)) return false;
     const actionDt = new Date(
@@ -176,17 +182,19 @@ export async function buildDriverDigest(label, isPM = false) {
     if (hotLeads.length > 5) msg += `  ...і ще ${hotLeads.length - 5}\n`;
   }
 
-  if (overdue.length > 0) {
-    msg += `\n⚠️ <b>Прострочені дії (${overdue.length}):</b>\n`;
-    for (const d of overdue.slice(0, 5))
-      msg += `  • ${dName(d)} — ${d.nextActionDate}${d.nextActionTime ? ` ${d.nextActionTime}` : ""}\n`;
-    if (overdue.length > 5) msg += `  ...і ще ${overdue.length - 5}\n`;
+  const totalAttention = noDate.length + overdue.length;
+  if (totalAttention > 0) {
+    msg += `\n⚠️ <b>Потребують уваги (${totalAttention}):</b>\n`;
+    if (noDate.length > 0)
+      msg += `  ❗ Без запланованої дії — <b>${noDate.length}</b> (першочергово!)\n`;
+    if (overdue.length > 0) {
+      msg += `  📅 Прострочена дія — <b>${overdue.length}</b>:\n`;
+      for (const d of overdue.slice(0, 5))
+        msg += `    • ${dName(d)} — ${d.nextActionDate}${d.nextActionTime ? ` ${d.nextActionTime}` : ""}\n`;
+      if (overdue.length > 5) msg += `    ...і ще ${overdue.length - 5}\n`;
+    }
   } else {
-    msg += `\n✅ Прострочених дій немає\n`;
-  }
-
-  if (stale.length > 0) {
-    msg += `\n🧊 <b>Завис без дій 3+ дні:</b> ${stale.length}\n`;
+    msg += `\n✅ Всі водії мають заплановані дії\n`;
   }
 
   // Productivity block (evening only)
