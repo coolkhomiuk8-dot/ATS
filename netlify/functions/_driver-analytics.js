@@ -122,13 +122,10 @@ export async function buildDriverDigest(label, isPM = false) {
   });
 
   // ── Productivity (PM only) ────────────────────────────────────────────────
-  let contacts = 0;
   let stageChanges = 0;
 
   if (isPM) {
     for (const d of drivers) {
-      // Contacts: lastContact === today
-      if ((d.lastContact || "").slice(0, 10) === today) contacts++;
 
       // Stage changes today: call1/call2/call3 = 0.5, everything else = 1
       if (Array.isArray(d.stageHistory)) {
@@ -191,7 +188,7 @@ export async function buildDriverDigest(label, isPM = false) {
 
   // Productivity block (evening only)
   if (isPM) {
-    const totalActions = contacts + stageChanges + newToday.length;
+    const totalActions = stageChanges + newToday.length;
     const grade = productivityGrade(totalActions);
 
     // RingCentral call stats for Emma (ext. 106)
@@ -199,7 +196,6 @@ export async function buildDriverDigest(label, isPM = false) {
 
     msg += `\n━━━━━━━━━━━━━━━━━━\n`;
     msg += `📈 <b>Продуктивність HR за день</b>\n`;
-    msg += `  📞 Контактів з водіями: <b>${contacts}</b>\n`;
     msg += `  🔄 Змін стадій: <b>${Number.isInteger(stageChanges) ? stageChanges : stageChanges.toFixed(1)}</b>\n`;
     msg += `  🆕 Нових лідів: <b>${newToday.length}</b>\n`;
     msg += `  ───\n`;
