@@ -25,9 +25,8 @@ async function getRCToken() {
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: new URLSearchParams({
-      grant_type: "password",
-      username: process.env.RC_USERNAME,
-      password: process.env.RC_PASSWORD,
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: process.env.RC_JWT_TOKEN,
     }).toString(),
   });
 
@@ -36,7 +35,7 @@ async function getRCToken() {
 }
 
 export async function getEmmaCallStats() {
-  if (!process.env.RC_CLIENT_ID || !process.env.RC_USERNAME) return null;
+  if (!process.env.RC_CLIENT_ID || !process.env.RC_JWT_TOKEN) return null;
 
   try {
     const token = await getRCToken();
