@@ -159,10 +159,7 @@ export async function buildDriverDigest(label, isPM = false) {
   }
 
   if (stale.length > 0) {
-    msg += `\n🧊 <b>Завис без дій 3+ дні (${stale.length}):</b>\n`;
-    for (const d of stale.slice(0, 5))
-      msg += `  • ${dName(d)} (${STAGE_LABELS[d.stage] || d.stage})\n`;
-    if (stale.length > 5) msg += `  ...і ще ${stale.length - 5}\n`;
+    msg += `\n🧊 <b>Завис без дій 3+ дні:</b> ${stale.length}\n`;
   }
 
   // Productivity block (evening only)
