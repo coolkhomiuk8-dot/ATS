@@ -176,9 +176,6 @@ export async function buildDriverDigest(label, isPM = false) {
     msg += `  Всього дій: <b>${totalActions}</b>\n`;
     msg += `  Оцінка: ${grade.icon} <b>${grade.label}</b>\n`;
 
-    // debug: show env var status
-    msg += `\n🔧 RC_JWT: ${process.env.RC_JWT_TOKEN ? "set("+process.env.RC_JWT_TOKEN.length+")" : "MISSING"} | RC_ID: ${process.env.RC_CLIENT_ID ? "set" : "MISSING"}\n`;
-
     if (rcStats) {
       if (rcStats.error) {
         msg += `\n📱 <b>RingCentral error:</b> ${rcStats.error}\n`;

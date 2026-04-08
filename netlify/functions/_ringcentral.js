@@ -34,18 +34,33 @@ async function getRCToken() {
   return (await res.json()).access_token;
 }
 
+// Find the internal extension ID by extension number (e.g. "106")
+async function findExtensionId(token, extNumber) {
+  const res = await fetch(
+    `https://platform.ringcentral.com/restapi/v1.0/account/~/extension?extensionNumber=${extNumber}&perPage=5`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) throw new Error(`RC extension lookup failed: ${await res.text()}`);
+  const { records = [] } = await res.json();
+  if (!records.length) throw new Error(`Extension ${extNumber} not found`);
+  return records[0].id;
+}
+
 export async function getEmmaCallStats() {
   if (!process.env.RC_CLIENT_ID || !process.env.RC_JWT_TOKEN) return null;
 
   try {
     const token = await getRCToken();
 
+    // Resolve extension number 106 → internal ID
+    const extId = await findExtensionId(token, "106");
+
     const todayET = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
     const offsetStr = getETOffsetStr();
     const dateFrom = encodeURIComponent(`${todayET}T00:00:00${offsetStr}`);
 
     const res = await fetch(
-      `https://platform.ringcentral.com/restapi/v1.0/account/~/extension/106/call-log` +
+      `https://platform.ringcentral.com/restapi/v1.0/account/~/extension/${extId}/call-log` +
         `?dateFrom=${dateFrom}&type=Voice&view=Simple&perPage=250`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -68,6 +83,6 @@ export async function getEmmaCallStats() {
     return { callCount, timeStr, avgStr };
   } catch (e) {
     console.error("RingCentral error:", e.message);
-    return { error: e.message }; // тимчасово повертаємо помилку для дебагу
+    return { error: e.message };
   }
 }
