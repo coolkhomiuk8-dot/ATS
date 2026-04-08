@@ -43,9 +43,9 @@ function todayET() {
 }
 
 function productivityGrade(total) {
-  if (total >= 45) return { icon: "🟢", label: "Відмінно" };
-  if (total >= 35) return { icon: "🟡", label: "Добре" };
-  if (total >= 20) return { icon: "🟠", label: "Задовільно" };
+  if (total >= 71) return { icon: "🟢", label: "Відмінно" };
+  if (total >= 51) return { icon: "🟡", label: "Добре" };
+  if (total >= 31) return { icon: "🟠", label: "Задовільно" };
   return { icon: "🔴", label: "Мало" };
 }
 
