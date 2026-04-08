@@ -209,7 +209,6 @@ export async function buildDriverDigest(label, isPM = false) {
     msg += `\n━━━━━━━━━━━━━━━━━━\n`;
     msg += `📈 <b>Продуктивність HR за день</b>\n`;
     msg += `  🔄 Змін стадій: <b>${stageChanges}</b>\n`;
-    msg += `  🆕 Нових лідів: <b>${newToday.length}</b>\n`;
     msg += `  ───\n`;
     msg += `  Всього дій: <b>${totalActions}</b>\n`;
     msg += `  Оцінка: ${grade.icon} <b>${grade.label}</b>\n`;
