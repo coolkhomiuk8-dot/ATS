@@ -180,6 +180,7 @@ export async function buildDriverDigest(label, isPM = false) {
       msg += `\n📱 <b>RingCentral — Emma (ext. 106)</b>\n`;
       msg += `  📞 Дзвінків за день: <b>${rcStats.callCount}</b>\n`;
       msg += `  ⏱ Час на лінії: <b>${rcStats.timeStr}</b>\n`;
+      msg += `  📊 Середній дзвінок: <b>${rcStats.avgStr}</b>\n`;
     }
   }
 

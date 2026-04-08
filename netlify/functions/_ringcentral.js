@@ -56,11 +56,17 @@ export async function getEmmaCallStats() {
 
     const callCount = records.length;
     const totalSec = records.reduce((s, r) => s + (r.duration || 0), 0);
+
     const h = Math.floor(totalSec / 3600);
     const m = Math.floor((totalSec % 3600) / 60);
     const timeStr = h > 0 ? `${h}г ${m}хв` : `${m}хв`;
 
-    return { callCount, timeStr };
+    const avgSec = callCount > 0 ? Math.round(totalSec / callCount) : 0;
+    const avgM = Math.floor(avgSec / 60);
+    const avgS = avgSec % 60;
+    const avgStr = avgM > 0 ? `${avgM}хв ${avgS}с` : `${avgS}с`;
+
+    return { callCount, timeStr, avgStr };
   } catch (e) {
     console.error("RingCentral error:", e.message);
     return null; // не ламаємо дайджест якщо RC недоступний
