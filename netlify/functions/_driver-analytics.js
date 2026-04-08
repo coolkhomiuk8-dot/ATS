@@ -65,6 +65,30 @@ export async function buildDriverDigest(label, isPM = false) {
     stageCounts[d.stage] = (stageCounts[d.stage] || 0) + 1;
   }
 
+  // ── Today's stage gains (08:00–18:00 ET) ─────────────────────────────────
+  const todayGains = {};
+  for (const d of drivers) {
+    if (!Array.isArray(d.stageHistory)) continue;
+    for (const entry of d.stageHistory) {
+      let entryDate, entryHour;
+      if (entry.ts) {
+        const dt = new Date(entry.ts);
+        entryDate = dt.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+        entryHour = parseInt(
+          dt.toLocaleString("en-US", { timeZone: "America/New_York", hour: "numeric", hour12: false }),
+          10
+        );
+      } else {
+        entryDate = (entry.date || "").slice(0, 10);
+        entryHour = 12; // no time info — assume midday
+      }
+      if (entryDate !== today) continue;
+      if (entryHour < 8 || entryHour >= 18) continue;
+      const stage = entry.stage || entry.to;
+      if (stage) todayGains[stage] = (todayGains[stage] || 0) + 1;
+    }
+  }
+
   // ── Hot leads ────────────────────────────────────────────────────────────
   const hotLeads = drivers.filter(
     (d) => d.interest === "Hot" && ACTIVE_STAGES.has(d.stage)
@@ -137,7 +161,8 @@ export async function buildDriverDigest(label, isPM = false) {
   for (const stageId of stageOrder) {
     const count = stageCounts[stageId];
     if (!count) continue;
-    msg += `  ${STAGE_LABELS[stageId] || stageId}: <b>${count}</b>\n`;
+    const gain = todayGains[stageId];
+    msg += `  ${STAGE_LABELS[stageId] || stageId}: <b>${count}</b>${gain ? ` <i>+${gain}</i>` : ""}\n`;
   }
 
   msg += `\n🆕 <b>Нові сьогодні:</b> ${newToday.length}\n`;
