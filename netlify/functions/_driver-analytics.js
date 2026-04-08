@@ -88,7 +88,6 @@ export async function buildDriverDigest(label, isPM = false) {
       if (stage) todayGains[stage] = (todayGains[stage] || 0) + 1;
     }
   }
-
   // ── Hot leads ────────────────────────────────────────────────────────────
   const hotLeads = drivers.filter(
     (d) => d.interest === "Hot" && ACTIVE_STAGES.has(d.stage)
@@ -107,6 +106,8 @@ export async function buildDriverDigest(label, isPM = false) {
 
   // ── New today (ET) ───────────────────────────────────────────────────────
   const newToday = drivers.filter((d) => (d.createdAt || "").slice(0, 10) === today);
+  // For "new" stage — use createdAt count, more accurate than stageHistory
+  todayGains["new"] = newToday.length;
 
   // ── Stale 3+ days ────────────────────────────────────────────────────────
   const stale = drivers.filter((d) => {
