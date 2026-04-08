@@ -3,12 +3,26 @@ import admin from "firebase-admin";
 let initialized = false;
 
 function getServiceAccount() {
+  // Prefer individual fields (avoids 4KB Lambda env-var limit)
+  const projectId  = process.env.FIREBASE_PROJECT_ID;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+
+  if (projectId && privateKey && clientEmail) {
+    return {
+      projectId,
+      privateKey: privateKey.replace(/\\n/g, "\n"), // handle escaped newlines
+      clientEmail,
+    };
+  }
+
+  // Fallback: full JSON (legacy)
   const raw =
     process.env.FIREBASE_SERVICE_ACCOUNT_JSON ||
     process.env.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON;
   if (!raw) {
     throw new Error(
-      "Missing Firebase Admin service account JSON. Set FIREBASE_SERVICE_ACCOUNT_JSON or reuse GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON."
+      "Missing Firebase credentials. Set FIREBASE_PROJECT_ID + FIREBASE_PRIVATE_KEY + FIREBASE_CLIENT_EMAIL."
     );
   }
   return JSON.parse(raw);
