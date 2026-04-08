@@ -1,6 +1,7 @@
 // Shared driver analytics helper used by driver-digest-am.js and driver-digest-pm.js
 
 import { getDb } from "./_auth.js";
+import { getEmmaCallStats } from "./_ringcentral.js";
 
 const STAGE_LABELS = {
   new:             "🆕 New Lead",
@@ -162,6 +163,10 @@ export async function buildDriverDigest(label, isPM = false) {
   if (isPM) {
     const totalActions = contacts + stageChanges + newToday.length;
     const grade = productivityGrade(totalActions);
+
+    // RingCentral call stats for Emma (ext. 106)
+    const rcStats = await getEmmaCallStats();
+
     msg += `\n━━━━━━━━━━━━━━━━━━\n`;
     msg += `📈 <b>Продуктивність HR за день</b>\n`;
     msg += `  📞 Контактів з водіями: <b>${contacts}</b>\n`;
@@ -170,6 +175,12 @@ export async function buildDriverDigest(label, isPM = false) {
     msg += `  ───\n`;
     msg += `  Всього дій: <b>${totalActions}</b>\n`;
     msg += `  Оцінка: ${grade.icon} <b>${grade.label}</b>\n`;
+
+    if (rcStats) {
+      msg += `\n📱 <b>RingCentral — Emma (ext. 106)</b>\n`;
+      msg += `  📞 Дзвінків за день: <b>${rcStats.callCount}</b>\n`;
+      msg += `  ⏱ Час на лінії: <b>${rcStats.timeStr}</b>\n`;
+    }
   }
 
   return msg;
