@@ -130,13 +130,15 @@ export async function buildDriverDigest(label, isPM = false) {
       // Contacts: lastContact === today
       if ((d.lastContact || "").slice(0, 10) === today) contacts++;
 
-      // Stage changes today: count stageHistory entries with date === today
+      // Stage changes today: call1/call2/call3 = 0.5, everything else = 1
       if (Array.isArray(d.stageHistory)) {
         for (const entry of d.stageHistory) {
           const entryDate = entry.ts
             ? new Date(entry.ts).toLocaleDateString("en-CA", { timeZone: "America/New_York" })
             : (entry.date || "").slice(0, 10);
-          if (entryDate === today) stageChanges++;
+          if (entryDate !== today) continue;
+          const stage = entry.stage || entry.to || "";
+          stageChanges += ["call1", "call2", "call3"].includes(stage) ? 0.5 : 1;
         }
       }
     }
@@ -198,10 +200,10 @@ export async function buildDriverDigest(label, isPM = false) {
     msg += `\n━━━━━━━━━━━━━━━━━━\n`;
     msg += `📈 <b>Продуктивність HR за день</b>\n`;
     msg += `  📞 Контактів з водіями: <b>${contacts}</b>\n`;
-    msg += `  🔄 Змін стадій: <b>${stageChanges}</b>\n`;
+    msg += `  🔄 Змін стадій: <b>${Number.isInteger(stageChanges) ? stageChanges : stageChanges.toFixed(1)}</b>\n`;
     msg += `  🆕 Нових лідів: <b>${newToday.length}</b>\n`;
     msg += `  ───\n`;
-    msg += `  Всього дій: <b>${totalActions}</b>\n`;
+    msg += `  Всього дій: <b>${Number.isInteger(totalActions) ? totalActions : totalActions.toFixed(1)}</b>\n`;
     msg += `  Оцінка: ${grade.icon} <b>${grade.label}</b>\n`;
 
     if (rcStats) {
