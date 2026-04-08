@@ -68,6 +68,6 @@ export async function getEmmaCallStats() {
     return { callCount, timeStr, avgStr };
   } catch (e) {
     console.error("RingCentral error:", e.message);
-    return null; // не ламаємо дайджест якщо RC недоступний
+    return { error: e.message }; // тимчасово повертаємо помилку для дебагу
   }
 }
