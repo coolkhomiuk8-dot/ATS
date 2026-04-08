@@ -31,6 +31,12 @@ const ACTIVE_STAGES = new Set([
   "drug_test_sched", "drug_test", "set_date", "yard",
 ]);
 
+// Trim driver name to first 25 chars — avoids form-dump garbage in Telegram
+function dName(d) {
+  const raw = (d.name || "—").trim();
+  return raw.length > 25 ? raw.slice(0, 25) + "…" : raw;
+}
+
 // Today's date string in Eastern Time
 function todayET() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }); // "2026-04-08"
@@ -139,14 +145,14 @@ export async function buildDriverDigest(label, isPM = false) {
   if (hotLeads.length > 0) {
     msg += `\n🔥 <b>Гарячі ліди (${hotLeads.length}):</b>\n`;
     for (const d of hotLeads.slice(0, 5))
-      msg += `  • ${d.name || "—"} (${STAGE_LABELS[d.stage] || d.stage})\n`;
+      msg += `  • ${dName(d)} (${STAGE_LABELS[d.stage] || d.stage})\n`;
     if (hotLeads.length > 5) msg += `  ...і ще ${hotLeads.length - 5}\n`;
   }
 
   if (overdue.length > 0) {
     msg += `\n⚠️ <b>Прострочені дії (${overdue.length}):</b>\n`;
     for (const d of overdue.slice(0, 5))
-      msg += `  • ${d.name || "—"} — ${d.nextActionDate}${d.nextActionTime ? ` ${d.nextActionTime}` : ""}\n`;
+      msg += `  • ${dName(d)} — ${d.nextActionDate}${d.nextActionTime ? ` ${d.nextActionTime}` : ""}\n`;
     if (overdue.length > 5) msg += `  ...і ще ${overdue.length - 5}\n`;
   } else {
     msg += `\n✅ Прострочених дій немає\n`;
@@ -155,7 +161,7 @@ export async function buildDriverDigest(label, isPM = false) {
   if (stale.length > 0) {
     msg += `\n🧊 <b>Завис без дій 3+ дні (${stale.length}):</b>\n`;
     for (const d of stale.slice(0, 5))
-      msg += `  • ${d.name || "—"} (${STAGE_LABELS[d.stage] || d.stage})\n`;
+      msg += `  • ${dName(d)} (${STAGE_LABELS[d.stage] || d.stage})\n`;
     if (stale.length > 5) msg += `  ...і ще ${stale.length - 5}\n`;
   }
 
