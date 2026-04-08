@@ -30,13 +30,26 @@ const ACTIVE_STAGES = new Set([
   "drug_test_sched", "drug_test", "set_date", "yard",
 ]);
 
-export async function buildDriverDigest(label) {
+// Today's date string in Eastern Time
+function todayET() {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }); // "2026-04-08"
+}
+
+function productivityGrade(total) {
+  if (total >= 20) return { icon: "🟢", label: "Відмінно" };
+  if (total >= 11) return { icon: "🟡", label: "Добре" };
+  if (total >= 5)  return { icon: "🟠", label: "Задовільно" };
+  return { icon: "🔴", label: "Мало" };
+}
+
+// isPM = true adds productivity block
+export async function buildDriverDigest(label, isPM = false) {
   const db = getDb();
   const snap = await db.collection("drivers").get();
   const drivers = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
   const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10); // "2026-04-08"
+  const today = todayET();
 
   // ── Stage breakdown ──────────────────────────────────────────────────────
   const stageCounts = {};
@@ -61,16 +74,12 @@ export async function buildDriverDigest(label) {
     return actionDt < now;
   });
 
-  // ── New today ────────────────────────────────────────────────────────────
-  const newToday = drivers.filter((d) => {
-    const created = d.createdAt || "";
-    return created.slice(0, 10) === todayStr;
-  });
+  // ── New today (ET) ───────────────────────────────────────────────────────
+  const newToday = drivers.filter((d) => (d.createdAt || "").slice(0, 10) === today);
 
-  // ── Stale 3+ days (active stages, no stage change) ───────────────────────
+  // ── Stale 3+ days ────────────────────────────────────────────────────────
   const stale = drivers.filter((d) => {
     if (!ACTIVE_STAGES.has(d.stage)) return false;
-    // Use stageHistory last entry ts, or createdAt
     let lastChange;
     if (Array.isArray(d.stageHistory) && d.stageHistory.length > 0) {
       const last = d.stageHistory[d.stageHistory.length - 1];
@@ -81,15 +90,35 @@ export async function buildDriverDigest(label) {
     return (now - lastChange) / (1000 * 60 * 60 * 24) >= 3;
   });
 
+  // ── Productivity (PM only) ────────────────────────────────────────────────
+  let contacts = 0;
+  let stageChanges = 0;
+
+  if (isPM) {
+    for (const d of drivers) {
+      // Contacts: lastContact === today
+      if ((d.lastContact || "").slice(0, 10) === today) contacts++;
+
+      // Stage changes today: count stageHistory entries with date === today
+      if (Array.isArray(d.stageHistory)) {
+        for (const entry of d.stageHistory) {
+          const entryDate = entry.ts
+            ? new Date(entry.ts).toLocaleDateString("en-CA", { timeZone: "America/New_York" })
+            : (entry.date || "").slice(0, 10);
+          if (entryDate === today) stageChanges++;
+        }
+      }
+    }
+  }
+
   // ── Build message ─────────────────────────────────────────────────────────
   const dateStr = now.toLocaleDateString("uk-UA", {
-    day: "numeric", month: "long", weekday: "short", timeZone: "Europe/Kyiv",
+    day: "numeric", month: "long", weekday: "short", timeZone: "America/New_York",
   });
 
   let msg = `📊 <b>Аналітика водіїв — ${label}</b>\n`;
-  msg += `📅 ${dateStr}\n\n`;
+  msg += `📅 ${dateStr} (ET)\n\n`;
 
-  // Stage breakdown
   const stageOrder = [
     "new", "call1", "call2", "call3", "video_sent", "ppw",
     "beenverified", "videocall", "offer_sent", "offer_accepted",
@@ -104,36 +133,43 @@ export async function buildDriverDigest(label) {
     msg += `  ${STAGE_LABELS[stageId] || stageId}: <b>${count}</b>\n`;
   }
 
-  // New today
   msg += `\n🆕 <b>Нові сьогодні:</b> ${newToday.length}\n`;
 
-  // Hot leads
   if (hotLeads.length > 0) {
     msg += `\n🔥 <b>Гарячі ліди (${hotLeads.length}):</b>\n`;
-    for (const d of hotLeads.slice(0, 5)) {
+    for (const d of hotLeads.slice(0, 5))
       msg += `  • ${d.name || "—"} (${STAGE_LABELS[d.stage] || d.stage})\n`;
-    }
     if (hotLeads.length > 5) msg += `  ...і ще ${hotLeads.length - 5}\n`;
   }
 
-  // Overdue
   if (overdue.length > 0) {
     msg += `\n⚠️ <b>Прострочені дії (${overdue.length}):</b>\n`;
-    for (const d of overdue.slice(0, 5)) {
+    for (const d of overdue.slice(0, 5))
       msg += `  • ${d.name || "—"} — ${d.nextActionDate}${d.nextActionTime ? ` ${d.nextActionTime}` : ""}\n`;
-    }
     if (overdue.length > 5) msg += `  ...і ще ${overdue.length - 5}\n`;
   } else {
     msg += `\n✅ Прострочених дій немає\n`;
   }
 
-  // Stale
   if (stale.length > 0) {
     msg += `\n🧊 <b>Завис без дій 3+ дні (${stale.length}):</b>\n`;
-    for (const d of stale.slice(0, 5)) {
+    for (const d of stale.slice(0, 5))
       msg += `  • ${d.name || "—"} (${STAGE_LABELS[d.stage] || d.stage})\n`;
-    }
     if (stale.length > 5) msg += `  ...і ще ${stale.length - 5}\n`;
+  }
+
+  // Productivity block (evening only)
+  if (isPM) {
+    const totalActions = contacts + stageChanges + newToday.length;
+    const grade = productivityGrade(totalActions);
+    msg += `\n━━━━━━━━━━━━━━━━━━\n`;
+    msg += `📈 <b>Продуктивність HR за день</b>\n`;
+    msg += `  📞 Контактів з водіями: <b>${contacts}</b>\n`;
+    msg += `  🔄 Змін стадій: <b>${stageChanges}</b>\n`;
+    msg += `  🆕 Нових лідів: <b>${newToday.length}</b>\n`;
+    msg += `  ───\n`;
+    msg += `  Всього дій: <b>${totalActions}</b>\n`;
+    msg += `  Оцінка: ${grade.icon} <b>${grade.label}</b>\n`;
   }
 
   return msg;

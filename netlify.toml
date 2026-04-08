@@ -12,10 +12,10 @@
   schedule = "0 6 * * *"
 
 [functions."driver-digest-am"]
-  schedule = "0 6 * * *"
+  schedule = "0 12 * * *"
 
 [functions."driver-digest-pm"]
-  schedule = "0 15 * * *"
+  schedule = "0 22 * * *"
 
 [[redirects]]
   from = "/*"
