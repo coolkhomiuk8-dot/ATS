@@ -1,6 +1,5 @@
 // ONE-TIME seed function — adds all trucks to Firestore, then DELETE this file
-import { initFirebase } from "./_auth.js";
-import { getFirestore } from "firebase-admin/firestore";
+import { getDb } from "./_auth.js";
 
 const TRUCKS = [
   { unit: "101", vin: "3C7WRVLG9PE527335" },
@@ -45,8 +44,7 @@ const TRUCKS = [
 ];
 
 export const handler = async () => {
-  initFirebase();
-  const db = getFirestore();
+  const db = getDb();
   const batch = db.batch();
 
   for (const truck of TRUCKS) {

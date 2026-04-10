@@ -7,8 +7,8 @@
 //   /addtruck 145        — add new truck
 //   /removetruck 145     — remove truck
 
-import { initFirebase } from "./_auth.js";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getDb } from "./_auth.js";
+import { FieldValue } from "firebase-admin/firestore";
 
 const BOT_TOKEN  = process.env.TELEGRAM_BOT_TOKEN;
 const HR_CHAT_ID = process.env.TELEGRAM_HR_CHAT_ID;
@@ -114,8 +114,7 @@ export const handler = async (event) => {
   // Only handle messages from the HR chat
   if (chatId !== String(HR_CHAT_ID)) return { statusCode: 200, body: "ok" };
 
-  initFirebase();
-  const db = getFirestore();
+  const db = getDb();
 
   try {
     if (/^\/trucks(@\S+)?$/i.test(text)) {
