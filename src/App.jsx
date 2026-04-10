@@ -43,6 +43,7 @@ export default function App() {
   const [copiedTpl, setCopiedTpl] = useState(null);
   const [stageModal, setStageModal] = useState(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
+  const [alertsPanelOpen, setAlertsPanelOpen] = useState(false);
   const [currentRole, setCurrentRole] = useState("user");
   const [roleLoading, setRoleLoading] = useState(true);
 
@@ -154,6 +155,13 @@ export default function App() {
   const finalStep = drivers.filter((d) => finalStepStages.includes(d.stage)).length;
 
   const { activeAlerts, dismissAlert } = useDriverAlerts(drivers);
+
+  const todayDateStr = new Date().toISOString().split("T")[0];
+  const pendingAlerts = drivers.filter((d) => {
+    if (d.stage === "trash" || d.stage === "fired") return false;
+    if (!d.nextAction) return false;
+    return d.nextAction <= todayDateStr;
+  }).sort((a, b) => (a.nextAction < b.nextAction ? -1 : 1));
 
   function handleAlertReschedule(driverId, newDate, newTime) {
     upd(driverId, { nextAction: newDate, nextActionTime: newTime });
@@ -623,6 +631,7 @@ export default function App() {
                   zIndex: 300, minWidth: 170, overflow: "hidden",
                 }}>
                   {[
+                    { icon: "⏰", label: pendingAlerts.length > 0 ? `Alerts (${pendingAlerts.length})` : "Alerts", action: () => { setAlertsPanelOpen(v => !v); setShowToolsMenu(false); } },
                     { icon: "📊", label: "Daily Report",  action: () => { setShowDailyReport(true); setShowToolsMenu(false); } },
                     { icon: "🔍", label: "Find Duplicates", action: () => { setShowDuplicates(true); setShowToolsMenu(false); } },
                     ...(currentRole === "root" || currentRole === "admin" ? [{
@@ -843,10 +852,12 @@ export default function App() {
       )}
 
       <DriverAlertsPanel
-        alerts={activeAlerts}
+        alerts={pendingAlerts}
         onReschedule={handleAlertReschedule}
         onDone={handleAlertDone}
-        onDismiss={dismissAlert}
+        onDriverClick={setSelectedId}
+        open={alertsPanelOpen}
+        onToggle={() => setAlertsPanelOpen(false)}
       />
     </div>
   );
