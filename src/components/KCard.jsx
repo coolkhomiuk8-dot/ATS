@@ -52,7 +52,12 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
           </span>
         )}
         {driver.jobType && (
-          <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 3, background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa" }}>
+          <span style={{
+            fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 3,
+            background: driver.jobType === "Conestoga" ? "#d0f5ec" : "#fff7ed",
+            color:      driver.jobType === "Conestoga" ? "#000000" : "#c2410c",
+            border:     `1px solid ${driver.jobType === "Conestoga" ? "#8dd5c3" : "#fed7aa"}`,
+          }}>
             {driver.jobType}
           </span>
         )}
