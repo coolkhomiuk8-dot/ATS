@@ -111,8 +111,9 @@ export const handler = async (event) => {
   const text   = msg.text.trim();
   const from   = msg.from?.username || msg.from?.first_name || "HR";
 
-  // Only handle messages from the HR chat
-  if (chatId !== String(HR_CHAT_ID)) return { statusCode: 200, body: "ok" };
+  // Only handle messages from the HR chat or owner's personal chat
+  const allowedChats = [String(HR_CHAT_ID), String(process.env.TELEGRAM_CHAT_ID)].filter(Boolean);
+  if (!allowedChats.includes(chatId)) return { statusCode: 200, body: "ok" };
 
   const db = getDb();
 
