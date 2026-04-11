@@ -1,0 +1,1654 @@
+{
+  "decisions": [
+    {
+      "situation": "Low rate load but no other options available",
+      "action": "take",
+      "reason": "Better to move poorly than stand still; need to keep driver moving",
+      "quote": "такий позор взяв на тексес, але краще погано їхати ніж добре стояти"
+    },
+    {
+      "situation": "Load to Arizona/California area at $2/mile after running 500 miles empty",
+      "action": "take",
+      "reason": "Need to cover deadhead miles and keep driver moving; can offer cheaper rates tomorrow",
+      "quote": "ми по-суті їдемо по 2 бакса, трохи перекриємо ті 500 миль, що вчора їхали пустими й завтра зможемо дати дешевші рейти"
+    },
+    {
+      "situation": "Not many loads available, considering taking whatever comes",
+      "action": "take",
+      "reason": "Market is slow, can't be too picky",
+      "quote": "грузів не дуже густо, будемо брати що попадеться, ен будемо сильно носом крутити"
+    },
+    {
+      "situation": "Small load for driver",
+      "action": "take",
+      "reason": "Good first miles for driver, small load is suitable",
+      "quote": "груз піде для водія перші милі норм"
+    },
+    {
+      "situation": "Low rate but no choice",
+      "action": "take",
+      "reason": "Little available, must take what's there",
+      "quote": "мало, але походу треба брати, ато вибору немає"
+    },
+    {
+      "situation": "Need to leave Florida before Friday",
+      "action": "take",
+      "reason": "Any money just to get out of bad location before weekend",
+      "quote": "любі гроші аби просто аиїхати"
+    },
+    {
+      "situation": "Load with suspicious new broker, factoring won't pass their loads",
+      "action": "reject",
+      "reason": "New broker, suspicious, factoring company won't approve",
+      "quote": "о бляха, щось підозріло, вони нові, й хз, факторинг ще їх груза не пропускає"
+    },
+    {
+      "situation": "Load that's meant for a van, not a box truck",
+      "action": "reject",
+      "reason": "Wrong equipment type",
+      "quote": "на бокс навряд дадуть, то груз для вена"
+    },
+    {
+      "situation": "Risky/sketchy load even if offered",
+      "action": "reject",
+      "reason": "Load is too risky",
+      "quote": "дуже стрьомний груз навіть яки й віддали"
+    },
+    {
+      "situation": "Owner gave $2/mile rate while truck sits idle since 4pm in a good location",
+      "action": "reject",
+      "reason": "Rate too low for good location; owner undervaluing the load",
+      "quote": "лол, овнер дав рейт\n\n4 вечора, трак досі стоїть, в ахеренну локацію дає по 2 бакса"
+    },
+    {
+      "situation": "Dallas location for Monday",
+      "action": "take",
+      "reason": "Good location allows accepting lower rates",
+      "quote": "бо даллас норм локація на мандей, то можна й дешевше"
+    },
+    {
+      "situation": "Load from Azusa CA to Electra TX, 2 pallets, 1600 lbs",
+      "action": "take",
+      "reason": "Decided to take confidently",
+      "quote": "можна брати сміливо"
+    },
+    {
+      "situation": "Broker initially refused a load, Roman decided to negotiate",
+      "action": "negotiate",
+      "reason": "Negotiated dimensions and extra $100 from broker who initially refused",
+      "quote": "я вирішив ризикнути й взяти той груз, що тобі ьрокер відмовив. вициганив в нього дімси та ще + 100$"
+    },
+    {
+      "situation": "Great load offered for $2300 but too wide to fit",
+      "action": "reject",
+      "reason": "Dimensions don't fit the truck",
+      "quote": "от бляха, афігенний груз дають за 2300 але по ширині не влізе("
+    },
+    {
+      "situation": "Suspicious/risky load appeared",
+      "action": "reject",
+      "reason": "Load looked risky/suspicious",
+      "quote": "стрьомний груз, ну його"
+    },
+    {
+      "situation": "Load to Colorado on Friday",
+      "action": "take",
+      "reason": "Risky but justified since no other options, can find load from there to Chicago next day",
+      "quote": "ну надіємось, особливо вибору немає, треба брати ризик, він оправданий"
+    },
+    {
+      "situation": "Rate of $700 offered by broker",
+      "action": "reject",
+      "reason": "Rate too low to accept",
+      "quote": "пишу шо 700 can't accept this rate"
+    },
+    {
+      "situation": "Rate of $1.20 per mile to South Dakota",
+      "action": "reject",
+      "reason": "Too cheap for South Dakota",
+      "quote": "по 1,2 це дешево в South Dakota?"
+    },
+    {
+      "situation": "Load with delivery on Monday at $1.65 RPM",
+      "action": "reject",
+      "reason": "Rate too low and delivery delayed to Monday",
+      "quote": "та не, ще й за такий рейт, то не серйозно"
+    },
+    {
+      "situation": "Broker offering rate of $1105, wouldn't go to $1150",
+      "action": "reject",
+      "reason": "Broker being cheap, wouldn't negotiate up",
+      "quote": "ай марозиться каже це якийсь рейт від фірми 1105 даже 1150 не захотів"
+    },
+    {
+      "situation": "Load from Taneytown MD, $2300, fits all parameters",
+      "action": "take",
+      "reason": "Good rate, dimensions fit, all parameters match",
+      "quote": "норм груз підходить по всіх параметрах"
+    },
+    {
+      "situation": "Partial loads appearing on board",
+      "action": "reject",
+      "reason": "Only interested in full loads",
+      "quote": "паршала не шукай, нас тут цікавлять тільки фулл лоади"
+    },
+    {
+      "situation": "Load offered at $1600",
+      "action": "take",
+      "reason": "Accepted the rate for the load",
+      "quote": "той груз за 1600"
+    },
+    {
+      "situation": "Broker offered $750",
+      "action": "reject",
+      "reason": "Rate too low, asked for $900 instead",
+      "quote": "вона давала 750$"
+    },
+    {
+      "situation": "Load with 169 inches length",
+      "action": "reject",
+      "reason": "Too risky due to dimensions",
+      "quote": "я вирішив той не брати, а то то там 169 в довжину не ризикнув"
+    },
+    {
+      "situation": "Asked $900 from broker",
+      "action": "negotiate",
+      "reason": "Aggressive ask but worth taking if agreed",
+      "quote": "ну я запитав 900, то трохи нагло, але ящо дасть то певно треба брати"
+    },
+    {
+      "situation": "Load with bad drop location",
+      "action": "reject",
+      "reason": "Drop location is bad",
+      "quote": "дроп локація галіма"
+    },
+    {
+      "situation": "Load needing $4300 for 26' truck",
+      "action": "reject",
+      "reason": "Too cheap for the truck type",
+      "quote": "дешево, тоеба 4300"
+    },
+    {
+      "situation": "Rate of $1600 offered, counter at $1700",
+      "action": "negotiate",
+      "reason": "Heavy load warrants higher rate",
+      "quote": "дай 1700$"
+    },
+    {
+      "situation": "717 miles at $950 rate",
+      "action": "reject",
+      "reason": "Bad location",
+      "quote": "та не, то погана локація"
+    },
+    {
+      "situation": "Load with good deadhead but low rate",
+      "action": "reject",
+      "reason": "Decent rate only without deadhead",
+      "quote": "єслі б не було дедхеду то прилічний рейт)"
+    },
+    {
+      "situation": "Load that doesn't fit trucks",
+      "action": "reject",
+      "reason": "Trucks can't accommodate ramp loading",
+      "quote": "неа, рампами нас не загрузиш"
+    },
+    {
+      "situation": "Suspicious/sketchy load",
+      "action": "reject",
+      "reason": "Load looks sketchy",
+      "quote": "груз стрьомний"
+    },
+    {
+      "situation": "Load pricing too low for 26ft truck",
+      "action": "reject",
+      "reason": "Too cheap for 26ft truck",
+      "quote": "для 26 фіт то трохи було дешево"
+    },
+    {
+      "situation": "Load at 1.25 per mile posted",
+      "action": "negotiate",
+      "reason": "Need to negotiate up to around 1.6",
+      "quote": "1,25 per/mile запощено нори просити десь по 1.6 ?"
+    },
+    {
+      "situation": "Going slightly into negative on a load",
+      "action": "take",
+      "reason": "Need to deduct some dollars to cover costs",
+      "quote": "ми трохи в мінус йдемо то якщо що треба буде задедактити кілька баксів, щоб покрити витрати на такому вантажі"
+    },
+    {
+      "situation": "Load offered at $1800",
+      "action": "reject",
+      "reason": "Too cheap, plus need to deduct $100 from driver's rate",
+      "quote": "неа, дешево"
+    },
+    {
+      "situation": "Load declined because system shows 0 trucks",
+      "action": "reject",
+      "reason": "Broker sees company has 0 trucks, can't take the load",
+      "quote": "отакий грузік був, відмовили, бо в нас 0 траків показує"
+    },
+    {
+      "situation": "Load on 26ft that was cheap but far and passes through home",
+      "action": "take",
+      "reason": "Driver agreed because it was long distance and passed through home",
+      "quote": "той груз, що я дав на 26 фіт насправді дуже дешевий, але він погодився бо він далекий та через дім"
+    },
+    {
+      "situation": "Load at 2.21 per mile",
+      "action": "take",
+      "reason": "Considered a top load",
+      "quote": "це топ груз"
+    },
+    {
+      "situation": "Multi-drop load from Laredo TX to multiple FL destinations",
+      "action": "take",
+      "reason": "Secured after long negotiation with broker",
+      "quote": "Load is yours. Will get it today team"
+    },
+    {
+      "situation": "Load at 1.37 per mile for idle driver",
+      "action": "take",
+      "reason": "Not great rate but driver was idle too long and needed to relocate from bad location",
+      "quote": "1.37 більш меньше не поганий рейт , плюс водій вже довго стояв треба дати йому роботу"
+    },
+    {
+      "situation": "Florida to dollar-per-mile rate",
+      "action": "reject",
+      "reason": "Not profitable to drive to Florida at $1/mile",
+      "quote": "не вигідно їхати на флориду по долару"
+    },
+    {
+      "situation": "Load from Richardson TX to S Bend IN, $1300 for 980 miles",
+      "action": "reject",
+      "reason": "Rate too low per mile",
+      "quote": "й трохи дешево)"
+    },
+    {
+      "situation": "Load confirmed at $275 with strict pickup/delivery times",
+      "action": "take",
+      "reason": "Short haul accepted to keep driver working",
+      "quote": "Thanks for the Help - Confirmed for $275 Pickup must be 4 pm - 5 pm"
+    },
+    {
+      "situation": "$700 load from Collegeville PA to Franklin MA, 670 lbs",
+      "action": "take",
+      "reason": "Price considered normal",
+      "quote": "ціна норм"
+    },
+    {
+      "situation": "Partial load at $1800 from Oregon",
+      "action": "take",
+      "reason": "Take it and add partials along the way tomorrow",
+      "quote": "так візьми його а тоді ще паршалами догрузиш завтра"
+    },
+    {
+      "situation": "Load for $850, 541 total miles",
+      "action": "negotiate",
+      "reason": "Dispatcher asked if $850 is acceptable, later offered $800 as best price",
+      "quote": "Якщо дасть 850 можна брати ?"
+    },
+    {
+      "situation": "1 ubox, 8 feet, posted rate $1000",
+      "action": "negotiate",
+      "reason": "Dispatcher wants to ask for $1200 on a $1000 posted rate",
+      "quote": "1 ubox. 8 feet. 1000 запощений рейт, думаю 1200 просити"
+    },
+    {
+      "situation": "Load to Colorado",
+      "action": "take",
+      "reason": "Taken but considered a bad load",
+      "quote": "взяв лайно груз на колорадо"
+    },
+    {
+      "situation": "FL to NY load, 1085 mi, $1700 posted rate",
+      "action": "take",
+      "reason": "Load posted with equipment requirements (straps, blankets, lift gate, E-tracks)",
+      "quote": "Posted rate: $1,700.00"
+    },
+    {
+      "situation": "$2000 load with weight concerns",
+      "action": "negotiate",
+      "reason": "Broker offering $2000, waiting for MC confirmation, but weight is uncertain",
+      "quote": "2000 $ наче дає (чекає МС) . Єдине з вагою трішки є сумнів"
+    },
+    {
+      "situation": "Kentucky load pricing",
+      "action": "negotiate",
+      "reason": "Manager advises not to go too cheap on Kentucky",
+      "quote": "кентаки по ситуації але бажано не дуже дешево)"
+    },
+    {
+      "situation": "Load for Petro on Monday at $1.45/mile",
+      "action": "take",
+      "reason": "Presented as option for Monday, low RPM but accepted context",
+      "quote": "Для Петра на понеділок 1,45$/mile"
+    },
+    {
+      "situation": "Need to move driver, rates are bad",
+      "action": "take",
+      "reason": "Manager says can go at $1/mile just to keep moving",
+      "quote": "можна їхати по долару"
+    },
+    {
+      "situation": "Harry's truck - deciding whether to load",
+      "action": "reject",
+      "reason": "Decided to do maintenance instead of loading",
+      "quote": "Такс, гаррі не грузимо, будемо робити йому профілактику"
+    },
+    {
+      "situation": "Two loads booked at $1/mile, resulted in cancel and delay",
+      "action": "take",
+      "reason": "Bad outcome - cancellation and standstill from cheap loads",
+      "quote": "Ото набукали, 2 груза по баксу, кенсел та простой"
+    },
+    {
+      "situation": "Bogdan offered $2200 on a load",
+      "action": "negotiate",
+      "reason": "Dispatcher asking whether to accept the $2200 offer",
+      "quote": "Богдан дав 2200 на цей вантаж ставити?"
+    },
+    {
+      "situation": "Broker offering low rate, told to push for $1000",
+      "action": "negotiate",
+      "reason": "Manager instructs to tell broker no and demand $1000",
+      "quote": "може віддадуть й скажи брокеру що нє, 1000 треба"
+    },
+    {
+      "situation": "Sylectus platform loads - low value",
+      "action": "reject",
+      "reason": "Decided to stop using Sylectus as very few loads were booked from it",
+      "quote": "поки селектус не ставимо, просто немає сенсу на нього витрачати час, звідти ми дуже мало вантажів забрали"
+    },
+    {
+      "situation": "Price on a load slightly increased, broker suggested taking it",
+      "action": "reject",
+      "reason": "Cancelled the bid despite price increase",
+      "quote": "прийшло сповіщення що типу ціна трошки піднялася типу беріть якщо хочете / я скасував бід"
+    },
+    {
+      "situation": "Accidentally bid on a hotshot load with a box truck",
+      "action": "take",
+      "reason": "Broker accepted box truck and paid significantly better than usual box truck rates in that area",
+      "quote": "Я сьогодні випадково написав на груз що постився на хотшот й брокерша віддала його хоча я сказав що в нас бокс трак, заплатили краще значно ніж платили на бокс траки в тому районі"
+    },
+    {
+      "situation": "Load with RPM not high but end of week",
+      "action": "take",
+      "reason": "Worth taking to chill until end of week",
+      "quote": "RPM не високи, але раз до кінця тижня взяти та й чілити то воно того вартує"
+    },
+    {
+      "situation": "Load at $1/mile even",
+      "action": "take",
+      "reason": "A partial load can supplement the revenue",
+      "quote": "навіть якщо груз по баксу то паршал вас легко виручить"
+    },
+    {
+      "situation": "Driver was offered only 2 pallets at pickup (Tipsha)",
+      "action": "reject",
+      "reason": "Must not leave with only 2 pallets, they must fully load",
+      "quote": "дзвонив казав ні в якому разі не їхати з 2 палетами / мають загрузити"
+    },
+    {
+      "situation": "Deciding whether to work with a specific owner operator",
+      "action": "reject",
+      "reason": "No longer working with that owner, finishing last load and releasing",
+      "quote": "Ми більше не працюємо з цим овнером / не давайте йому квоути, останній груз веземо та звільняємо"
+    },
+    {
+      "situation": "Load from Eatonton GA to Pooler GA, broker offering $350 then $400",
+      "action": "negotiate",
+      "reason": "Broker definitely has more money on the load and is looking for someone cheaper",
+      "quote": "після 350 $ best пішов 400$ best / та навряд, точно має він ці гроші на грузі, шукає когсь дешевше"
+    },
+    {
+      "situation": "Friday loads — opportunity for lower-priced long hauls",
+      "action": "negotiate",
+      "reason": "On Fridays you can get lower prices from brokers on long-distance loads",
+      "quote": "й сьогодні п'ятниця, ви можете отримати від нього нижчі ціни на дальні груза"
+    },
+    {
+      "situation": "Trying to book a good load for $4k",
+      "action": "negotiate",
+      "reason": "Attempting to secure a high-value load",
+      "quote": "пробую забрати за 4к"
+    },
+    {
+      "situation": "Load at $1.82 RPM offered",
+      "action": "take",
+      "reason": "Considered a normal/acceptable rate by the team",
+      "quote": "по 1,82 можна сюди їхати ? / норм рейт"
+    },
+    {
+      "situation": "Broker offered a load that doesn't factor",
+      "action": "negotiate",
+      "reason": "Can take non-factored loads only in one specific format",
+      "quote": "ми можемо брати груз, якщо він не факториться, але тільки в одному єдиному форматі"
+    },
+    {
+      "situation": "Load from a broker that cheats/scams",
+      "action": "reject",
+      "reason": "Broker is dishonest, they cheat on loads",
+      "quote": "з цими поцами краще більше грузи не брати, вони намахують"
+    },
+    {
+      "situation": "Short haul $300 for ~50 miles",
+      "action": "take",
+      "reason": "High RPM short load, considered interesting",
+      "quote": "300$ за 50 миль десь"
+    },
+    {
+      "situation": "Loads going to New York",
+      "action": "negotiate",
+      "reason": "Must get at least $2/mile for NY loads",
+      "quote": "В Ню йорк по 2 не меньше треба їхати"
+    },
+    {
+      "situation": "Top load found in the area before competitors could grab it",
+      "action": "take",
+      "reason": "Excellent load, important to act fast before other companies take it",
+      "quote": "аж руки спотіли, топ груз в цій ерії / добре що дивився) Міг якийсь фраєрок тільки з чужої компанії забрати з під носа"
+    },
+    {
+      "situation": "First load with Ryans broker who is problematic",
+      "action": "take",
+      "reason": "Don't want to confront broker on first load, will absorb cost difference internally",
+      "quote": "але на раянів наїзджати на першому грузі не будем / якщо що то зріжемо кілька баксів з нашого рейта"
+    },
+    {
+      "situation": "Load with $4200 rate but 370 miles deadhead, resulting in $1.4 RPM",
+      "action": "reject",
+      "reason": "Too much deadhead making the RPM too low at $1.4",
+      "quote": "крутий груз- в мене дедхед 370 мл-4200 булоб по 1.4 ))"
+    },
+    {
+      "situation": "Load posted at $2000, broker offering $1800",
+      "action": "reject",
+      "reason": "Broker offering significantly less than posted rate",
+      "quote": "даже й не хочу питати) запощено 2000$ а дає 1800"
+    },
+    {
+      "situation": "Broker offering $900, dispatcher thinks can get $1000",
+      "action": "negotiate",
+      "reason": "Trying to push rate up from $900 to $1000",
+      "quote": "900$ дає думаю можна за 1000 забрати"
+    },
+    {
+      "situation": "Load priced around $850-900",
+      "action": "take",
+      "reason": "Worth taking at that price point",
+      "quote": "за 900 думаю варто брати, якщо дадуть або 850"
+    },
+    {
+      "situation": "Broker offering $600 resulting in $1.2 RPM",
+      "action": "negotiate",
+      "reason": "Dispatcher considering if it's worth it or should wait for something better",
+      "quote": "Надумав 600$ каже дасть 1,2 виходить. Звідти мені легше буде до Клівленда доїхати ? Чи почекати шось краще ?"
+    },
+    {
+      "situation": "D-rated broker load",
+      "action": "reject",
+      "reason": "Policy not to take loads from D-rated brokers",
+      "quote": "D рейтетд бркоерів не беремо якщо це не критично"
+    },
+    {
+      "situation": "Driver Ronald had issue with load, company considering covering cost from own rate",
+      "action": "take",
+      "reason": "Good driver worth keeping, company willing to absorb cost",
+      "quote": "Такс, я з Рональдом акуратно вчора поговорив, він норм водій, не хітілось би його втрачати через дрібниці, якщо нам на заплатять що треба то ми йому покриємо з нашого рейта"
+    },
+    {
+      "situation": "Broker requiring $275k insurance for high-value cargo",
+      "action": "negotiate",
+      "reason": "Broker needs extra insurance coverage beyond standard $100k",
+      "quote": "він сказав типу потрібна звичайна страховка на 100к+ 175к через вартість вантажу"
+    },
+    {
+      "situation": "Misbehaving broker/driver situation, broker needs to apologize",
+      "action": "reject",
+      "reason": "Not offering loads until broker provides evidence and apologizes",
+      "quote": "наразі йому груза не пропонуємо поки він не надасть нам всі докази та не вибачиться за свою поведінку"
+    },
+    {
+      "situation": "Load with $1.4/mile rate from Lumberton, NC for truck 216",
+      "action": "negotiate",
+      "reason": "Rate too low, asking dispatchers to look at it",
+      "quote": "216му треба щось з Lumberton, NC, попросили по $1.4, подивіться будь ласка"
+    },
+    {
+      "situation": "Load with rate $1.28",
+      "action": "reject",
+      "reason": "Rate too low",
+      "quote": "да, там рейт 1,28"
+    },
+    {
+      "situation": "Broker cancelled load because driver Slavik doesn't speak English",
+      "action": "reject",
+      "reason": "Broker didn't want to risk customer relationship with non-English speaking driver",
+      "quote": "Відмінив груз бо набрав Славіка, а він взагалі не говорить англійською. Я сказав що трохи розмовляє. А він типу не хоче відносини з кастомером портити і відправляти водіїв які нічого не розуміють англійською"
+    },
+    {
+      "situation": "Load requiring nailed-to-floor securement",
+      "action": "reject",
+      "reason": "Only worth taking if it's an extremely expensive/high-paying load",
+      "quote": "Роман сказав що в теорії можемо але це має бути овер дорогий груз"
+    },
+    {
+      "situation": "TQL loads",
+      "action": "reject",
+      "reason": "Company policy not to take TQL loads currently",
+      "quote": "А грузи TQL ми поки не беремо"
+    },
+    {
+      "situation": "Friday load strategy - need 1000+ mile loads",
+      "action": "take",
+      "reason": "Priority on Fridays is long-haul loads to maximize weekend productivity",
+      "quote": "Сьогодні пʼятниця в пріоритеті груза на 1000+ миль"
+    },
+    {
+      "situation": "Short 300-400 mile loads for weekend",
+      "action": "reject",
+      "reason": "Not worth sending drivers on short runs over the weekend",
+      "quote": "Та тоже не хочеться шось знов на 300-400 миль брати їм на вихідні"
+    },
+    {
+      "situation": "Bad load on Friday, need to find something better",
+      "action": "reject",
+      "reason": "Poor Friday load, need to hustle for better option",
+      "quote": "то це поганий груз на п'ятницю"
+    },
+    {
+      "situation": "Broker offering $800 for a load",
+      "action": "negotiate",
+      "reason": "Dispatcher asking team what price is acceptable",
+      "quote": "Я думаєте за скільки можна таке брати. Дає 800"
+    },
+    {
+      "situation": "If hard to find loads, lower price to avoid truck sitting idle over weekend",
+      "action": "negotiate",
+      "reason": "Truck downtime costs $150/day per driver, better to take cheaper load than sit",
+      "quote": "якщо тяжко то збийте ціну, я не зможу допомогти вам, а водіям не треба стояти всі вихідні, 1 простой трака це збитки й - 150$ водію за простой"
+    },
+    {
+      "situation": "Trucks need to move even if the rate is a bit lower",
+      "action": "take",
+      "reason": "Trucks must keep moving, even at a slightly cheaper rate",
+      "quote": "ще не дуже пізно але вони мусять поїхати, навіть якщо дешевше трохи"
+    },
+    {
+      "situation": "Evaluating whether to take a load going to a bad location (Dallas, TX)",
+      "action": "negotiate",
+      "reason": "Dallas is risky - may not have loads available for backhaul, pure gamble",
+      "quote": "Це чисто рулетка. повезе не повезе. Тут в Даласі може не бути вантажів"
+    },
+    {
+      "situation": "Considering a load with a so-so rate but good Ohio destination for the weekend",
+      "action": "take",
+      "reason": "A good Ohio load on the weekend would be a smart move despite mediocre rate",
+      "quote": "трошки соу соу, але якщо гарний груз огайо взяти на вихідні, то це буде нормальним кроком"
+    },
+    {
+      "situation": "Certain brokers flagged as problematic",
+      "action": "reject",
+      "reason": "Skip problematic brokers for now",
+      "quote": "поки скіп таких брокерів"
+    },
+    {
+      "situation": "Load with delivery to military base (carousel)",
+      "action": "reject",
+      "reason": "Delivery to military base is problematic",
+      "quote": "оце не дзвоніть, то керсел, доставка на мілітарі"
+    },
+    {
+      "situation": "Broker called asking if still interested in a load, price likely dropped to $1500",
+      "action": "negotiate",
+      "reason": "Price is likely no longer current/attractive at $1500",
+      "quote": "думаю що так, але схоже ціна не актуальна буде в 1500"
+    },
+    {
+      "situation": "Choosing between going to Texas vs staying in Ohio",
+      "action": "reject",
+      "reason": "Better to deadhead to a good location like Ohio than go to Texas with bad outbound options",
+      "quote": "просто виїхати в правильну локацію і краще стояти десь в Огайо день а не їхати в Техас"
+    }
+  ],
+  "pricing_rules": [
+    "Minimum rate target is around $1.40-$1.50 per mile",
+    "In California, rates around $1/mile may be acceptable",
+    "Dallas is a good location on Monday, so can accept cheaper rates",
+    "From Florida it's hardest to leave - take any money to get out",
+    "Short local loads in the evening can pay $400-$700",
+    "When stuck in bad location before Friday, take any rate to move",
+    "Owner offering $2/mile in a good location is considered too low",
+    "RPM of ~$3.03 for short hauls (e.g. Erie PA to Lawrence MA) is a golden load range",
+    "Rate around $2/mile to Utah is a reasonable ask",
+    "1300 for 1045 miles (~$1.24/mile) is considered weak but may need to take it",
+    "Below $1.70 RPM is very cheap - minimum $1.70 for such loads",
+    "$1.20 RPM to South Dakota is too cheap",
+    "$1.40 RPM is acceptable only if load is 1000+ miles, and even then think twice",
+    "$1500 is market price for certain mid-range loads",
+    "$1.65 RPM with Monday delivery is not serious/too low",
+    "When offering rate to broker, 95% chance they give the load",
+    "For owner-operators: take load for e.g. $2000 and sell for $1600 minimum, keep 25% of profit, but must be at least 10% profit from total load value",
+    "Alternative for owner-operators: 2% from gross like company trucks",
+    "Average RPM for hotshot is 1.5-2.5",
+    "For 26ft truck, current loads run close to $2 RPM",
+    "Below $4300 is too cheap for certain 26ft loads",
+    "If posted at 1.25 per/mile, negotiate up to around 1.6",
+    "1.46 per/mile is noted as a reference point",
+    "Deadhead must be factored into rate evaluation",
+    "Delivery timing (e.g., Tuesday delivery) affects rate assessment",
+    "Below $1.80 RPM is considered cheap/undesirable",
+    "$1800 for a load requiring $100 deduction is too cheap",
+    "Florida outbound loads at $1/mile are not profitable",
+    "Loads 1000+ miles preferred",
+    "Target minimum around $700+ for NJ area loads",
+    "2.21 per mile is considered a top rate",
+    "1.37 per mile is acceptable only when driver has been idle too long",
+    "6000 lbs is maximum critical weight, lighter is better",
+    "Canada rates are normal/good",
+    "Rate should cover the cost of return trip",
+    "$1/mile is the absolute minimum, only to reposition trucks",
+    "Below $1.45/mile is considered low",
+    "$1.58/mile noted as a specific rate reference point",
+    "Always add 10% markup to broker's rate",
+    "Don't go too cheap on Kentucky loads",
+    "Around $100 per load is acceptable for short/small loads",
+    "$1/mile loads lead to cancellations and delays - risky",
+    "Spot rate to Nebraska is $1.11 RPM — considered low, carriers don't want to go",
+    "Below $1/mile rates are common but bad — 'навіть по долару немає шоб в кращу локацію переїхати'",
+    "Partials can supplement low RPM loads — 'навіть якщо груз по баксу то паршал вас легко виручить'",
+    "On Fridays brokers may accept lower prices on long-distance loads",
+    "Bogdan's truck max weight is 5000-5500 lbs, own trucks can take 6000 lbs",
+    "Hotshot loads can pay better for box trucks — worth calling on them",
+    "$1.82 RPM is considered a normal/acceptable rate",
+    "New York loads must be at least $2/mile",
+    "$300 for 50 miles (~$6/mile) is a good short haul rate",
+    "$500 for 1000 miles ($0.50/mile) is very low — noted as a data point",
+    "Target gross revenue per truck is $5-6K per week",
+    "Day when load is dropped off does not count as a working day",
+    "Will cut a few bucks from own rate rather than fight with a new broker on first load",
+    "Minimum rate is $1.5 RPM",
+    "D-rated brokers are not acceptable unless critical",
+    "Yellow-rated brokers are not acceptable",
+    "Ryan (broker) always sends first rate minus $100",
+    "$1.4 RPM is considered too low (not worth it with deadhead)",
+    "$1.2 RPM is questionable, may need to wait for better",
+    "Below $1.80 RPM is implied bad based on context of rejections",
+    "$1.28 RPM is too low - load rejected at that rate",
+    "$1.4 RPM is questionable - needs review",
+    "Truck downtime costs -$150/day per driver",
+    "On Fridays, prioritize loads 1000+ miles",
+    "300-400 mile loads on weekends are undesirable",
+    "Nailed-to-floor securement loads must be extremely high-paying to justify",
+    "If struggling to find loads, lower price rather than let trucks sit idle over weekend",
+    "Name your own rate to brokers - they often agree: 'Кажеш свій рейт вони часто соглашаються'",
+    "Target RPM is $1.30-$1.50+ per mile; $1.20 RPM only covers costs and is not profitable",
+    "Competitors with similar brokers achieve $1.50-$1.70 RPM per week; team currently at ~$1.20 RPM",
+    "Partials (partial loads) significantly improve RPM - but hard to get when loading at 2-6 PM",
+    "Some loads offered at $1/mile are noted as bad, especially to poor locations",
+    "Broker compensation for extras must be added to the rate confirmation document"
+  ],
+  "broker_notes": [
+    {
+      "broker": "Unknown broker (ghosted)",
+      "note": "Broker ghosted/went cold on them",
+      "quote": "бачу, що брокер відморозився, парцюємо далі"
+    },
+    {
+      "broker": "Unknown broker (dishonest)",
+      "note": "Dishonest broker, not how business should be done",
+      "quote": "вот звичайно не чесний брокер, так діла не ведуться"
+    },
+    {
+      "broker": "Unknown broker (holding)",
+      "note": "Broker is holding them on a load, causing delays",
+      "quote": "поки пауза, бо брокер холдить нас по цьому грузу"
+    },
+    {
+      "broker": "Unknown broker (very strange)",
+      "note": "Very strange broker behavior",
+      "quote": "дуже йдуже дивний брокер"
+    },
+    {
+      "broker": "Unknown broker (slow/dumb)",
+      "note": "Broker is slow, doesn't learn",
+      "quote": "брокер апоходу нічого не вчить в цьому житті"
+    },
+    {
+      "broker": "Unknown broker (new, won't approve MC for 2 months)",
+      "note": "Won't work with them, says call back in 2 months; first time seeing this broker",
+      "quote": "не признаються, кажуть наберіть нам ще за 2 місяці(\n\nЯ вперше бачу цього брокера"
+    },
+    {
+      "broker": "CCS Logistics Inc",
+      "note": "Normal broker, load from Erie PA to Lawrence MA at good rate",
+      "quote": "є, норм брокер"
+    },
+    {
+      "broker": "Unknown broker (didn't check truck size)",
+      "note": "Broker may not have noticed they have a 14ft truck",
+      "quote": "я так розумію брокер дурачок ? чи не побачив шо у нас 14 фіт трак ?"
+    },
+    {
+      "broker": "Unknown broker (new/suspicious)",
+      "note": "Suspicious new broker, factoring won't pass their loads",
+      "quote": "о бляха, щось підозріло, вони нові, й хз, факторинг ще їх груза не пропускає"
+    },
+    {
+      "broker": "Total Quality",
+      "note": "Had unresolved problem, told to call back in a few weeks",
+      "quote": "тотал кволіті, да, я не зміг пофіксити з ними проблему, сказали пізніше набрати за кілька тижнів"
+    },
+    {
+      "broker": "Nationwide Logistics LLC",
+      "note": "Load from Parsippany NJ to Dubuque IA, 960 miles, 5370 lbs",
+      "quote": "Nationwide Logistics LLC"
+    },
+    {
+      "broker": "General observation",
+      "note": "Brokers are cheap - they offer low rates nobody will take; also experienced brokers can see through dispatchers",
+      "quote": "вони чіпарі, ніхто такий груз не візьме"
+    },
+    {
+      "broker": "General observation",
+      "note": "Some brokers change dimensions when you ask, likely to bait and switch",
+      "quote": "блін це якийсь прикол кожен раз коли питаю за груз який підходить дімси то вони одразу міняють на інші"
+    },
+    {
+      "broker": "General observation",
+      "note": "Don't be afraid to talk to brokers - they're people like us",
+      "quote": "не знаю, не боюся просто говорити) брокери такі ж люди як ми"
+    },
+    {
+      "broker": "Дніпро Логістікс (Дмитрий Демишев)",
+      "note": "They double-broker loads, avoid",
+      "quote": "не, то дніпро логістікс є такий тіпуля Дмитрий Демишев, вони даблброкерять груза"
+    },
+    {
+      "broker": "CH Robinson",
+      "note": "Has a separate board, sometimes used for searching loads",
+      "quote": "є такий брокер Сіейч робінсон, є в них окремий борд, андрій ще там іноді дивиться"
+    },
+    {
+      "broker": "CH Robinson (C.H.)",
+      "note": "Need minimum 10 loads before accessing better/bigger loads",
+      "quote": "на сіейчі треба понабирати хоча б 10 грузів шоб потом можна було жирнякові брати"
+    },
+    {
+      "broker": "Unnamed broker",
+      "note": "Rejected company after MC check",
+      "quote": "Брокер сказала canºt use your company 😭 після перевірки МС нашого"
+    },
+    {
+      "broker": "Core Logistics",
+      "note": "Had a load, need to send POD",
+      "quote": "пришли мені будь-ласка БоЛ від Core Logistics"
+    },
+    {
+      "broker": "Unnamed broker",
+      "note": "Wouldn't share rate because not set up with them",
+      "quote": "Міг би нам підійти але не захотів казати рейт бо ми не засетаплені з ними"
+    },
+    {
+      "broker": "Echo",
+      "note": "MC has been flagged multiple times, needs review - problematic broker relationship",
+      "quote": "Again, for the third time this week. Second time today. Your MC has been flagged and needs a review."
+    },
+    {
+      "broker": "Landstar",
+      "note": "Always verify loads from Landstar brokers",
+      "quote": "груза з лендстарами завжди верифіковуємо!!!!"
+    },
+    {
+      "broker": "Giltner Logistic Services Inc",
+      "note": "Load offered was slightly cheap at $1300 for 980 miles",
+      "quote": "й трохи дешево)"
+    },
+    {
+      "broker": "Unnamed broker",
+      "note": "Rejected carrier due to insufficient load history together",
+      "quote": "відписали що мало з ними грузів робили, а кастомер вимагає перевіреного керріера"
+    },
+    {
+      "broker": "Unnamed broker on hot load",
+      "note": "Hot loads get many simultaneous calls from carriers",
+      "quote": "дзвонив тільки шо на вантаж ,з 5 разу взяли трубку, сказав 25 дзвінків одночасно було"
+    },
+    {
+      "broker": "D & L Transport Llc",
+      "note": "Used for FL to NY load, Sioux Falls SD based, posted $1700 for 1085 mi",
+      "quote": "D & L Transport Llc in Sioux Falls, SD"
+    },
+    {
+      "broker": "Axle Logistics LLC",
+      "note": "Posted Atlanta GA to Theodore AL, 339 mi, $500, 380 lbs",
+      "quote": "Company Axle Logistics LLC"
+    },
+    {
+      "broker": "Simple Logistics Solutions",
+      "note": "Edison NJ to Pompano Beach FL, 1236 mi, 2100 lbs",
+      "quote": "Company Simple Logistics Solutions"
+    },
+    {
+      "broker": "FITZMARK, INC",
+      "note": "Mentioned as a load source, manager asked if anyone is taking their load",
+      "quote": "хтось бере груз з FITZMARK, INC?"
+    },
+    {
+      "broker": "MILHOUSE",
+      "note": "Broker board access provided, considered additional load source",
+      "quote": "MILHOUSE  info@212expedite.com  Kyiv2024!"
+    },
+    {
+      "broker": "NTG",
+      "note": "Broker board access provided",
+      "quote": "NTG  info@212expedite.com  Kyiv2024!"
+    },
+    {
+      "broker": "ARRIVE",
+      "note": "Described as a big broker",
+      "quote": "але це великий брокер"
+    },
+    {
+      "broker": "Unknown broker",
+      "note": "Refused to give load because company had an old/changed email - unusual behavior",
+      "quote": "я вперша бачу такого брокера щоб не віддали бо був старий емейл змінений"
+    },
+    {
+      "broker": "Midex (something)",
+      "note": "Newly set up broker",
+      "quote": "я засетапив брокера Мідекс щось там"
+    },
+    {
+      "broker": "King of Freight",
+      "note": "Possibly problematic — associated with $1300 load issue",
+      "quote": "кінг оф фрейт той що за 1300?"
+    },
+    {
+      "broker": "Pinacle",
+      "note": "Used by dispatcher, confirmed load with them",
+      "quote": "да, але брокер був Pinacle"
+    },
+    {
+      "broker": "Sureway Transportation Company",
+      "note": "Easy load, good opportunity — Warsaw IN to Bohemia NY, $1200 for 749 miles",
+      "quote": "ізі лоад"
+    },
+    {
+      "broker": "C H Robinson (Navisphere)",
+      "note": "Must update all data on their website or company rating drops and loads get denied",
+      "quote": "що якщо туписо то падає наш рейтинг в системі й деякі груза не будуть давати"
+    },
+    {
+      "broker": "Freight Tec Management Group Inc",
+      "note": "Load posted Bolingbrook IL to Knox PA, 481 miles, told to try calling",
+      "quote": "попробуй набрати"
+    },
+    {
+      "broker": "DestiNATION Transport, LLC",
+      "note": "Order 9285029 handled",
+      "quote": "DestiNATION Transport, LLC Rate Confirmation for order: 9285029"
+    },
+    {
+      "broker": "Sims",
+      "note": "Don't want to work with the company",
+      "quote": "але Сімси не хочуть з нами їхати"
+    },
+    {
+      "broker": "Indian brokers (general)",
+      "note": "Aggressive competitors and sometimes deceptive",
+      "quote": "той індус надурив за груз / там вже індуси штурмують цей груз полюбому"
+    },
+    {
+      "broker": "Unnamed (scam broker)",
+      "note": "Blacklisted — they cheat and should not be used again",
+      "quote": "з цими поцами краще більше грузи не брати, вони намахують"
+    },
+    {
+      "broker": "Ryans (Ryan Transportation)",
+      "note": "Picky, require load history before giving loads; problematic but worth building relationship; don't push back on first load",
+      "quote": "Оце з Раянами напостой така тєма. З вами всьо ок ми б вам дали груз але в Вас немає історії, то наступний раз"
+    },
+    {
+      "broker": "Landstar",
+      "note": "Active broker that sends loads, used regularly",
+      "quote": "лендстар якийсь груз прислав"
+    },
+    {
+      "broker": "Flock Freight",
+      "note": "Team checking if they are set up with this broker",
+      "quote": "А ми засетаплені з Флок фрейт ?"
+    },
+    {
+      "broker": "Mode Transportation LLC",
+      "note": "Team inquiring about experience with them; rate was shared",
+      "quote": "Хтось працював з цим брокером Mode Transportation Llc"
+    },
+    {
+      "broker": "Locktheload",
+      "note": "Mentioned as a broker source, team familiar with them",
+      "quote": "Чуваки з Locktheload?"
+    },
+    {
+      "broker": "Unnamed broker who removed them from load",
+      "note": "Negative — removed company from load without explanation",
+      "quote": "даже не обяснив чього він зняв нас з грузу козел"
+    },
+    {
+      "broker": "Unnamed broker (positive)",
+      "note": "Good broker, team has taken loads from them before",
+      "quote": "Це норм брокер наче / Я в них брав груза / крутий брокер"
+    },
+    {
+      "broker": "Ryan",
+      "note": "Always lowballs - sends rate $100 less than actual",
+      "quote": "раян завжди присилає рейт перший -100 баксів"
+    },
+    {
+      "broker": "Landstar",
+      "note": "Double brokered a load through CH Robinson",
+      "quote": "це лендстари цей груз дабл брокнули в СН"
+    },
+    {
+      "broker": "AM TRANS Expedite",
+      "note": "Phone number out of service, unreachable",
+      "quote": "там в рейтконі номер не обслуговуєтся говорить"
+    },
+    {
+      "broker": "Odyssey",
+      "note": "Broker who booked the load was fired, need to establish new contact",
+      "quote": "а то брокера який букав груз звільнили"
+    },
+    {
+      "broker": "ORD (Selectus)",
+      "note": "Rating dropped to D, previously used twice but no longer acceptable",
+      "quote": "зверніть увагу, спав рейтинг в ORD він на силектусі, брали з ними 2 раза"
+    },
+    {
+      "broker": "Flock Freight",
+      "note": "Need to get set up with them before taking loads",
+      "quote": "Флок Фрейгт нам не дають груза?"
+    },
+    {
+      "broker": "Maven",
+      "note": "Load Dallas-Lubbock, Indian broker contact",
+      "quote": "Maven ex273 Load Dallas-Lubbock (indus)"
+    },
+    {
+      "broker": "Unknown broker (tough negotiator)",
+      "note": "Negotiates hard down to the last $10, good lesson for everyone",
+      "quote": "класно брокер торгується, жостко та до кінця, знає що 10 баксів не зіграють ролі, але собі збрив, всім наука"
+    },
+    {
+      "broker": "Unknown broker (verified)",
+      "note": "Seemed suspicious, had to call company to verify broker identity",
+      "quote": "я аж засумнівався, подзвонив в їх компанію верифікувати брокера"
+    },
+    {
+      "broker": "NTG",
+      "note": "Used for load Southaven MS to Lakeside CA",
+      "quote": "NTG Rate Confirmation: Load # 8246774 Southaven, MS to Lakeside, CA"
+    },
+    {
+      "broker": "TQL (Total Quality Logistics Inc)",
+      "note": "Currently not taking loads from them",
+      "quote": "А грузи TQL ми поки не беремо"
+    },
+    {
+      "broker": "Axle",
+      "note": "Some trouble/issues with getting loads from them",
+      "quote": "Є якийсь трабл з грузами від Акселів"
+    },
+    {
+      "broker": "UberFreight",
+      "note": "Extremely bureaucratic - require excessive information just to give a simple pickup update",
+      "quote": "чтобы дать информацию по грузу уберфрейтам нужно сказать МС,главный номер телефона компании полное имя с ЛЛС ИЛИ СО,фамилия имя водителя фамилия имя диспетчера,свою фамилию имя,номер груза куда груз идёт и тд и тп"
+    },
+    {
+      "broker": "Freightlink, INC",
+      "note": "Reached out with some kind of offer/proposal for loads, interested in how many trucks we have",
+      "quote": "Говорил с брокершой с Freigthtlink, INC она спрашивала сколько у нас траков,говорила что у них для нас какоето предложение есть"
+    },
+    {
+      "broker": "fidelityfreight",
+      "note": "Expected to send BOL, needs follow-up",
+      "quote": "Там брокер fidelityfreight должен был скинуть BOL скажите если что то пришло пожалуйста"
+    },
+    {
+      "broker": "D-rated brokers",
+      "note": "Questionable - depends on which broker specifically",
+      "quote": "Рейтинг D не підходить?"
+    },
+    {
+      "broker": "A A Freight Brokers LLC",
+      "note": "Mentioned in context of a load, no strong opinion recorded",
+      "quote": "A A Freight Brokers LLC"
+    },
+    {
+      "broker": "Priority 1 Inc",
+      "note": "Positive - liked the service, wants to continue working together, has loads from GA",
+      "quote": "Priority 1 Inc понравился наш сервис и как мы работаем,сказал что будет работать с нами дальше и у него бывают груза с GA"
+    },
+    {
+      "broker": "Unknown broker (Load 14426863)",
+      "note": "Very negative - never answered phone or email from pickup to delivery, terrible customer service",
+      "quote": "офігенний кастомер сёрвіс як то кажуть,хоч би гроші за груз дали"
+    },
+    {
+      "broker": "Landstar",
+      "note": "Suspected of double brokering; many sub-entities making it confusing",
+      "quote": "вже лендстари походу даблброкерять цей груз"
+    },
+    {
+      "broker": "Landstar",
+      "note": "Has a million offices, complicated to deal with",
+      "quote": "Та там мільйон кантор лендстраа"
+    },
+    {
+      "broker": "King of Freight",
+      "note": "Neutral - called to check on Florida delivery status",
+      "quote": "кінг оф фрейт дзвонили і питали чи доставили вантаж із флориди якийсь"
+    },
+    {
+      "broker": "Coyote, RXO, TQL",
+      "note": "Used by experienced competitors occasionally (5% of loads), same broker pool overall",
+      "quote": "єдине що я бачив ще койотів, RXO та TQL кілька разів, аде 95% це ті ж брокери що й у нас"
+    },
+    {
+      "broker": "Unknown broker with $100 deduct",
+      "note": "Negative - unreasonable $100 deduction for unloading 100kg",
+      "quote": "Оце ахеревший брокер"
+    }
+  ],
+  "lane_notes": [
+    {
+      "lane": "Florida",
+      "note": "Bad - hardest to get loads out of; take any money to leave especially before Friday",
+      "quote": "з флоріди саме тяжче виїхати?"
+    },
+    {
+      "lane": "Florida",
+      "note": "Bad - need to leave before Friday at any price",
+      "quote": "треба виїхати бо то завтра п'ятниця"
+    },
+    {
+      "lane": "California",
+      "note": "Bad - most expensive fuel but low rates; can accept ~$1/mile",
+      "quote": "прикол в тому що в калі найдорожче паливао а ціна така сміжна"
+    },
+    {
+      "lane": "California/Arizona",
+      "note": "Bad for loads - poor options in both locations",
+      "quote": "ми по-суті, що в калі що в арізоні фігня по грузам"
+    },
+    {
+      "lane": "Dallas, TX",
+      "note": "Good location on Monday - can accept cheaper rates",
+      "quote": "бо даллас норм локація на мандей, то можна й дешевше"
+    },
+    {
+      "lane": "Chicago",
+      "note": "Uncertain, needs morning calls to confirm loads",
+      "quote": "чикаго поки на паузі, може є груз"
+    },
+    {
+      "lane": "Indiana",
+      "note": "Target for local loads",
+      "quote": "Володя бажано по локалу до завтра десь в Індіану"
+    },
+    {
+      "lane": "Colorado (Friday delivery)",
+      "note": "Risky - can get stuck there over weekend",
+      "quote": "бляха, на пятницю в колорадо, можна застрягнути("
+    },
+    {
+      "lane": "South Dakota",
+      "note": "Bad at $1.20 RPM, too cheap",
+      "quote": "по 1,2 це дешево в South Dakota?"
+    },
+    {
+      "lane": "New York",
+      "note": "Competitive - lots of carriers fighting for loads",
+      "quote": "а в нью йорку зараз замес, всі хочуть цей груз"
+    },
+    {
+      "lane": "Ohio to Tennessee",
+      "note": "Inbound load opportunity, broker called about it",
+      "quote": "Казав що є вантаж з OH"
+    },
+    {
+      "lane": "Ohio/Indiana to Chicago",
+      "note": "Good connecting lane - can find loads to Chicago from deliveries in OH/IN",
+      "quote": "якщо завтра делівері в Охайо або Індіані то можна не добавляти в рейті на чикаго?"
+    },
+    {
+      "lane": "Florida",
+      "note": "Specific rate inquiry, no clear verdict but warrants attention",
+      "quote": "на флориду який рейт даємо?"
+    },
+    {
+      "lane": "Tennessee",
+      "note": "Booked a load, positive",
+      "quote": "Теннезі забукав, заьрав той груз"
+    },
+    {
+      "lane": "North Carolina (NC)",
+      "note": "Good destination to look for loads after current delivery",
+      "quote": "водій загрузився, можна дивитися на NC"
+    },
+    {
+      "lane": "Chicago",
+      "note": "Checked for loads from/to Chicago",
+      "quote": "сіеч щось має? як по грузам зось в чикаго є?"
+    },
+    {
+      "lane": "Woodbridge NJ to Williston ND",
+      "note": "Long haul, 7 pallets, broker asking for best rate",
+      "quote": "Pick up: Woodbridge, NJ \n\nDelivery: WILLISTON, ND, USA 58801"
+    },
+    {
+      "lane": "Canada",
+      "note": "Good - rates are normal/decent",
+      "quote": "в Канаду рейти нормальни"
+    },
+    {
+      "lane": "Florida outbound",
+      "note": "Bad - very low rates, around $1/mile, not profitable",
+      "quote": "з флориди по 1$ виъжаты?"
+    },
+    {
+      "lane": "New York / New Jersey",
+      "note": "Weak area for loads currently",
+      "quote": "Ню Джерсі з Ню Йорком слабувато"
+    },
+    {
+      "lane": "Texas outbound",
+      "note": "Difficult to find good loads out of Texas",
+      "quote": "з техаса виїхати чисто, нє ?"
+    },
+    {
+      "lane": "Florida inbound (Laredo TX to FL)",
+      "note": "Bad - not worth driving to Florida at $1/mile",
+      "quote": "не вигідно їхати на флориду по долару"
+    },
+    {
+      "lane": "Pre-holiday period",
+      "note": "Bad - rates drop significantly before holidays/weekends",
+      "quote": "бляха, відбувається тещо я вчора й думав, буде затишшя перед вихіними а груза будуть дуже дешеві"
+    },
+    {
+      "lane": "Colorado",
+      "note": "Bad - load to Colorado was described as terrible",
+      "quote": "взяв лайно груз на колорадо"
+    },
+    {
+      "lane": "Kentucky",
+      "note": "Needs coverage but should not go too cheap",
+      "quote": "кентаки по ситуації але бажано не дуже дешево)"
+    },
+    {
+      "lane": "Florida (Oviedo, FL to New York, NY)",
+      "note": "Good lane, 1085 mi at $1700 posted rate",
+      "quote": "Oviedo, FL Destination New York, NY Trip 1,085 mi Posted rate: $1,700.00"
+    },
+    {
+      "lane": "Florida",
+      "note": "Risky due to Hurricane Helene - short loads or driving into hurricane",
+      "quote": "Те ж саме або короткі або в ураган їхати"
+    },
+    {
+      "lane": "Dallas / Houston, TX",
+      "note": "Good options available from these locations",
+      "quote": "там вибір грузів з далласа та хюстона, точно має бути щось круте"
+    },
+    {
+      "lane": "Miami, FL",
+      "note": "Good - multiple loads can be booked back to back",
+      "quote": "хто дивитись маямі, 2 груза можен прямо підряд букати)"
+    },
+    {
+      "lane": "Oklahoma (from Colorado)",
+      "note": "Neutral - used as repositioning from Colorado",
+      "quote": "Колорадо взяли груз на Оклахому, завтра буде дроп"
+    },
+    {
+      "lane": "Fitchburg, IL",
+      "note": "Bad - driver stuck without a load",
+      "quote": "Михайло без груза в Fitchburg, Il ?"
+    },
+    {
+      "lane": "Georgia (GA)",
+      "note": "Bad — all trucks from Florida flooded GA, loads are scarce",
+      "quote": "в GA зараз всі траки з Флориди виїхали, думаю там з вантажами так собі"
+    },
+    {
+      "lane": "Florida",
+      "note": "Risky — rates questionable, need to evaluate if worth going",
+      "quote": "Варто по такому рейту в флоріду чи мало ?"
+    },
+    {
+      "lane": "Nebraska",
+      "note": "Bad — spot rate is only $1.11 RPM, carriers refuse to go",
+      "quote": "для прикладу на Небраску спот 1.11 але Сімси не хочуть з нами їхати"
+    },
+    {
+      "lane": "Chicago, IL",
+      "note": "Bad — underperforming lately, few good loads",
+      "quote": "можна по звичайному рейту їхати, останнім часом чикаго кульгає / Чикаго не завантажений, але там чомусь мало хороших вантажів"
+    },
+    {
+      "lane": "PA-MI lane",
+      "note": "Active lane being booked, need to call broker",
+      "quote": "Хто букає PA-MI Наберіть брокера"
+    },
+    {
+      "lane": "Pompano Beach, FL",
+      "note": "Needs to be loaded — active dispatch task",
+      "quote": "допоможіть Денису, якщо треба та загрузіть помпано біч"
+    },
+    {
+      "lane": "Warsaw IN to Bohemia NY",
+      "note": "Good — easy load, 749 miles at $1200 with partial load option",
+      "quote": "ізі лоад / може нввіть загрузимся завтра та й паршалок лупанеш"
+    },
+    {
+      "lane": "General market",
+      "note": "Bad week-over-week trend, loads exist but rates are terrible",
+      "quote": "Це всюди так. Грузи наче є а рейти 💩 / таке враження що цей тиждень вантажі гірші ніж попередній"
+    },
+    {
+      "lane": "Henderson, NC",
+      "note": "Driver was in this area and needed a load to cover truck 102; actively looking for anything available",
+      "quote": "Якщо побачите вантаж з ерії Henderson, NC спробуйте забрати хоча б щось на сьогодні, треба покрити 102"
+    },
+    {
+      "lane": "Central Florida (outbound)",
+      "note": "Good location — loads are posted frequently from central Florida",
+      "quote": "в центральній частині флориди дійсно частіше постились вантажі"
+    },
+    {
+      "lane": "Florida (red zones / heatmap)",
+      "note": "Red inbound zones = avoid delivering there; Red outbound zones = good pickup locations with many loads",
+      "quote": "Ну я так зрозумів де червоний Inbound, туди не варто їхати. А Outbound навпаки звідти багато вантажів"
+    },
+    {
+      "lane": "New York",
+      "note": "Must charge at least $2/mile — expensive/difficult area",
+      "quote": "В Ню йорк по 2 не меньше треба їхати"
+    },
+    {
+      "lane": "Odessa, TX",
+      "note": "Unknown — team asking if it's an active location or dead",
+      "quote": "Odessa TX хтось був там ? Жива локація чи не дуже ?"
+    },
+    {
+      "lane": "Carolina (NC/SC)",
+      "note": "Loads available in the Carolinas",
+      "quote": "груз є каролайну"
+    },
+    {
+      "lane": "California",
+      "note": "Good - lots of loads expected soon",
+      "quote": "зараз буде багато грузів на калі"
+    },
+    {
+      "lane": "California (inbound)",
+      "note": "Good loads available but watch deadhead",
+      "quote": "алу груз там топ"
+    },
+    {
+      "lane": "AR to KS",
+      "note": "Considered as option with next-day delivery",
+      "quote": "AR KS з вигрузкою завтра не підходить ?"
+    },
+    {
+      "lane": "Georgia",
+      "note": "Monitoring for available loads",
+      "quote": "промоніторте будь ласка вантажі для 102 трака в Джрджиї"
+    },
+    {
+      "lane": "IL to TX",
+      "note": "Load under consideration",
+      "quote": "По грузу іл тх"
+    },
+    {
+      "lane": "Maine",
+      "note": "Uncertain - dispatcher asking if anyone has been there recently and how loads are",
+      "quote": "Хтось в Мейн останнім часом їздив ? Як там з вантажами?"
+    },
+    {
+      "lane": "New York",
+      "note": "Good rate noted for a New York load",
+      "quote": "Як для Нюйора норм рейт"
+    },
+    {
+      "lane": "Arizona and Nevada",
+      "note": "Difficult to find loads on Fridays, need to grab loads early in the morning",
+      "quote": "Арізона та Невада чіпляйтесь за груза з самого ранку, там буде важко але ви впораєтесь"
+    },
+    {
+      "lane": "North Carolina (Lumberton)",
+      "note": "Low rates offered - $1.4/mile requested",
+      "quote": "216му треба щось з Lumberton, NC, попросили по $1.4"
+    },
+    {
+      "lane": "Ohio",
+      "note": "Dispatcher taking a load to Ohio",
+      "quote": "Беру Огай тільки той груз шо ти скинув рейт"
+    },
+    {
+      "lane": "Illinois to California",
+      "note": "Possible hold on load, waiting for it to be released",
+      "quote": "Іліной холд паро мінут-може віддадуть на калі груз"
+    },
+    {
+      "lane": "Dallas, TX",
+      "note": "Risky - may not have outbound loads, pure gamble",
+      "quote": "Це чисто рулетка. повезе не повезе. Тут в Даласі може не бути вантажів"
+    },
+    {
+      "lane": "Texas (general)",
+      "note": "Bad destination - better to stay in Ohio than go to Texas",
+      "quote": "просто виїхати в правильну локацію і краще стояти десь в Огайо день а не їхати в Техас"
+    },
+    {
+      "lane": "Ohio",
+      "note": "Good location - worth deadheading to and waiting a day for good loads",
+      "quote": "краще стояти десь в Огайо день а не їхати в Техас"
+    },
+    {
+      "lane": "Chicago",
+      "note": "Bad - loads have stopped coming from Chicago",
+      "quote": "бачу чикаго перестали йти груза"
+    },
+    {
+      "lane": "Mountain areas",
+      "note": "Bad/risky - costly mistakes from driving through mountains",
+      "quote": "оце така ціна помилки покатушок по горах"
+    },
+    {
+      "lane": "GA (Georgia)",
+      "note": "Potential opportunity via Priority 1 Inc broker",
+      "quote": "у него бывают груза с GA"
+    },
+    {
+      "lane": "IA to West Virginia",
+      "note": "Under consideration, mentioned as active lane",
+      "quote": "По грузу ІА- Вест перджінія"
+    },
+    {
+      "lane": "El Paso TX to Monett MO",
+      "note": "Low-paying lane, bad location, ~$1/mile",
+      "quote": "Також бачив вони по далару давали але там локація 💩"
+    }
+  ],
+  "style_samples": [
+    "краще погано їхати ніж добре стояти",
+    "грузів не дуже густо, будемо брати що попадеться, ен будемо сильно носом крутити",
+    "любі гроші аби просто аиїхати",
+    "брокер має чути те що хоче чути",
+    "головне що ти вчишся, а забрав чи ні, то таке, але краще забрати",
+    "то золотий груз",
+    "взяв позорний груз водієві",
+    "вот звичайно не чесний брокер, так діла не ведуться",
+    "загрузились таки) Трошки прийшлося затриматися",
+    "ціна космос",
+    "можна брати сміливо",
+    "молодець, борись за груз, тільки пиши типу сі аттчд",
+    "вони чіпарі, ніхто такий груз не візьме",
+    "стрьомний груз, ну його",
+    "ну надіємось, особливо вибору немає, треба брати ризик, він оправданий",
+    "не знаю, не боюся просто говорити) брокери такі ж люди як ми",
+    "Driver already loaded.Thank's for the deal. can we leave facility?",
+    "та не, ще й за такий рейт, то не серйозно",
+    "а взагалі ти молодець, пів вечора мучив той груз, але все витягнув",
+    "за такий рейт можна пів трака купити",
+    "ладно, букай, тільки підтвердь з брокером все-все-все",
+    "А досвідчений брокер - бачить й тебе й мене наскрізь",
+    "ну я запитав 900, то трохи нагло, але ящо дасть то певно треба брати",
+    "дроп локація галіма",
+    "груз стрьомний",
+    "смішний рейт",
+    "єслі б не було дедхеду то прилічний рейт)",
+    "Треба брокером кадики рвати за грузи😂",
+    "дешево, тоеба 4300",
+    "За бордами сидять рекси з досвідом, що як тільки провтикали - вони заберуть, майте це на увазі, з рексами можуть боротися тільки рекси",
+    "нищій дав рейт шоб наверняк))",
+    "вітаємо з першим грузом та першою конфою, трохи дешево, але нічого, у всіх буває)",
+    "неа, дешево",
+    "це топ груз",
+    "я поняв, треба його забрати кров з носа",
+    "красава, годний груз",
+    "груз бомба був, шкода що не підійшов",
+    "взагалі це груз фігня",
+    "такий кончений груз",
+    "брокер тут лохом виявився",
+    "через цих дурачків я пропустив всі груза",
+    "але впритик капец, прийшлося брокера просити щоб не канселив 😅",
+    "приколіть, щойно брокер відписав, каже а можете назад завезти ту фігню що ви сьогодні привезли?",
+    "я вкрав в вас груз з-під носа, просто подзвонивши брокеру)",
+    "добре порахуй все чи він встигне, а якщо застрягне у нас будуть проблеми",
+    "Thank you . Unfortunately, due to scheduling conflicts and limited availability on our end, we won't be able to accommodate this shipment at this time.",
+    "взяв лайно груз на колорадо",
+    "можна їхати по долару",
+    "аби їхати",
+    "деньок був слабенький але завтра водії будуть в норм локаціях, всіх витягнемо",
+    "хух, я аж потний, всім брокерам трохи набрехав",
+    "Ото набукали, 2 груза по баксу, кенсел та простой",
+    "не дай мені забрати ваш вантаж у вас з під носа",
+    "такс, щось по грузам сумно",
+    "якщо питаєш чи брати то бери)",
+    "Брокер мене мильно вимучив, але наче все вийшло замнути та вийшло довести що це їх провина",
+    "по грузікам сумно",
+    "може віддадуть й скажи брокеру що нє, 1000 треба",
+    "хтось бере груз?",
+    "після 350 $ best пішов 400$ best😂",
+    "там вже індуси штурмують цей груз полюбому",
+    "довели брокера до сліз",
+    "Це всюди так. Грузи наче є а рейти 💩",
+    "ізі лоад",
+    "атакуйте хлопці, то хороший груз",
+    "касарік від бюджету на рейт десь би загубився)",
+    "жирна локація",
+    "тихенько щоб брокер не почув",
+    "не встиг набрати, там походу його врвали жицем",
+    "RPM не високи, але раз до кінця тижня взяти та й чілити то воно того вартує",
+    "даже не обяснив чього він зняв нас з грузу козел",
+    "аж руки спотіли, топ груз в цій ерії",
+    "давайте ще Олексію груз на 300 баксів візьмемо та й погазуємо спати)",
+    "з цими поцами краще більше грузи не брати, вони намахують",
+    "Міг якийсь фраєрок тільки з чужої компанії забрати з під носа",
+    "да, брокер поцка тако(",
+    "щось по грузам бачу сумно",
+    "не ігноруйте брокерів",
+    "Хлопці, усім нам буде як порада, відкривати груза, хотів пропустити, а вицепився норм грузец",
+    "просто хай він спокійно грузиться, не кіпішує, на щастя в нас є зазор, тому ми все розрулимо",
+    "щоб вони не скинули нас з груза",
+    "класно брокер торгується, жостко та до кінця, знає що 10 баксів не зіграють ролі, але собі збрив, всім наука",
+    "я аж засумнівався, подзвонив в їх компанію верифікувати брокера",
+    "З брокером також акуратно, без лижніх слів чи емоцій, просто м'ягко з поясненнями, аргументовано",
+    "що до чого, бо вони всі нєженки що капец, що рональд що брокер",
+    "ахахах, да, з ними якщо брати то тільки на компані траки",
+    "D рейтетд бркоерів не беремо якщо це не критично",
+    "оце вони так за 50$ жмуться?",
+    "простіше інший вантаж знайти",
+    "терміново повідомити брокера з фотками",
+    "наразі йому груза не пропонуємо поки він не надасть нам всі докази та не вибачиться за свою поведінку",
+    "Нагадую, жовтих брокерів не беремо",
+    "якщо тяжко то збийте ціну, я не зможу допомогти вам, а водіям не треба стояти всі вихідні, 1 простой трака це збитки й - 150$ водію за простой",
+    "Сьогодні пʼятниця в пріоритеті груза на 1000+ миль",
+    "Арізона та Невада чіпляйтесь за груза з самого ранку, там буде важко але ви впораєтесь",
+    "треба буде вилізти зі шкури ще сьогодні щоб щось забрати",
+    "Кажеш свій рейт вони часто соглашаються",
+    "Наканецто при Трампові норм рейти почались )",
+    "Рівні захисту убер фрейт солідні",
+    "Ми на день раніше забрали той вантаж, чому він має бути доставлений сьогодні, а не завтра наприклад. Вони нам ціну добавили чи шо? То шо вони в RC намалювали то хай собі малюють що хочуть",
+    "якщо що то для брокерів у нас 5 траків)",
+    "ще не дуже пізно але вони мусять поїхати, навіть якщо дешевше трохи",
+    "Це чисто рулетка. повезе не повезе. Тут в Даласі може не бути вантажів",
+    "поки скіп таких брокерів",
+    "Хай додадуть це в рейткон",
+    "Хай пришлють новий рейткон й там додадуть це",
+    "В ЖОДНОМУ РАЗІ НЕ ДАВАТИ VIN БРОКЕРУ БЕЗ МЕНЕ!",
+    "оце не дзвоніть, то керсел, доставка на мілітарі",
+    "трошки соу соу, але якщо гарний груз огайо взяти на вихідні, то це буде нормальним кроком",
+    "офігенний кастомер сёрвіс як то кажуть,хоч би гроші за груз дали",
+    "просто виїхати в правильну локацію і краще стояти десь в Огайо день а не їхати в Техас",
+    "можна супутитися трохи по цінах",
+    "щоб не злетів груз то я напсиав що будемо давати чато апдейти"
+  ],
+  "rules": [
+    "Always call on loads even without listed dimensions - might be something small that fits at a good price",
+    "Broker must hear what they want to hear - manage communication strategically",
+    "When explaining rate decisions, always state your reasoning",
+    "Check if load fits truck before calling (14ft box truck / Conestoga limitations)",
+    "Must verify loads through factoring before accepting from new/unknown brokers",
+    "Send rate confirmations to quotes@212expedite.com",
+    "Before booking, confirm load is guaranteed",
+    "Must have $700,000 cargo insurance for certain loads",
+    "OK with Macropoint tracking",
+    "On Fridays, priority is to get out of bad locations at any price",
+    "Evening loads (short distance) can pay $400-$700 - worth calling on",
+    "PO (Power Only) has two styles: Drop&Hook and Loadout - know the difference",
+    "DAY LOADOUT means you take a trailer and haul with it for 1-2 weeks then deliver it to destination",
+    "Must be set up/registered with brokers before booking loads",
+    "Use Sylectus and DAT for load boards; always keep refreshing DAT if it glitches",
+    "Three drivers have different strategies: Igor 600-800 miles, Volodya local to Indiana, Mykhailo long distance anywhere",
+    "Only take full loads, no partials: 'паршала не шукай, нас тут цікавлять тільки фулл лоади'",
+    "Always introduce yourself on calls: 'Hello, this is Andrew with 212 Expedite, calling about your load'",
+    "Always verify exact dimensions before committing to avoid wasted trips: 'дізнайся точні дімси, щоб дарма не їхати завтра'",
+    "Send BOL to broker after loading",
+    "Confirm everything with broker before booking: 'букай, тільки підтвердь з брокером все-все-все'",
+    "Call flatbed and hotshot loads and ask dimensions - propose our truck if it fits",
+    "Enter loads into the spreadsheet after driver is loaded",
+    "Don't give cheap rates - minimum $1.70 RPM for standard loads",
+    "Be proactive - call maximum, don't miss loads: 'мені потрібно від тебе більше включення, дзвони максимально, старайся не пропускати вантажі'",
+    "For owner-operators: minimum 10% profit margin on load resale, dispatcher gets 25% of profit; or 2% of gross",
+    "Owner-operator (16ft box, up to 5500 lbs) is not exclusive - other companies also load him",
+    "Some customers require minimum 10 delivered loads before working with you",
+    "When you offer a rate to a broker, 95% chance they give the load - so be careful with offers",
+    "Need minimum 10 loads on CH Robinson before accessing premium loads",
+    "Only search for next load AFTER driver has loaded current one",
+    "If brokers are stalling, send them the scheme/documentation",
+    "Call for loads rather than waiting for email/text responses on sketchy loads",
+    "For loads posted for 53ft trucks, sometimes don't disclose 26ft truck if dimensions clearly fit",
+    "For box truck loads, disclose box truck upfront",
+    "Always fight aggressively for loads - experienced reps will take them if you hesitate",
+    "Truck weight capacity up to 12,000 lbs",
+    "Trucks cannot be loaded via ramps",
+    "Get broker agreement/confirmation first before proceeding",
+    "On Monday (US holiday), long-haul loads will go fast - plan Friday accordingly",
+    "Ask broker for pickup number; sometimes it's in the confirmation",
+    "Always send POD to broker after delivery",
+    "Introduce/brief the driver about the load details",
+    "Account for deadhead and delivery day when evaluating rate",
+    "All loads should be 1 pickup 1 drop only - avoid multi-drop loads",
+    "Always verify loads from Landstar brokers",
+    "Maximum critical weight is 6000 lbs, lighter is better",
+    "Loads must be 1000+ miles preferred",
+    "Monitor and control driver loading/unloading schedules",
+    "Don't let drivers sit idle too long - give them work even at lower rates if necessary",
+    "When calling brokers early (around 7am), expect low answer rates",
+    "Food commodities (chips, olive oil) may not be loaded for their trucks",
+    "Calculate carefully if driver can make delivery on time - being late causes problems",
+    "On hot loads, call immediately - don't rely only on email",
+    "Cover return trip costs in the rate",
+    "Before holidays/weekends expect cheap rates - plan accordingly",
+    "Dispatchers get commission split on loads they work on",
+    "Add MC number to your email signature to speed up broker communication",
+    "Give broker updates every 15 minutes during pickup/delivery",
+    "Before updating broker, check with manager if anything changed",
+    "Always enter all loads into the tracking spreadsheet/table",
+    "Upload POD and close out loads after unloading",
+    "Check broker MC on RTS before taking loads",
+    "Always add 10% markup to broker's rate",
+    "Watch loads in real-time, especially in the first half of the day - good loads can be taken within 30 seconds",
+    "On Sylectus, once you bid you must take it - cannot refuse",
+    "Focus on DAT as primary load board, Sylectus deprioritized",
+    "Upload rate confirmations to the shared drive",
+    "Log all loads into the new month's sheet (e.g., October)",
+    "Don't skip loads on Sylectus board",
+    "Learn to work with one truck at a time to not miss loads",
+    "On Fridays, manager also searches loads - dispatchers should be competitive",
+    "Use LockTheLoad extension - double-click load to pull RTS rating",
+    "Do NOT cancel loads — cancellations lead to reports and damage company reputation: 'другий кенсел від нас за сьогодні то не серйозно взагалі'",
+    "Carefully verify loads before booking to avoid cancellations: 'уважно пеервіряйте що ви берете, щоб нам не кенселити'",
+    "When truck is loaded, remove from today and mark as uncovered for tomorrow: 'коли трак загрузився, то ви видаляєте його з сьогоднішнього дня та позначаєте, що на завтра він ще не покритий'",
+    "Check BOL photos quality — blurry drop photos won't pass factoring: 'на дроп такі розмазані фотки ен прокатять, фаторинг верне мені'",
+    "Use new email quotes@212expedite.com as primary for all boards",
+    "All new loads go on a new page — mark loads you're managing with docs and your name",
+    "Don't add loads into David's chain — keep things organized separately",
+    "Discuss loads in group chat, not private messages: 'краще пишіть в чат, щоб порадитись за вантаж, не мені в приватні'",
+    "Update all data on CH Robinson (Navisphere) site promptly or rating drops and loads get denied",
+    "Give broker ETAs immediately, update status on broker websites: 'які тільки приїхав пишіть брокеру й оновлюйте на сайті'",
+    "After booking a load: give broker ETA, add tracking, write load name and comments in TRACKING 212 EXPEDITE chat, tag tracker, add to spreadsheet, then search for next load",
+    "Add tracking@212expedite.com to chain for all booked loads and make sure they reply to all",
+    "If doubts about broker's MC or they are D-rated, call RTS at 913.329.8068",
+    "Hotshot loads are worth calling on with box trucks — can pay better",
+    "Bogdan's truck max weight 5000-5500 lbs, own trucks can handle 6000 lbs",
+    "Driver must notify broker 30 minutes before going into detention to be eligible for detention pay",
+    "Try to get Friday driver loads that allow them to go home over the weekend: 'аби так, щоб він міг заїхати додому'",
+    "Partials should be used to supplement low-rate loads",
+    "Don't put pick up/delivery times or rates in the group chat with drivers — it interferes with driver management and costs money",
+    "Don't ignore brokers — always respond",
+    "When a driver has tight timing, dispatcher and tracker must monitor and ensure driver makes the appointment; if running late, notify both broker and shipper proactively",
+    "Non-factored loads can only be accepted in one specific format",
+    "Use Truckstop loadboard in addition to DAT, especially in late hours when DAT has fewer loads",
+    "All loads must be logged in the new tracking page/spreadsheet",
+    "When covering your own trucks, you can take loads assigned to other dispatchers' trucks if they are already covered",
+    "Conestoga bid photos should show empty trailer (not loaded) to avoid brokers thinking it's a partial load request",
+    "Day load is dropped off does not count toward driver working time",
+    "Training/education sessions are mandatory attendance",
+    "$200 referral bonus for recommending a dispatcher or recruiter who stays for one month",
+    "If driver misses appointment, absorb the cost internally on first loads with new brokers rather than confronting the broker",
+    "Open and review every load posting — don't skip loads, good ones can be hidden among bad-looking postings",
+    "Market conditions: November showed ~10-15% drop in load volume (from 4200-4400 to 3700-3900 on Selectus) — expect tighter market",
+    "Brokers have become very picky in the last 3 years since the market dropped — history matters for getting loads",
+    "D-rated brokers are not accepted unless critical situation",
+    "Yellow-rated brokers are not accepted",
+    "Minimum RPM target is $1.5",
+    "Signs (company signs on trucks) must be verified before pickup and removed after leaving pickup, same for delivery - priority #1",
+    "Owner operators must check in under company MC but drive under their own authority",
+    "Always verify suspicious brokers by calling their company",
+    "Communicate with brokers carefully - soft, with explanations, no unnecessary words or emotions",
+    "Always provide broker updates, especially overnight status",
+    "When a screenshot with a number is shared, it means call that number",
+    "After taking a load, get set up with the broker immediately",
+    "Photos must be sent to broker urgently when issues arise",
+    "Dispatchers and tracking both responsible for sign compliance",
+    "Do not make driver look like a liar to brokers - be diplomatic about delays",
+    "For owner-operator loads, company documents must be on cargo paperwork",
+    "Advances of $300 distributed to team, remainder paid on 2nd-7th of month",
+    "Dispatcher is the primary person responsible for pickup and delivery, including after-hours: 'В першу чергу саме диспетчер відповідальний за завантаження в робочий так й позаробочий час'",
+    "If truck loads/unloads during non-working hours, notify tracking (Vadim) in advance: 'якщо у вас хтось грузиться в інший час повідомте Вадима'",
+    "Downtime is counted from the next day after unloading: 'Простой рахується з наступного дня після розвантаження'",
+    "Day when load was dropped but no cargo available does not count as downtime: 'День коли скинув, але не буде вантажу не враховується'",
+    "Tell brokers we have 5 trucks: 'якщо що то для брокерів у нас 5 траків'",
+    "Do not take TQL loads currently: 'А грузи TQL ми поки не беремо'",
+    "On Fridays prioritize 1000+ mile loads",
+    "Avoid leaving drivers stranded over weekends - lower price if needed rather than have trucks sit idle",
+    "Nailed-to-floor loads only if extremely high-paying",
+    "Name your own rate to brokers - they often agree",
+    "Drivers must speak at least some English or risk broker cancellation",
+    "NEVER give VIN number to broker without manager approval: 'В ЖОДНОМУ РАЗІ НЕ ДАВАТИ VIN БРОКЕРУ БЕЗ МЕНЕ!'",
+    "All rate confirmations must be forwarded to quotes@212expedite.com",
+    "Any extra compensation agreed with broker must be added to the rate confirmation document",
+    "Update the tracking table after every delivery - don't leave it unupdated",
+    "Confirm with broker after driver drops off a load",
+    "Add tracker (Vadim) to all load-related conversations",
+    "Maintain a blacklist tab for brokers/entities to avoid",
+    "All load-related questions should be posted in the group chat, not in private messages to manager",
+    "Dispatchers should help each other and make their own decisions - enough expertise exists in the team",
+    "Owners cannot share VIN numbers directly with brokers - only management provides the correct VIN",
+    "80% of loads sourced from DAT, 10% Sylectus, 10% broker-offered loads",
+    "Avoid delivering to military bases (carousel/kernel loads)",
+    "Driver must take photos at service stops as proof for broker",
+    "Provide frequent updates to broker to prevent load cancellation",
+    "January-February are the hardest months for rates; it gets easier after",
+    "Prioritize good outbound locations over cheap immediate loads - avoid getting stuck in bad areas",
+    "Partials are key to increasing RPM - try to load earlier in the day to have a chance at partials",
+    "Watch for double brokering (e.g., Landstar suspected)"
+  ]
+}
