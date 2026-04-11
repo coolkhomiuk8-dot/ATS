@@ -45,3 +45,4 @@ coverage/
 
 # Local Netlify folder
 .netlify
+.claude/worktrees/
