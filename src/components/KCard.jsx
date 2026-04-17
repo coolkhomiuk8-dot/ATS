@@ -1,3 +1,4 @@
+import { useState, useRef } from "react";
 import { DOC_LIST, FLAGS_OPT } from "../constants/data";
 import { minutesUntil } from "../utils/date";
 import { useTick } from "../hooks/useTick";
@@ -10,6 +11,24 @@ const FLAG_STYLES = {
 
 export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragging }) {
   useTick();
+  const [dlPreview, setDlPreview] = useState(null); // {x, y}
+  const hoverTimer = useRef(null);
+
+  const dlFile = (driver.files || []).find(f => f.linkedDoc === "Driver License" && f.driveFileId);
+  const dlThumbUrl = dlFile ? `https://drive.google.com/thumbnail?id=${dlFile.driveFileId}&sz=w400` : null;
+
+  function handleMouseEnter(e) {
+    if (!dlThumbUrl) return;
+    hoverTimer.current = setTimeout(() => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setDlPreview({ x: rect.right + 8, y: rect.top });
+    }, 400);
+  }
+
+  function handleMouseLeave() {
+    clearTimeout(hoverTimer.current);
+    setDlPreview(null);
+  }
 
   const isDeadEnd = driver.stage === "trash" || driver.stage === "fired";
   const mins = !isDeadEnd ? minutesUntil(driver) : null;
@@ -39,6 +58,8 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
       draggable
       onDragStart={(event) => onDragStart(event, driver.id)}
       onDragEnd={onDragEnd}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <div className="driver-card__top">
         <div className="driver-card__name">{driver.name}</div>
@@ -128,6 +149,33 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
         )}
         <span className="driver-card__docs-count">{docs}/{DOC_LIST.length}</span>
       </div>
+
+      {/* DL hover preview */}
+      {dlPreview && (
+        <div style={{
+          position: "fixed",
+          left: Math.min(dlPreview.x, window.innerWidth - 230),
+          top: Math.max(8, Math.min(dlPreview.y, window.innerHeight - 180)),
+          zIndex: 9999,
+          background: "#fff",
+          border: "2px solid var(--border)",
+          borderRadius: 10,
+          boxShadow: "0 8px 32px rgba(0,0,0,.18)",
+          overflow: "hidden",
+          pointerEvents: "none",
+          width: 220,
+        }}>
+          <img
+            src={dlThumbUrl}
+            alt="DL"
+            style={{ width: "100%", display: "block" }}
+            onError={e => e.target.style.display = "none"}
+          />
+          <div style={{ padding: "6px 10px", fontSize: 11, color: "#64748b", fontWeight: 600 }}>
+            Driver License
+          </div>
+        </div>
+      )}
 
       {/* Trained by badge — only for Hired */}
       {driver.stage === "hired" && driver.trainedBy && (
