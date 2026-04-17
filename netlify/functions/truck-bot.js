@@ -111,7 +111,13 @@ export const handler = async (event) => {
   const text   = msg.text.trim();
   const from   = msg.from?.username || msg.from?.first_name || "HR";
 
-  // Only handle messages from the HR chat or owner's personal chat
+  // /myid works for everyone — used to get chat ID for whitelisting
+  if (/^\/myid$/i.test(text)) {
+    await reply(chatId, `🆔 Твій chat ID: <code>${chatId}</code>`);
+    return { statusCode: 200, body: "ok" };
+  }
+
+  // All other commands — HR chat and whitelisted personal chats only
   const OWNER_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "384588590";
   const allowedChats = [String(HR_CHAT_ID), String(OWNER_CHAT_ID)];
   if (!allowedChats.includes(chatId)) return { statusCode: 200, body: "ok" };
