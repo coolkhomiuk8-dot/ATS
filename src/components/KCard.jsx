@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { DOC_LIST, FLAGS_OPT } from "../constants/data";
 import { minutesUntil } from "../utils/date";
 import { useTick } from "../hooks/useTick";
@@ -14,15 +15,18 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
   const [dlPreview, setDlPreview] = useState(null); // {x, y}
   const hoverTimer = useRef(null);
 
-  const dlFile = (driver.files || []).find(f => f.linkedDoc === "Driver License" && f.driveFileId);
-  const dlThumbUrl = dlFile ? `https://drive.google.com/thumbnail?id=${dlFile.driveFileId}&sz=w400` : null;
+  const dlFile = (driver.files || []).find(f => f.linkedDoc === "Driver License");
+  // Try thumbnail first, fall back to direct URL
+  const dlThumbUrl = dlFile?.driveFileId
+    ? `https://drive.google.com/thumbnail?id=${dlFile.driveFileId}&sz=w400`
+    : (dlFile?.url || dlFile?.viewUrl || null);
 
   function handleMouseEnter(e) {
     if (!dlThumbUrl) return;
     hoverTimer.current = setTimeout(() => {
       const rect = e.currentTarget.getBoundingClientRect();
       setDlPreview({ x: rect.right + 8, y: rect.top });
-    }, 400);
+    }, 300);
   }
 
   function handleMouseLeave() {
@@ -63,7 +67,10 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
     >
       <div className="driver-card__top">
         <div className="driver-card__name">{driver.name}</div>
-        <div className="driver-card__interest-dot" style={{ background: intC }} title={driver.interest} />
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          {dlThumbUrl && <span title="Driver License available — hover to preview" style={{ fontSize: 12, opacity: 0.6 }}>🪪</span>}
+          <div className="driver-card__interest-dot" style={{ background: intC }} title={driver.interest} />
+        </div>
       </div>
       <div className="driver-card__meta" style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
         <span>{driver.city} · {driver.exp}yr exp</span>
@@ -150,17 +157,17 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
         <span className="driver-card__docs-count">{docs}/{DOC_LIST.length}</span>
       </div>
 
-      {/* DL hover preview */}
-      {dlPreview && (
+      {/* DL hover preview — rendered in body to escape overflow:hidden */}
+      {dlPreview && createPortal(
         <div style={{
           position: "fixed",
           left: Math.min(dlPreview.x, window.innerWidth - 230),
-          top: Math.max(8, Math.min(dlPreview.y, window.innerHeight - 180)),
+          top: Math.max(8, Math.min(dlPreview.y, window.innerHeight - 200)),
           zIndex: 9999,
           background: "#fff",
-          border: "2px solid var(--border)",
+          border: "2px solid #e2e8f0",
           borderRadius: 10,
-          boxShadow: "0 8px 32px rgba(0,0,0,.18)",
+          boxShadow: "0 8px 32px rgba(0,0,0,.22)",
           overflow: "hidden",
           pointerEvents: "none",
           width: 220,
@@ -168,13 +175,14 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
           <img
             src={dlThumbUrl}
             alt="DL"
-            style={{ width: "100%", display: "block" }}
-            onError={e => e.target.style.display = "none"}
+            style={{ width: "100%", display: "block", minHeight: 80 }}
+            onError={e => { e.target.style.display = "none"; }}
           />
           <div style={{ padding: "6px 10px", fontSize: 11, color: "#64748b", fontWeight: 600 }}>
-            Driver License
+            🪪 Driver License
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Trained by badge — only for Hired */}
