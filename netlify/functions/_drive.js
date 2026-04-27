@@ -1,12 +1,27 @@
 import { google } from "googleapis";
 
 function getDriveServiceAccount() {
+  // Prefer individual fields (avoids 4 KB Lambda env-var limit, matches _auth.js)
+  const projectId   = process.env.FIREBASE_PROJECT_ID;
+  const privateKey  = process.env.FIREBASE_PRIVATE_KEY;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+
+  if (projectId && privateKey && clientEmail) {
+    return {
+      type: "service_account",
+      project_id: projectId,
+      private_key: privateKey.replace(/\\n/g, "\n"),
+      client_email: clientEmail,
+    };
+  }
+
+  // Fallback: full JSON blob
   const raw =
     process.env.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON ||
     process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   if (!raw) {
     throw new Error(
-      "Missing Google service account JSON. Set GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON or reuse FIREBASE_SERVICE_ACCOUNT_JSON."
+      "Missing Google Drive credentials. Set FIREBASE_PROJECT_ID + FIREBASE_PRIVATE_KEY + FIREBASE_CLIENT_EMAIL, or GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON."
     );
   }
   return JSON.parse(raw);
