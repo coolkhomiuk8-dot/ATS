@@ -63,14 +63,16 @@ function TruckCard({ truck, driver, onClick }) {
         <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-1px" }}>
           Unit {truck.unitNumber || "—"}
         </div>
-        <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
-          {(!truck.insuranceStatus || truck.insuranceStatus === "none") && (
-            <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>
-              ⚠ No Ins.
-            </span>
-          )}
-          <StatusBadge status={truck.status} />
-        </div>
+        <StatusBadge status={truck.status} />
+      </div>
+      {/* Insurance badges */}
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: truck.autoLiabilityStatus === "active" ? "#f0fdf4" : "#fef2f2", color: truck.autoLiabilityStatus === "active" ? "#15803d" : "#dc2626", border: `1px solid ${truck.autoLiabilityStatus === "active" ? "#86efac" : "#fecaca"}` }}>
+          {truck.autoLiabilityStatus === "active" ? "✓" : "⚠"} Auto Liability
+        </span>
+        <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: truck.cargoInsuranceStatus === "active" ? "#f0fdf4" : "#fef2f2", color: truck.cargoInsuranceStatus === "active" ? "#15803d" : "#dc2626", border: `1px solid ${truck.cargoInsuranceStatus === "active" ? "#86efac" : "#fecaca"}` }}>
+          {truck.cargoInsuranceStatus === "active" ? "✓" : "⚠"} Cargo
+        </span>
       </div>
 
       {/* Meta row */}
@@ -151,6 +153,8 @@ export default function TrucksView() {
     truckCompany: "SKP BROKERAGE", eldId: "", status: "active",
     statusNote: "", homeLocation: "", fuelCard: "",
     lastOilChange: "", currentOdometer: "", notes: "",
+    autoLiabilityStatus: "none", autoLiabilityCompany: "",
+    cargoInsuranceStatus: "none", cargoInsuranceCompany: "",
   });
 
   function setF(key, val) { setForm((p) => ({ ...p, [key]: val })); }
@@ -163,6 +167,8 @@ export default function TrucksView() {
       truckCompany: "SKP BROKERAGE", eldId: "", status: "active",
       statusNote: "", homeLocation: "", fuelCard: "",
       lastOilChange: "", currentOdometer: "", notes: "",
+      autoLiabilityStatus: "none", autoLiabilityCompany: "",
+      cargoInsuranceStatus: "none", cargoInsuranceCompany: "",
     });
     setShowAdd(false);
   }
@@ -394,6 +400,35 @@ export default function TrucksView() {
                 <div style={{ gridColumn: "1 / -1" }}>
                   <div style={labelStyle}>Current Odometer (mi)</div>
                   <input type="number" value={form.currentOdometer} onChange={(e) => setF("currentOdometer", e.target.value)} style={inputStyle} placeholder="0" />
+                </div>
+              </div>
+
+              {/* Insurance */}
+              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 10 }}>Insurance</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div>
+                    <div style={labelStyle}>Auto Liability</div>
+                    <select value={form.autoLiabilityStatus} onChange={(e) => setF("autoLiabilityStatus", e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                      <option value="none">Not on Insurance</option>
+                      <option value="active">On Insurance ✓</option>
+                    </select>
+                  </div>
+                  <div>
+                    <div style={labelStyle}>Auto Liability Company</div>
+                    <input value={form.autoLiabilityCompany} onChange={(e) => setF("autoLiabilityCompany", e.target.value)} style={inputStyle} placeholder="e.g. Progressive" />
+                  </div>
+                  <div>
+                    <div style={labelStyle}>Cargo Insurance</div>
+                    <select value={form.cargoInsuranceStatus} onChange={(e) => setF("cargoInsuranceStatus", e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                      <option value="none">Not on Insurance</option>
+                      <option value="active">On Insurance ✓</option>
+                    </select>
+                  </div>
+                  <div>
+                    <div style={labelStyle}>Cargo Insurance Company</div>
+                    <input value={form.cargoInsuranceCompany} onChange={(e) => setF("cargoInsuranceCompany", e.target.value)} style={inputStyle} placeholder="e.g. State Farm" />
+                  </div>
                 </div>
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 4 }}>

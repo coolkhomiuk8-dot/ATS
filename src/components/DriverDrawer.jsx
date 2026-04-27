@@ -609,38 +609,54 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
               )}
 
               {/* ── INSURANCE ── */}
-              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, marginTop: 4 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase" }}>Insurance</div>
-                  {(!driver.insuranceStatus || driver.insuranceStatus === "none") && (
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>
-                      ⚠ Not on Insurance
-                    </span>
-                  )}
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <div>
-                    <FL t="Status" />
-                    <select
-                      value={driver.insuranceStatus || "none"}
-                      onChange={(e) => updDriver(driver.id, { insuranceStatus: e.target.value })}
-                      style={{ width: "100%", padding: "8px 10px", fontSize: 13, background: driver.insuranceStatus === "active" ? "#f0fdf4" : "#fef2f2", border: `1px solid ${driver.insuranceStatus === "active" ? "#86efac" : "#fecaca"}`, borderRadius: 7, color: driver.insuranceStatus === "active" ? "#15803d" : "#dc2626", outline: "none", cursor: "pointer", fontWeight: 600 }}
-                    >
-                      <option value="none">Not on Insurance</option>
-                      <option value="active">On Insurance ✓</option>
-                    </select>
+              {(() => {
+                const companies = driver.insuranceCompanies || [];
+                const [insInput, setInsInput] = useState("");
+                function addIns() {
+                  const v = insInput.trim();
+                  if (!v || companies.includes(v)) return;
+                  updDriver(driver.id, { insuranceCompanies: [...companies, v] });
+                  setInsInput("");
+                }
+                function removeIns(c) {
+                  updDriver(driver.id, { insuranceCompanies: companies.filter((x) => x !== c) });
+                }
+                return (
+                  <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, marginTop: 4 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase" }}>Insurance</div>
+                      {companies.length === 0 && (
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>⚠ Not on Insurance</span>
+                      )}
+                      {companies.length > 0 && (
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: "#f0fdf4", color: "#15803d", border: "1px solid #86efac" }}>✓ {companies.length} polic{companies.length > 1 ? "ies" : "y"}</span>
+                      )}
+                    </div>
+                    {/* Tags */}
+                    {companies.length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                        {companies.map((c) => (
+                          <span key={c} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: "#f0fdf4", color: "#15803d", border: "1px solid #86efac" }}>
+                            {c}
+                            <button onClick={() => removeIns(c)} style={{ background: "none", border: "none", cursor: "pointer", color: "#15803d", fontSize: 13, padding: 0, lineHeight: 1, opacity: .7 }}>×</button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {/* Add */}
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <input
+                        value={insInput}
+                        onChange={(e) => setInsInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && addIns()}
+                        placeholder="Add insurance company..."
+                        style={{ flex: 1, padding: "8px 10px", fontSize: 13, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-primary)", outline: "none" }}
+                      />
+                      <button onClick={addIns} style={{ padding: "8px 14px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>+ Add</button>
+                    </div>
                   </div>
-                  <div>
-                    <FL t="Insurance Company" />
-                    <input
-                      value={driver.insuranceCompany || ""}
-                      onChange={(e) => updDriver(driver.id, { insuranceCompany: e.target.value })}
-                      placeholder="e.g. Progressive, State Farm"
-                      style={{ width: "100%", padding: "8px 10px", fontSize: 13, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-primary)", outline: "none", boxSizing: "border-box" }}
-                    />
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* ── LOG ── */}
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, marginTop: 4 }}>
