@@ -32,7 +32,16 @@ export default function App() {
   const [firebaseUser, setFirebaseUser] = useState(() => auth?.currentUser || null);
   const [authLoading, setAuthLoading] = useState(isFirebaseConfigured);
 
-  const [view, setView] = useState("pipeline");
+  const VALID_VIEWS = ["pipeline", "dispatchers", "fleet", "dashboard", "templates"];
+  function getInitialView() {
+    const hash = window.location.hash.replace("#", "");
+    return VALID_VIEWS.includes(hash) ? hash : "pipeline";
+  }
+  const [view, setViewRaw] = useState(getInitialView);
+  function setView(v) {
+    setViewRaw(v);
+    window.location.hash = v;
+  }
   const [selectedId, setSelectedId] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showIndeed, setShowIndeed] = useState(false);
@@ -54,6 +63,15 @@ export default function App() {
 
   const canManageRoles = currentRole === "root";
   const canManageFiles = currentRole === "root" || currentRole === "admin";
+
+  useEffect(() => {
+    function onHashChange() {
+      const hash = window.location.hash.replace("#", "");
+      if (VALID_VIEWS.includes(hash)) setViewRaw(hash);
+    }
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
 
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) {
