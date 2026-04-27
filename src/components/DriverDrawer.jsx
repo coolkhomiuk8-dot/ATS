@@ -608,6 +608,40 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                 </div>
               )}
 
+              {/* ── INSURANCE ── */}
+              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, marginTop: 4 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase" }}>Insurance</div>
+                  {(!driver.insuranceStatus || driver.insuranceStatus === "none") && (
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>
+                      ⚠ Not on Insurance
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div>
+                    <FL t="Status" />
+                    <select
+                      value={driver.insuranceStatus || "none"}
+                      onChange={(e) => updDriver(driver.id, { insuranceStatus: e.target.value })}
+                      style={{ width: "100%", padding: "8px 10px", fontSize: 13, background: driver.insuranceStatus === "active" ? "#f0fdf4" : "#fef2f2", border: `1px solid ${driver.insuranceStatus === "active" ? "#86efac" : "#fecaca"}`, borderRadius: 7, color: driver.insuranceStatus === "active" ? "#15803d" : "#dc2626", outline: "none", cursor: "pointer", fontWeight: 600 }}
+                    >
+                      <option value="none">Not on Insurance</option>
+                      <option value="active">On Insurance ✓</option>
+                    </select>
+                  </div>
+                  <div>
+                    <FL t="Insurance Company" />
+                    <input
+                      value={driver.insuranceCompany || ""}
+                      onChange={(e) => updDriver(driver.id, { insuranceCompany: e.target.value })}
+                      placeholder="e.g. Progressive, State Farm"
+                      style={{ width: "100%", padding: "8px 10px", fontSize: 13, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-primary)", outline: "none", boxSizing: "border-box" }}
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* ── LOG ── */}
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, marginTop: 4 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", marginBottom: 10, textTransform: "uppercase" }}>

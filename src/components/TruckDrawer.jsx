@@ -282,6 +282,40 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                 </div>
               </div>
 
+              {/* Insurance */}
+              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase" }}>Insurance</div>
+                  {(!truck.insuranceStatus || truck.insuranceStatus === "none") && (
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>
+                      ⚠ Not on Insurance
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div>
+                    <FL t="Status" />
+                    <select
+                      value={truck.insuranceStatus || "none"}
+                      onChange={(e) => onUpd(truck.id, { insuranceStatus: e.target.value })}
+                      style={{ width: "100%", padding: "8px 10px", fontSize: 13, background: truck.insuranceStatus === "active" ? "#f0fdf4" : "#fef2f2", border: `1px solid ${truck.insuranceStatus === "active" ? "#86efac" : "#fecaca"}`, borderRadius: 7, color: truck.insuranceStatus === "active" ? "#15803d" : "#dc2626", outline: "none", cursor: "pointer", fontWeight: 600, boxSizing: "border-box" }}
+                    >
+                      <option value="none">Not on Insurance</option>
+                      <option value="active">On Insurance ✓</option>
+                    </select>
+                  </div>
+                  <div>
+                    <FL t="Insurance Company" />
+                    <input
+                      value={truck.insuranceCompany || ""}
+                      onChange={(e) => onUpd(truck.id, { insuranceCompany: e.target.value })}
+                      placeholder="e.g. Progressive"
+                      style={{ width: "100%", padding: "8px 10px", fontSize: 13, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-primary)", outline: "none", boxSizing: "border-box" }}
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Assigned Driver */}
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 10 }}>Assigned Driver</div>

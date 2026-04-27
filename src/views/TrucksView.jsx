@@ -63,7 +63,14 @@ function TruckCard({ truck, driver, onClick }) {
         <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-1px" }}>
           Unit {truck.unitNumber || "—"}
         </div>
-        <StatusBadge status={truck.status} />
+        <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+          {(!truck.insuranceStatus || truck.insuranceStatus === "none") && (
+            <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>
+              ⚠ No Ins.
+            </span>
+          )}
+          <StatusBadge status={truck.status} />
+        </div>
       </div>
 
       {/* Meta row */}
