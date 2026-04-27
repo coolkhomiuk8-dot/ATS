@@ -36,7 +36,139 @@ function fmtSize(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-function DocSection({ title, subtitle, docList, category, truck, files, isUploading, fileRef, onToggleDoc, onUpload, onDeleteFile, onPreview, allFiles }) {
+/* ── Upload Modal ── */
+function UploadModal({ category, docList, onClose, onSave }) {
+  const fileRef = useRef(null);
+  const [selectedDoc, setSelectedDoc] = useState(docList[0] || "");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function handleSave() {
+    if (!selectedDoc || !selectedFile || uploading) return;
+    setUploading(true);
+    setError(null);
+    try {
+      await onSave(selectedFile, selectedDoc, category);
+      onClose();
+    } catch (err) {
+      setError(String(err?.message || "Upload failed"));
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 4000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+    >
+      <div style={{ background: "var(--bg-surface)", borderRadius: 16, width: 400, padding: "24px 24px 20px", boxShadow: "0 24px 60px rgba(0,0,0,.3)" }}>
+        {/* Title */}
+        <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)", marginBottom: 4 }}>Upload Document</div>
+        <div style={{ fontSize: 12, color: "var(--text-faint)", marginBottom: 18 }}>
+          Select the document type, then choose your file.
+        </div>
+
+        {/* Doc type list */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 8 }}>Document Type</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            {docList.map((doc) => {
+              const active = selectedDoc === doc;
+              return (
+                <label
+                  key={doc}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "9px 12px", borderRadius: 8, cursor: "pointer",
+                    border: `1.5px solid ${active ? "var(--color-primary)" : "var(--border)"}`,
+                    background: active ? "var(--color-primary-light, #eff6ff)" : "var(--bg-raised)",
+                    transition: "all .1s",
+                  }}
+                >
+                  <div style={{
+                    width: 16, height: 16, borderRadius: "50%", flexShrink: 0,
+                    border: `2px solid ${active ? "var(--color-primary)" : "var(--text-disabled)"}`,
+                    background: active ? "var(--color-primary)" : "transparent",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    {active && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#fff" }} />}
+                  </div>
+                  <input type="radio" name="docType" value={doc} checked={active} onChange={() => setSelectedDoc(doc)} style={{ display: "none" }} />
+                  <span style={{ fontSize: 13, fontWeight: active ? 700 : 400, color: active ? "var(--color-primary-dark, #1e40af)" : "var(--text-secondary)" }}>
+                    {doc}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* File picker */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 8 }}>File</div>
+          <div
+            onClick={() => fileRef.current?.click()}
+            style={{
+              padding: "12px 14px", border: `2px dashed ${selectedFile ? "var(--color-primary)" : "var(--border)"}`,
+              borderRadius: 9, cursor: "pointer", textAlign: "center",
+              color: selectedFile ? "var(--text-secondary)" : "var(--text-disabled)",
+              fontSize: 13, background: selectedFile ? "var(--color-primary-light, #eff6ff)" : "var(--bg-raised)",
+              transition: "all .15s",
+            }}
+          >
+            {selectedFile ? (
+              <span>📄 <strong>{selectedFile.name}</strong> <span style={{ color: "var(--text-faint)", fontWeight: 400 }}>({fmtSize(selectedFile.size)})</span></span>
+            ) : (
+              <span>Click to choose a file… <span style={{ fontSize: 11 }}>(image or PDF)</span></span>
+            )}
+          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*,.pdf"
+            style={{ display: "none" }}
+            onChange={(e) => { setSelectedFile(e.target.files?.[0] || null); e.target.value = ""; }}
+          />
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div style={{ marginBottom: 12, fontSize: 12, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", padding: "7px 10px", borderRadius: 7 }}>
+            ⚠ {error}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={handleSave}
+            disabled={!selectedDoc || !selectedFile || uploading}
+            style={{
+              flex: 1, padding: "11px",
+              background: (!selectedDoc || !selectedFile || uploading) ? "var(--text-disabled)" : "var(--color-primary)",
+              color: "#fff", border: "none", borderRadius: 9, fontSize: 14, fontWeight: 700,
+              cursor: (!selectedDoc || !selectedFile || uploading) ? "default" : "pointer",
+              transition: "background .15s",
+            }}
+          >
+            {uploading ? "Uploading…" : "Upload & Save"}
+          </button>
+          <button
+            onClick={onClose}
+            disabled={uploading}
+            style={{ padding: "11px 18px", background: "var(--bg-raised)", color: "var(--text-muted)", border: "1px solid var(--border)", borderRadius: 9, fontSize: 13, cursor: uploading ? "default" : "pointer" }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Doc Section ── */
+function DocSection({ title, subtitle, docList, truck, files, onOpenUpload, onDeleteFile, onPreview, allFiles }) {
   const received = docList.filter((d) => truck.docs?.[d]).length;
   const isImage = (f) => f.type === "image" || /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(f.name || "");
 
@@ -53,48 +185,54 @@ function DocSection({ title, subtitle, docList, category, truck, files, isUpload
             {received}/{docList.length} docs
           </span>
           <button
-            onClick={() => fileRef.current?.click()}
-            disabled={isUploading}
-            style={{ padding: "5px 12px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: isUploading ? "wait" : "pointer", opacity: isUploading ? .6 : 1 }}
+            onClick={onOpenUpload}
+            style={{ padding: "5px 12px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
           >
-            {isUploading ? "Uploading..." : "+ Upload"}
+            + Upload
           </button>
-          <input ref={fileRef} type="file" multiple accept="image/*,.pdf" style={{ display: "none" }} onChange={(e) => onUpload(e.target.files)} />
         </div>
       </div>
 
-      {/* Checklist */}
-      <div style={{ borderBottom: "1px solid var(--border)" }}>
+      {/* Checklist — read-only, checked only when file is uploaded */}
+      <div style={{ borderBottom: files.length > 0 ? "1px solid var(--border)" : "none" }}>
         {docList.map((docName, idx) => {
           const checked = !!truck.docs?.[docName];
           const linkedFiles = files.filter((f) => f.linkedDoc === docName);
           return (
             <div key={docName} style={{ borderBottom: idx < docList.length - 1 ? "1px solid var(--bg-hover)" : "none" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", cursor: "pointer", background: checked ? "#f0fdf4" : "transparent" }}>
-                <div style={{ width: 17, height: 17, borderRadius: 4, border: `2px solid ${checked ? "#16a34a" : "var(--text-disabled)"}`, background: checked ? "#16a34a" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", background: checked ? "#f0fdf4" : "transparent" }}>
+                {/* Read-only checkbox */}
+                <div style={{
+                  width: 17, height: 17, borderRadius: 4, flexShrink: 0,
+                  border: `2px solid ${checked ? "#16a34a" : "var(--text-disabled)"}`,
+                  background: checked ? "#16a34a" : "transparent",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
                   {checked && <span style={{ color: "#fff", fontSize: 9, fontWeight: 700 }}>✓</span>}
                 </div>
-                <input type="checkbox" checked={checked} onChange={() => onToggleDoc(docName)} style={{ display: "none" }} />
-                <span style={{ fontSize: 13, color: checked ? "#15803d" : "var(--text-secondary)", flex: 1 }}>{docName}</span>
+                <span style={{ fontSize: 13, color: checked ? "#15803d" : "var(--text-secondary)", flex: 1, fontWeight: checked ? 600 : 400 }}>
+                  {docName}
+                </span>
+                {/* Thumbnails for linked files */}
                 {linkedFiles.length > 0 && (
                   <div style={{ display: "flex", gap: 4 }}>
                     {linkedFiles.map((f, i) => {
                       const img = isImage(f) && (f.driveFileId ? `https://drive.google.com/thumbnail?id=${f.driveFileId}&sz=w80` : (f.url || f.data));
                       return img ? (
-                        <img key={i} src={img} alt={f.name} onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPreview(f); }} style={{ width: 28, height: 28, borderRadius: 4, objectFit: "cover", border: "1px solid #86efac", cursor: "zoom-in" }} />
+                        <img key={i} src={img} alt={f.name} onClick={() => onPreview(f)} style={{ width: 28, height: 28, borderRadius: 4, objectFit: "cover", border: "1px solid #86efac", cursor: "zoom-in" }} />
                       ) : (
-                        <a key={i} href={f.url || f.data} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ fontSize: 9, padding: "2px 6px", background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 4, fontWeight: 600, textDecoration: "none" }}>FILE</a>
+                        <a key={i} href={f.url || f.data} target="_blank" rel="noopener noreferrer" style={{ fontSize: 9, padding: "2px 6px", background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 4, fontWeight: 600, textDecoration: "none" }}>FILE</a>
                       );
                     })}
                   </div>
                 )}
-              </label>
+              </div>
             </div>
           );
         })}
       </div>
 
-      {/* Uploaded files for this category */}
+      {/* Uploaded files list */}
       {files.length > 0 && (
         <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
           {files.map((file) => {
@@ -109,7 +247,10 @@ function DocSection({ title, subtitle, docList, category, truck, files, isUpload
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{file.name}</div>
-                  <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 1 }}>{fmtSize(file.size)} · {file.date}</div>
+                  <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 1 }}>
+                    {file.linkedDoc && <span style={{ fontWeight: 700, color: "#15803d" }}>{file.linkedDoc} · </span>}
+                    {fmtSize(file.size)} · {file.date}
+                  </div>
                 </div>
                 <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
                   {img && <button onClick={() => onPreview(file)} style={{ fontSize: 11, color: "var(--color-primary)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>View</button>}
@@ -123,7 +264,7 @@ function DocSection({ title, subtitle, docList, category, truck, files, isUpload
       )}
 
       {files.length === 0 && (
-        <div style={{ padding: "14px", textAlign: "center", fontSize: 12, color: "var(--text-disabled)" }}>
+        <div style={{ padding: "16px", textAlign: "center", fontSize: 12, color: "var(--text-disabled)" }}>
           No files uploaded yet — click + Upload
         </div>
       )}
@@ -131,24 +272,28 @@ function DocSection({ title, subtitle, docList, category, truck, files, isUpload
   );
 }
 
+/* ══════════════════════════════════════════════
+   TRUCK DRAWER
+══════════════════════════════════════════════ */
 export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignDriver, onUnassignDriver }) {
   const { drivers, upd: updateDriver } = useDriversStore();
   const { addTruckFile, deleteTruckFile } = useTrucksStore();
+
   const [tab, setTab] = useState("info");
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({ ...truck });
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showAssignPicker, setShowAssignPicker] = useState(false);
   const [assignSearch, setAssignSearch] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadCategory, setUploadCategory] = useState(null); // "truck" | "driver"
-  const [lightbox, setLightbox] = useState(null); // { url, name }
-  // Insurance inputs — must live at top level to keep hook count stable across tab switches
+  const [lightbox, setLightbox] = useState(null);
+
+  // Upload modal state — null = closed, { category: "truck"|"driver" } = open
+  const [uploadModal, setUploadModal] = useState(null);
+
+  // Insurance inputs — top-level to keep hook count stable across tab switches
   const [alInput, setAlInput] = useState("");
   const [cgInput, setCgInput] = useState("");
   const [drvInsInput, setDrvInsInput] = useState("");
-  const truckFileRef = useRef(null);
-  const driverFileRef = useRef(null);
 
   const assignedDriver = truck.assignedDriverId
     ? drivers.find((d) => d.id === truck.assignedDriverId)
@@ -164,33 +309,33 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
     setEditing(false);
   }
 
-  function toggleDoc(docName) {
-    onUpd(truck.id, { docs: { ...truck.docs, [docName]: !truck.docs?.[docName] } });
+  /* Upload a single file with a known document type */
+  async function handleSingleUpload(rawFile, docName, category) {
+    const fileObj = {
+      name: rawFile.name,
+      type: rawFile.type.startsWith("image/") ? "image" : "file",
+      mime: rawFile.type,
+      size: rawFile.size,
+      rawFile,
+      category,
+      linkedDoc: docName,
+      date: new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
+    };
+    await addTruckFile(truck.id, fileObj);
+    // Auto-check the document
+    onUpd(truck.id, { docs: { ...(truck.docs || {}), [docName]: true } });
   }
 
-  async function handleUpload(rawFiles, category) {
-    if (!rawFiles?.length || isUploading) return;
-    setIsUploading(true);
-    setUploadCategory(category);
-    try {
-      for (const rawFile of Array.from(rawFiles)) {
-        const fileObj = {
-          name: rawFile.name,
-          type: rawFile.type.startsWith("image/") ? "image" : "file",
-          mime: rawFile.type,
-          size: rawFile.size,
-          rawFile,
-          category,
-          date: new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
-          linkedDoc: null,
-        };
-        await addTruckFile(truck.id, fileObj);
+  /* Delete a file and uncheck its linked doc */
+  function handleDeleteFile(globalIdx) {
+    const file = (truck.files || [])[globalIdx];
+    deleteTruckFile(truck.id, globalIdx);
+    if (file?.linkedDoc) {
+      // Only uncheck if no other files are linked to the same doc
+      const remaining = (truck.files || []).filter((f, i) => i !== globalIdx && f.linkedDoc === file.linkedDoc);
+      if (remaining.length === 0) {
+        onUpd(truck.id, { docs: { ...(truck.docs || {}), [file.linkedDoc]: false } });
       }
-    } finally {
-      setIsUploading(false);
-      setUploadCategory(null);
-      if (truckFileRef.current) truckFileRef.current.value = "";
-      if (driverFileRef.current) driverFileRef.current.value = "";
     }
   }
 
@@ -364,53 +509,28 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                 )}
               </div>
 
-              {/* Odometer Section */}
+              {/* Odometer & Oil Change */}
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 10 }}>Odometer & Oil Change</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div>
                     <FL t="Last Oil Change (mi)" />
-                    <input
-                      type="number"
-                      value={truck.lastOilChange || ""}
-                      onChange={(e) => onUpd(truck.id, { lastOilChange: Number(e.target.value) })}
-                      style={inputStyle}
-                      placeholder="0"
-                    />
+                    <input type="number" value={truck.lastOilChange || ""} onChange={(e) => onUpd(truck.id, { lastOilChange: Number(e.target.value) })} style={inputStyle} placeholder="0" />
                   </div>
                   <div>
                     <FL t="Current Odometer (mi)" />
-                    <input
-                      type="number"
-                      value={truck.currentOdometer || ""}
-                      onChange={(e) => onUpd(truck.id, { currentOdometer: Number(e.target.value) })}
-                      style={inputStyle}
-                      placeholder="0"
-                    />
+                    <input type="number" value={truck.currentOdometer || ""} onChange={(e) => onUpd(truck.id, { currentOdometer: Number(e.target.value) })} style={inputStyle} placeholder="0" />
                   </div>
                 </div>
-                <div style={{
-                  background: oilLeft < 0 ? "#fef2f2" : oilLeft < OIL_WARN_URGENT ? "#fff7ed" : oilLeft < OIL_WARN_SOON ? "#fffbeb" : "#f0fdf4",
-                  border: `1px solid ${oilColor}44`, borderRadius: 9, padding: "10px 14px",
-                }}>
+                <div style={{ background: oilLeft < 0 ? "#fef2f2" : oilLeft < OIL_WARN_URGENT ? "#fff7ed" : oilLeft < OIL_WARN_SOON ? "#fffbeb" : "#f0fdf4", border: `1px solid ${oilColor}44`, borderRadius: 9, padding: "10px 14px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
                     <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>Left till oil change</span>
                     <span style={{ fontSize: 14, fontWeight: 800, color: oilColor }}>
-                      {oilLeft < 0
-                        ? `${Math.abs(oilLeft).toLocaleString()} mi OVERDUE`
-                        : oilLeft < OIL_WARN_URGENT
-                          ? `⚠ ${oilLeft.toLocaleString()} mi — Change soon!`
-                          : oilLeft < OIL_WARN_SOON
-                            ? `${oilLeft.toLocaleString()} mi — Coming up`
-                            : `${oilLeft.toLocaleString()} mi`}
+                      {oilLeft < 0 ? `${Math.abs(oilLeft).toLocaleString()} mi OVERDUE` : oilLeft < OIL_WARN_URGENT ? `⚠ ${oilLeft.toLocaleString()} mi — Change soon!` : oilLeft < OIL_WARN_SOON ? `${oilLeft.toLocaleString()} mi — Coming up` : `${oilLeft.toLocaleString()} mi`}
                     </span>
                   </div>
                   <div style={{ height: 6, borderRadius: 99, background: "var(--bg-hover)", overflow: "hidden" }}>
-                    <div style={{
-                      height: "100%",
-                      width: `${Math.max(0, Math.min(100, (oilLeft / OIL_CHANGE_INTERVAL) * 100))}%`,
-                      background: oilColor, borderRadius: 99,
-                    }} />
+                    <div style={{ height: "100%", width: `${Math.max(0, Math.min(100, (oilLeft / OIL_CHANGE_INTERVAL) * 100))}%`, background: oilColor, borderRadius: 99 }} />
                   </div>
                   <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 5 }}>
                     Target interval: {OIL_CHANGE_INTERVAL.toLocaleString()} miles
@@ -425,23 +545,14 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div>
                     <FL t="Status" />
-                    <select
-                      value={truck.status}
-                      onChange={(e) => onUpd(truck.id, { status: e.target.value })}
-                      style={{ ...inputStyle, cursor: "pointer" }}
-                    >
+                    <select value={truck.status} onChange={(e) => onUpd(truck.id, { status: e.target.value })} style={{ ...inputStyle, cursor: "pointer" }}>
                       {TRUCK_STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
                     </select>
                   </div>
                 </div>
                 <div>
                   <FL t="Maintenance / Status Note" />
-                  <input
-                    value={truck.statusNote || ""}
-                    onChange={(e) => onUpd(truck.id, { statusNote: e.target.value })}
-                    style={inputStyle}
-                    placeholder="e.g. На ремонті дилер IL (Addison)"
-                  />
+                  <input value={truck.statusNote || ""} onChange={(e) => onUpd(truck.id, { statusNote: e.target.value })} style={inputStyle} placeholder="e.g. На ремонті дилер IL (Addison)" />
                 </div>
               </div>
 
@@ -486,7 +597,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                         <div style={{ display: "flex", gap: 6 }}>
                           <input value={alInput} onChange={(e) => setAlInput(e.target.value)}
                             onKeyDown={(e) => { if (e.key === "Enter" && alInput.trim()) { onUpd(truck.id, { autoLiabilityCompany: alInput.trim(), autoLiabilityStatus: "active" }); setAlInput(""); } }}
-                            placeholder={alCompany ? "Change company..." : "Enter company name..."}
+                            placeholder={alCompany ? "Change company…" : "Enter company name…"}
                             style={{ flex: 1, padding: "7px 10px", fontSize: 13, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-primary)", outline: "none" }} />
                           <button onClick={() => { if (alInput.trim()) { onUpd(truck.id, { autoLiabilityCompany: alInput.trim(), autoLiabilityStatus: "active" }); setAlInput(""); } }}
                             style={{ padding: "7px 12px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Set</button>
@@ -509,7 +620,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                         <div style={{ display: "flex", gap: 6 }}>
                           <input value={cgInput} onChange={(e) => setCgInput(e.target.value)}
                             onKeyDown={(e) => { if (e.key === "Enter" && cgInput.trim()) { onUpd(truck.id, { cargoInsuranceCompany: cgInput.trim(), cargoInsuranceStatus: "active" }); setCgInput(""); } }}
-                            placeholder={cgCompany ? "Change company..." : "Enter company name..."}
+                            placeholder={cgCompany ? "Change company…" : "Enter company name…"}
                             style={{ flex: 1, padding: "7px 10px", fontSize: 13, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-primary)", outline: "none" }} />
                           <button onClick={() => { if (cgInput.trim()) { onUpd(truck.id, { cargoInsuranceCompany: cgInput.trim(), cargoInsuranceStatus: "active" }); setCgInput(""); } }}
                             style={{ padding: "7px 12px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Set</button>
@@ -540,7 +651,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                             <div style={{ display: "flex", gap: 6 }}>
                               <input value={drvInsInput} onChange={(e) => setDrvInsInput(e.target.value)}
                                 onKeyDown={(e) => e.key === "Enter" && addDrvIns()}
-                                placeholder="Add insurance company..."
+                                placeholder="Add insurance company…"
                                 style={{ flex: 1, padding: "7px 10px", fontSize: 13, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-primary)", outline: "none" }} />
                               <button onClick={addDrvIns} style={{ padding: "7px 12px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>+ Add</button>
                             </div>
@@ -564,7 +675,6 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                         <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-primary-dark)" }}>{assignedDriver.name}</div>
                         <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{assignedDriver.phone}</div>
                       </div>
-                      {/* Tenure badge */}
                       {(() => {
                         const t = tenureLabel(assignedDriver.hireDate);
                         return t ? (
@@ -574,7 +684,6 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                         ) : null;
                       })()}
                     </div>
-                    {/* DL expiry row */}
                     {(() => {
                       const exp = expiryStatus(assignedDriver.dlExpiry);
                       return (
@@ -591,56 +700,28 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                       );
                     })()}
                     <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                      <button
-                        onClick={() => setShowAssignPicker(true)}
-                        style={{ padding: "7px 14px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-                      >
-                        Change Driver
-                      </button>
-                      <button
-                        onClick={() => onUnassignDriver(truck.id)}
-                        style={{ padding: "7px 14px", background: "var(--bg-hover)", color: "var(--text-muted)", border: "1px solid var(--border)", borderRadius: 7, fontSize: 12, cursor: "pointer" }}
-                      >
-                        Unassign
-                      </button>
+                      <button onClick={() => setShowAssignPicker(true)} style={{ padding: "7px 14px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Change Driver</button>
+                      <button onClick={() => onUnassignDriver(truck.id)} style={{ padding: "7px 14px", background: "var(--bg-hover)", color: "var(--text-muted)", border: "1px solid var(--border)", borderRadius: 7, fontSize: 12, cursor: "pointer" }}>Unassign</button>
                     </div>
                   </div>
                 ) : (
                   <div style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px" }}>
                     <div style={{ fontSize: 13, color: "var(--text-faint)", marginBottom: 10 }}>No driver assigned</div>
-                    <button
-                      onClick={() => setShowAssignPicker(true)}
-                      style={{ padding: "8px 16px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-                    >
-                      Assign Driver
-                    </button>
+                    <button onClick={() => setShowAssignPicker(true)} style={{ padding: "8px 16px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Assign Driver</button>
                   </div>
                 )}
 
-                {/* Assign picker dropdown */}
                 {showAssignPicker && (
                   <div style={{ marginTop: 10, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,.12)" }}>
                     <div style={{ padding: "10px 12px", borderBottom: "1px solid var(--border)" }}>
-                      <input
-                        autoFocus
-                        value={assignSearch}
-                        onChange={(e) => setAssignSearch(e.target.value)}
-                        placeholder="Search hired drivers..."
-                        style={{ width: "100%", padding: "7px 10px", fontSize: 13, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 7, outline: "none", color: "var(--text-primary)", boxSizing: "border-box" }}
-                      />
+                      <input autoFocus value={assignSearch} onChange={(e) => setAssignSearch(e.target.value)} placeholder="Search hired drivers…" style={{ width: "100%", padding: "7px 10px", fontSize: 13, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 7, outline: "none", color: "var(--text-primary)", boxSizing: "border-box" }} />
                     </div>
                     <div style={{ maxHeight: 220, overflowY: "auto" }}>
                       {filteredAssignDrivers.length === 0 ? (
                         <div style={{ padding: "14px", fontSize: 13, color: "var(--text-faint)", textAlign: "center" }}>No hired drivers found</div>
                       ) : filteredAssignDrivers.map((d) => (
-                        <button
-                          key={d.id}
-                          onClick={() => { onAssignDriver(truck.id, d.id); setShowAssignPicker(false); setAssignSearch(""); }}
-                          style={{
-                            width: "100%", padding: "10px 14px", border: "none", borderBottom: "1px solid var(--border)",
-                            background: "transparent", cursor: "pointer", textAlign: "left",
-                            display: "flex", flexDirection: "column", gap: 2,
-                          }}
+                        <button key={d.id} onClick={() => { onAssignDriver(truck.id, d.id); setShowAssignPicker(false); setAssignSearch(""); }}
+                          style={{ width: "100%", padding: "10px 14px", border: "none", borderBottom: "1px solid var(--border)", background: "transparent", cursor: "pointer", textAlign: "left", display: "flex", flexDirection: "column", gap: 2 }}
                           onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-hover)"}
                           onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                         >
@@ -649,12 +730,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                         </button>
                       ))}
                     </div>
-                    <button
-                      onClick={() => { setShowAssignPicker(false); setAssignSearch(""); }}
-                      style={{ width: "100%", padding: "9px", background: "var(--bg-raised)", border: "none", borderTop: "1px solid var(--border)", cursor: "pointer", fontSize: 12, color: "var(--text-muted)" }}
-                    >
-                      Cancel
-                    </button>
+                    <button onClick={() => { setShowAssignPicker(false); setAssignSearch(""); }} style={{ width: "100%", padding: "9px", background: "var(--bg-raised)", border: "none", borderTop: "1px solid var(--border)", cursor: "pointer", fontSize: 12, color: "var(--text-muted)" }}>Cancel</button>
                   </div>
                 )}
               </div>
@@ -662,13 +738,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
               {/* Notes */}
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 10 }}>Notes</div>
-                <textarea
-                  value={truck.notes || ""}
-                  onChange={(e) => onUpd(truck.id, { notes: e.target.value })}
-                  rows={3}
-                  placeholder="Any notes about this truck..."
-                  style={{ ...inputStyle, resize: "vertical", lineHeight: 1.6 }}
-                />
+                <textarea value={truck.notes || ""} onChange={(e) => onUpd(truck.id, { notes: e.target.value })} rows={3} placeholder="Any notes about this truck…" style={{ ...inputStyle, resize: "vertical", lineHeight: 1.6 }} />
               </div>
             </div>
           )}
@@ -676,37 +746,25 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
           {/* ── DOCUMENTS TAB ── */}
           {tab === "documents" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
-              {/* ── TRUCK DOCUMENTS ── */}
               <DocSection
                 title="Truck Documents"
                 subtitle="Plates · Registration · VIN Picture"
                 docList={TRUCK_DOC_LIST}
-                category="truck"
                 truck={truck}
                 files={(truck.files || []).filter((f) => f.category === "truck" || !f.category)}
-                isUploading={isUploading && uploadCategory === "truck"}
-                fileRef={truckFileRef}
-                onToggleDoc={toggleDoc}
-                onUpload={(rawFiles) => handleUpload(rawFiles, "truck")}
-                onDeleteFile={(globalIdx) => deleteTruckFile(truck.id, globalIdx)}
+                onOpenUpload={() => setUploadModal({ category: "truck" })}
+                onDeleteFile={handleDeleteFile}
                 onPreview={(file) => setLightbox({ url: file.driveFileId ? `https://drive.google.com/thumbnail?id=${file.driveFileId}&sz=w1200` : (file.url || file.data), name: file.name })}
                 allFiles={truck.files || []}
               />
-
-              {/* ── DRIVER DOCUMENTS ── */}
               <DocSection
                 title="Driver Documents"
                 subtitle="Driver License · MVR · Criminal Record"
                 docList={DRIVER_DOC_LIST}
-                category="driver"
                 truck={truck}
                 files={(truck.files || []).filter((f) => f.category === "driver")}
-                isUploading={isUploading && uploadCategory === "driver"}
-                fileRef={driverFileRef}
-                onToggleDoc={toggleDoc}
-                onUpload={(rawFiles) => handleUpload(rawFiles, "driver")}
-                onDeleteFile={(globalIdx) => deleteTruckFile(truck.id, globalIdx)}
+                onOpenUpload={() => setUploadModal({ category: "driver" })}
+                onDeleteFile={handleDeleteFile}
                 onPreview={(file) => setLightbox({ url: file.driveFileId ? `https://drive.google.com/thumbnail?id=${file.driveFileId}&sz=w1200` : (file.url || file.data), name: file.name })}
                 allFiles={truck.files || []}
               />
@@ -715,10 +773,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
 
           {/* Lightbox */}
           {lightbox && (
-            <div
-              onClick={() => setLightbox(null)}
-              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.85)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
-            >
+            <div onClick={() => setLightbox(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.85)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
               <div onClick={(e) => e.stopPropagation()} style={{ position: "relative", maxWidth: "90vw", maxHeight: "90vh" }}>
                 <img src={lightbox.url} alt={lightbox.name} style={{ maxWidth: "100%", maxHeight: "85vh", borderRadius: 10, boxShadow: "0 20px 60px rgba(0,0,0,.5)", display: "block" }} onError={(e) => { e.target.style.display = "none"; }} />
                 <div style={{ textAlign: "center", color: "#fff", fontSize: 12, marginTop: 8, opacity: .7 }}>{lightbox.name}</div>
@@ -728,6 +783,16 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
           )}
         </div>
       </div>
+
+      {/* Upload Modal */}
+      {uploadModal && (
+        <UploadModal
+          category={uploadModal.category}
+          docList={uploadModal.category === "truck" ? TRUCK_DOC_LIST : DRIVER_DOC_LIST}
+          onClose={() => setUploadModal(null)}
+          onSave={handleSingleUpload}
+        />
+      )}
     </div>
   );
 }
