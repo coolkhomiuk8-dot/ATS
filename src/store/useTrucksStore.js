@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { db, ensureAuthReady, isFirebaseConfigured } from "../lib/firebase";
+import { db, auth, ensureAuthReady, isFirebaseConfigured } from "../lib/firebase";
 import {
   collection,
   deleteDoc,
@@ -8,6 +8,58 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
+
+const driveUploadTruckEndpoint = import.meta.env.VITE_DRIVE_UPLOAD_TRUCK_ENDPOINT || "/.netlify/functions/driveUploadTruck";
+const driveDeleteEndpoint = import.meta.env.VITE_DRIVE_DELETE_ENDPOINT || "/.netlify/functions/driveDelete";
+
+function sanitizeFileForDb(file) {
+  const clean = {};
+  const allowed = ["name", "type", "mime", "size", "date", "url", "data", "viewUrl", "contentUrl", "driveFileId", "folderId", "folderName", "linkedDoc", "category"];
+  for (const key of allowed) {
+    if (file[key] !== undefined && file[key] !== null) clean[key] = file[key];
+  }
+  return clean;
+}
+
+async function uploadTruckFile(truckId, fileObj) {
+  if (!fileObj.rawFile) return sanitizeFileForDb(fileObj);
+
+  if (!auth?.currentUser) throw new Error("Not authenticated. Sign in again.");
+  const idToken = await auth.currentUser.getIdToken();
+
+  const formData = new FormData();
+  formData.append("file", fileObj.rawFile, fileObj.name);
+  formData.append("truckId", String(truckId));
+
+  const response = await fetch(driveUploadTruckEndpoint, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${idToken}` },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `Drive upload failed (${response.status}).`);
+  }
+
+  const payload = await response.json().catch(() => ({}));
+  const viewUrl = payload.webViewLink || payload.url || "";
+  const contentUrl = payload.webContentLink || "";
+  const driveUrl = fileObj.type === "image" ? contentUrl || viewUrl : viewUrl || contentUrl;
+
+  if (!driveUrl) throw new Error("Upload succeeded but no URL returned.");
+
+  return sanitizeFileForDb({
+    ...fileObj,
+    url: driveUrl,
+    data: driveUrl,
+    viewUrl,
+    contentUrl,
+    driveFileId: payload.id || payload.fileId || null,
+    folderId: payload.folderId || null,
+    folderName: payload.folderName || null,
+  });
+}
 
 function ensureTruckShape(truck) {
   return {
@@ -135,5 +187,34 @@ export const useTrucksStore = create((set, get) => ({
 
   unassignDriver: async (truckId) => {
     return get().updateTruck(truckId, { assignedDriverId: null });
+  },
+
+  addTruckFile: async (truckId, fileObj) => {
+    const uploaded = await uploadTruckFile(truckId, fileObj);
+    const truck = get().trucks.find((t) => t.id === truckId);
+    if (!truck) return;
+    const files = [...(truck.files || []), uploaded];
+    return get().updateTruck(truckId, { files });
+  },
+
+  deleteTruckFile: async (truckId, fileIdx) => {
+    const truck = get().trucks.find((t) => t.id === truckId);
+    if (!truck) return;
+    const file = (truck.files || [])[fileIdx];
+
+    // Try to delete from Drive
+    if (file?.driveFileId && auth?.currentUser) {
+      try {
+        const idToken = await auth.currentUser.getIdToken();
+        await fetch(driveDeleteEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+          body: JSON.stringify({ fileId: file.driveFileId }),
+        });
+      } catch (_) { /* non-critical */ }
+    }
+
+    const files = (truck.files || []).filter((_, i) => i !== fileIdx);
+    return get().updateTruck(truckId, { files });
   },
 }));

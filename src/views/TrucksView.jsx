@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useTrucksStore } from "../store/useTrucksStore";
 import { useDriversStore } from "../store/useDriversStore";
-import { TRUCK_STATUSES, TRUCK_DOC_LIST, TRUCK_COMPANIES, OIL_CHANGE_INTERVAL } from "../constants/truckData";
+import { TRUCK_STATUSES, TRUCK_DOC_LIST, DRIVER_DOC_LIST, OIL_CHANGE_INTERVAL, OIL_WARN_SOON, OIL_WARN_URGENT } from "../constants/truckData";
 import TruckDrawer from "../components/TruckDrawer";
 
 function StatusBadge({ status }) {
@@ -17,18 +17,29 @@ function StatusBadge({ status }) {
   );
 }
 
+function oilColor(left) {
+  if (left < 0) return "#dc2626";          // red — overdue
+  if (left < OIL_WARN_URGENT) return "#f97316"; // orange — < 500 mi
+  if (left < OIL_WARN_SOON)   return "#f59e0b"; // yellow — < 1000 mi
+  return "#16a34a";                         // green — ok
+}
+
 function OilBar({ last, current }) {
-  const interval = OIL_CHANGE_INTERVAL;
-  const left = interval - (Number(current) - Number(last));
-  const pct = Math.max(0, Math.min(100, (left / interval) * 100));
-  const color = left < 0 ? "#dc2626" : left < 1500 ? "#f59e0b" : "#16a34a";
+  const left = OIL_CHANGE_INTERVAL - (Number(current) - Number(last));
+  const pct = Math.max(0, Math.min(100, (left / OIL_CHANGE_INTERVAL) * 100));
+  const color = oilColor(left);
+  const label = left < 0
+    ? `⚠ ${Math.abs(left).toLocaleString()} mi OVERDUE`
+    : left < OIL_WARN_URGENT
+      ? `🔴 ${left.toLocaleString()} mi left`
+      : left < OIL_WARN_SOON
+        ? `⚠ ${left.toLocaleString()} mi left`
+        : `${left.toLocaleString()} mi left`;
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text-faint)", marginBottom: 3 }}>
         <span>{Number(last).toLocaleString()} mi</span>
-        <span style={{ color, fontWeight: 700 }}>
-          {left >= 0 ? `${left.toLocaleString()} left` : `${Math.abs(left).toLocaleString()} overdue`}
-        </span>
+        <span style={{ color, fontWeight: 700 }}>{label}</span>
       </div>
       <div style={{ height: 4, borderRadius: 99, background: "var(--bg-hover)", overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 99, transition: "width .3s" }} />
@@ -37,9 +48,65 @@ function OilBar({ last, current }) {
   );
 }
 
-function TruckCard({ truck, driver, onClick }) {
+function DocBadge({ docName, category, files, onUpload, onPreview }) {
+  const fileRef = useRef(null);
+  const linked = (files || []).find((f) => f.linkedDoc === docName);
+  const isImg = linked && (linked.type === "image" || /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(linked.name || ""));
+  const thumbUrl = linked?.driveFileId
+    ? `https://drive.google.com/thumbnail?id=${linked.driveFileId}&sz=w80`
+    : (linked?.url || linked?.data || null);
+  const hasFile = !!linked;
+
+  function handleClick(e) {
+    e.stopPropagation();
+    if (hasFile) {
+      if (isImg && thumbUrl) onPreview(linked);
+      else window.open(linked.url || linked.data, "_blank");
+    } else {
+      fileRef.current?.click();
+    }
+  }
+
+  return (
+    <span
+      onClick={handleClick}
+      title={hasFile ? `Open ${docName}` : `Upload ${docName}`}
+      style={{
+        position: "relative",
+        display: "inline-flex", alignItems: "center", gap: 3,
+        fontSize: 9, padding: "2px 6px", borderRadius: 5, fontWeight: 600,
+        background: hasFile ? "#dcfce7" : "var(--bg-raised)",
+        color: hasFile ? "#16a34a" : "var(--text-muted)",
+        border: `1px solid ${hasFile ? "#86efac" : "var(--border)"}`,
+        whiteSpace: "nowrap", cursor: "pointer",
+        transition: "all .1s",
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.opacity = ".75"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+    >
+      {isImg && thumbUrl
+        ? <img src={thumbUrl} alt="" style={{ width: 14, height: 14, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
+        : hasFile ? "📄" : "⬆"}
+      {docName.split(" ")[0]}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*,.pdf"
+        style={{ display: "none" }}
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onUpload(f, docName, category);
+          e.target.value = "";
+        }}
+      />
+    </span>
+  );
+}
+
+function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc }) {
   const vinShort = truck.vinNumber ? truck.vinNumber.slice(-6) : "—";
-  const docsCount = Object.values(truck.docs || {}).filter(Boolean).length;
+  const oilLeft = OIL_CHANGE_INTERVAL - (Number(truck.currentOdometer) - Number(truck.lastOilChange));
+  const files = truck.files || [];
 
   return (
     <div
@@ -48,109 +115,121 @@ function TruckCard({ truck, driver, onClick }) {
         background: "var(--bg-surface)",
         border: "1px solid var(--border)",
         borderRadius: 12,
-        padding: "14px 16px",
+        padding: "12px 18px",
         cursor: "pointer",
         transition: "all .15s",
         display: "flex",
-        flexDirection: "column",
-        gap: 8,
+        alignItems: "center",
+        gap: 0,
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-primary)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(37,99,235,.1)"; }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-primary)"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(37,99,235,.08)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
     >
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-1px" }}>
+      {/* Col 1 — Unit + status */}
+      <div style={{ minWidth: 110, flexShrink: 0, paddingRight: 16, borderRight: "1px solid var(--border)" }}>
+        <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-1px", lineHeight: 1.1 }}>
           Unit {truck.unitNumber || "—"}
         </div>
-        <StatusBadge status={truck.status} />
-      </div>
-      {/* Insurance badges */}
-      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: truck.autoLiabilityStatus === "active" ? "#f0fdf4" : "#fef2f2", color: truck.autoLiabilityStatus === "active" ? "#15803d" : "#dc2626", border: `1px solid ${truck.autoLiabilityStatus === "active" ? "#86efac" : "#fecaca"}` }}>
-          {truck.autoLiabilityStatus === "active" ? "✓" : "⚠"} Auto Liability
-        </span>
-        <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: truck.cargoInsuranceStatus === "active" ? "#f0fdf4" : "#fef2f2", color: truck.cargoInsuranceStatus === "active" ? "#15803d" : "#dc2626", border: `1px solid ${truck.cargoInsuranceStatus === "active" ? "#86efac" : "#fecaca"}` }}>
-          {truck.cargoInsuranceStatus === "active" ? "✓" : "⚠"} Cargo
-        </span>
-      </div>
-
-      {/* Meta row */}
-      <div style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <span>{truck.year || "—"}</span>
-        {truck.truckCompany && <span style={{ fontWeight: 600, color: "var(--text-secondary)" }}>{truck.truckCompany}</span>}
-        {truck.eldId && <span style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 5, padding: "1px 6px", fontSize: 11 }}>ELD: {truck.eldId}</span>}
-      </div>
-
-      {/* VIN */}
-      <div style={{ fontSize: 11, color: "var(--text-faint)", fontFamily: "monospace" }}>
-        VIN ...{vinShort}
-      </div>
-
-      {/* Driver */}
-      <div style={{
-        background: driver ? "var(--color-primary-light)" : "var(--bg-raised)",
-        border: `1px solid ${driver ? "var(--color-primary-border)" : "var(--border)"}`,
-        borderRadius: 7,
-        padding: "6px 10px",
-        fontSize: 12,
-        color: driver ? "var(--color-primary-dark)" : "var(--text-faint)",
-        fontWeight: driver ? 600 : 400,
-      }}>
-        {driver ? `🚗 ${driver.name}` : "Available — no driver assigned"}
-      </div>
-
-      {/* Fuel card */}
-      {truck.fuelCard && (
-        <div style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "monospace" }}>
-          Fuel: {truck.fuelCard}
+        <div style={{ marginTop: 5 }}>
+          <StatusBadge status={truck.status} />
         </div>
-      )}
+        {truck.year && <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 4 }}>{truck.year}</div>}
+        {vinShort !== "—" && <div style={{ fontSize: 10, color: "var(--text-faint)", fontFamily: "monospace", marginTop: 2 }}>...{vinShort}</div>}
+      </div>
 
-      {/* Oil change bar */}
-      {(truck.lastOilChange || truck.currentOdometer) ? (
-        <OilBar last={truck.lastOilChange} current={truck.currentOdometer} />
-      ) : null}
-
-      {/* Docs mini badges */}
-      <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
-        {TRUCK_DOC_LIST.map((doc) => (
-          <span key={doc} style={{
-            fontSize: 9, padding: "1px 5px", borderRadius: 4, fontWeight: 600,
-            background: truck.docs?.[doc] ? "#dcfce7" : "var(--bg-raised)",
-            color: truck.docs?.[doc] ? "#16a34a" : "var(--text-disabled)",
-            border: `1px solid ${truck.docs?.[doc] ? "#86efac" : "var(--border)"}`,
-            whiteSpace: "nowrap",
-          }}>
-            {doc.split(" ")[0]}
-          </span>
-        ))}
-        <span style={{ fontSize: 10, color: "var(--text-faint)", marginLeft: 2, alignSelf: "center" }}>
-          {docsCount}/{TRUCK_DOC_LIST.length}
+      {/* Col 2 — Insurance */}
+      <div style={{ minWidth: 160, flexShrink: 0, padding: "0 16px", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 4 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 2 }}>Insurance</div>
+        <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: truck.autoLiabilityCompany ? "#f0fdf4" : "#fef2f2", color: truck.autoLiabilityCompany ? "#15803d" : "#dc2626", border: `1px solid ${truck.autoLiabilityCompany ? "#86efac" : "#fecaca"}`, whiteSpace: "nowrap" }}>
+          {truck.autoLiabilityCompany ? `✓ AL: ${truck.autoLiabilityCompany}` : "⚠ Auto Liability"}
+        </span>
+        <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: truck.cargoInsuranceCompany ? "#f0fdf4" : "#fef2f2", color: truck.cargoInsuranceCompany ? "#15803d" : "#dc2626", border: `1px solid ${truck.cargoInsuranceCompany ? "#86efac" : "#fecaca"}`, whiteSpace: "nowrap" }}>
+          {truck.cargoInsuranceCompany ? `✓ Cargo: ${truck.cargoInsuranceCompany}` : "⚠ Cargo"}
         </span>
       </div>
 
-      {/* Status note */}
-      {truck.statusNote && (
-        <div style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic", marginTop: 2 }}>
-          {truck.statusNote}
+      {/* Col 3 — Driver */}
+      <div style={{ minWidth: 180, flexShrink: 0, padding: "0 16px", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 4 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 2 }}>Driver</div>
+        <div style={{ fontSize: 12, fontWeight: driver ? 600 : 400, color: driver ? "var(--color-primary-dark)" : "var(--text-faint)" }}>
+          {driver ? `🚗 ${driver.name}` : "Available"}
         </div>
-      )}
+        {driver && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+            {(driver.insuranceCompanies || []).length === 0
+              ? <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 4, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>⚠ No Ins.</span>
+              : (driver.insuranceCompanies || []).map((c) => (
+                  <span key={c} style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 4, background: "#f0fdf4", color: "#15803d", border: "1px solid #86efac" }}>✓ {c}</span>
+                ))
+            }
+          </div>
+        )}
+      </div>
+
+      {/* Col 4 — Oil */}
+      <div style={{ minWidth: 180, flexShrink: 0, padding: "0 16px", borderRight: "1px solid var(--border)" }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>Oil Change</div>
+        {(truck.lastOilChange || truck.currentOdometer)
+          ? <OilBar last={truck.lastOilChange} current={truck.currentOdometer} />
+          : <span style={{ fontSize: 11, color: "var(--text-disabled)" }}>No data</span>
+        }
+        {truck.fuelCard && <div style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "monospace", marginTop: 5 }}>⛽ {truck.fuelCard}</div>}
+      </div>
+
+      {/* Col 5 — Docs */}
+      <div style={{ flex: 1, padding: "0 0 0 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+        <div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Truck Docs</div>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {TRUCK_DOC_LIST.map((doc) => (
+              <DocBadge key={doc} docName={doc} category="truck" files={files} onUpload={onUploadDoc} onPreview={onPreviewDoc} />
+            ))}
+          </div>
+        </div>
+        <div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Driver Docs</div>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {DRIVER_DOC_LIST.map((doc) => (
+              <DocBadge key={doc} docName={doc} category="driver" files={files} onUpload={onUploadDoc} onPreview={onPreviewDoc} />
+            ))}
+          </div>
+        </div>
+        {truck.eldId && <div style={{ fontSize: 10, color: "var(--text-muted)" }}>ELD: {truck.eldId}</div>}
+        {truck.statusNote && <div style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic" }}>{truck.statusNote}</div>}
+      </div>
     </div>
   );
 }
 
 export default function TrucksView() {
-  const { trucks, addTruck, updateTruck, deleteTruck, assignDriver, unassignDriver } = useTrucksStore();
+  const { trucks, addTruck, updateTruck, deleteTruck, assignDriver, unassignDriver, addTruckFile } = useTrucksStore();
   const { drivers } = useDriversStore();
 
   const [selectedId, setSelectedId] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [lightbox, setLightbox] = useState(null); // { url, name }
+
+  async function handleDocUpload(truckId, rawFile, docName, category) {
+    const fileObj = {
+      name: rawFile.name,
+      type: rawFile.type.startsWith("image/") ? "image" : "file",
+      mime: rawFile.type,
+      size: rawFile.size,
+      rawFile,
+      category,
+      linkedDoc: docName,
+      date: new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
+    };
+    await addTruckFile(truckId, fileObj);
+    // also mark doc as received
+    const truck = trucks.find((t) => t.id === truckId);
+    if (truck) updateTruck(truckId, { docs: { ...(truck.docs || {}), [docName]: true } });
+  }
   const [form, setForm] = useState({
     unitNumber: "", year: "", maxWeight: "", vinNumber: "",
-    truckCompany: "SKP BROKERAGE", eldId: "", status: "active",
+    eldId: "", status: "active",
     statusNote: "", homeLocation: "", fuelCard: "",
     lastOilChange: "", currentOdometer: "", notes: "",
     autoLiabilityStatus: "none", autoLiabilityCompany: "",
@@ -164,7 +243,7 @@ export default function TrucksView() {
     await addTruck(form);
     setForm({
       unitNumber: "", year: "", maxWeight: "", vinNumber: "",
-      truckCompany: "SKP BROKERAGE", eldId: "", status: "active",
+      eldId: "", status: "active",
       statusNote: "", homeLocation: "", fuelCard: "",
       lastOilChange: "", currentOdometer: "", notes: "",
       autoLiabilityStatus: "none", autoLiabilityCompany: "",
@@ -186,7 +265,6 @@ export default function TrucksView() {
       return (
         String(t.unitNumber).toLowerCase().includes(q) ||
         String(t.vinNumber).toLowerCase().includes(q) ||
-        String(t.truckCompany).toLowerCase().includes(q) ||
         driverName.includes(q)
       );
     });
@@ -299,11 +377,7 @@ export default function TrucksView() {
             {trucks.length === 0 ? "No trucks yet — click + Add Truck to get started." : "No trucks match your search."}
           </div>
         ) : (
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: 14,
-          }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {filtered.map((truck) => {
               const driver = truck.assignedDriverId
                 ? drivers.find((d) => d.id === truck.assignedDriverId)
@@ -314,12 +388,30 @@ export default function TrucksView() {
                   truck={truck}
                   driver={driver}
                   onClick={() => setSelectedId(truck.id)}
+                  onUploadDoc={(rawFile, docName, category) => handleDocUpload(truck.id, rawFile, docName, category)}
+                  onPreviewDoc={(file) => {
+                    const url = file.driveFileId
+                      ? `https://drive.google.com/thumbnail?id=${file.driveFileId}&sz=w1200`
+                      : (file.url || file.data);
+                    setLightbox({ url, name: file.name });
+                  }}
                 />
               );
             })}
           </div>
         )}
       </div>
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div onClick={() => setLightbox(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.88)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: "relative", maxWidth: "92vw", maxHeight: "92vh" }}>
+            <img src={lightbox.url} alt={lightbox.name} style={{ maxWidth: "100%", maxHeight: "88vh", borderRadius: 10, boxShadow: "0 20px 60px rgba(0,0,0,.5)", display: "block" }} />
+            <div style={{ textAlign: "center", color: "#fff", fontSize: 12, marginTop: 8, opacity: .6 }}>{lightbox.name}</div>
+            <button onClick={() => setLightbox(null)} style={{ position: "absolute", top: -14, right: -14, background: "#fff", border: "none", borderRadius: "50%", width: 30, height: 30, cursor: "pointer", fontSize: 16, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,.3)" }}>×</button>
+          </div>
+        </div>
+      )}
 
       {/* Truck drawer */}
       {selectedTruck && (
@@ -370,12 +462,6 @@ export default function TrucksView() {
                   <input value={form.maxWeight} onChange={(e) => setF("maxWeight", e.target.value)} style={inputStyle} placeholder="5900" />
                 </div>
                 <div>
-                  <div style={labelStyle}>Company</div>
-                  <select value={form.truckCompany} onChange={(e) => setF("truckCompany", e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                    {TRUCK_COMPANIES.map((c) => <option key={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div>
                   <div style={labelStyle}>ELD ID</div>
                   <input value={form.eldId} onChange={(e) => setF("eldId", e.target.value)} style={inputStyle} placeholder="EZ" />
                 </div>
@@ -408,26 +494,12 @@ export default function TrucksView() {
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 10 }}>Insurance</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   <div>
-                    <div style={labelStyle}>Auto Liability</div>
-                    <select value={form.autoLiabilityStatus} onChange={(e) => setF("autoLiabilityStatus", e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                      <option value="none">Not on Insurance</option>
-                      <option value="active">On Insurance ✓</option>
-                    </select>
-                  </div>
-                  <div>
                     <div style={labelStyle}>Auto Liability Company</div>
-                    <input value={form.autoLiabilityCompany} onChange={(e) => setF("autoLiabilityCompany", e.target.value)} style={inputStyle} placeholder="e.g. Progressive" />
-                  </div>
-                  <div>
-                    <div style={labelStyle}>Cargo Insurance</div>
-                    <select value={form.cargoInsuranceStatus} onChange={(e) => setF("cargoInsuranceStatus", e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                      <option value="none">Not on Insurance</option>
-                      <option value="active">On Insurance ✓</option>
-                    </select>
+                    <input value={form.autoLiabilityCompany} onChange={(e) => setF("autoLiabilityCompany", e.target.value)} onBlur={(e) => setF("autoLiabilityStatus", e.target.value.trim() ? "active" : "none")} style={inputStyle} placeholder="e.g. Progressive" />
                   </div>
                   <div>
                     <div style={labelStyle}>Cargo Insurance Company</div>
-                    <input value={form.cargoInsuranceCompany} onChange={(e) => setF("cargoInsuranceCompany", e.target.value)} style={inputStyle} placeholder="e.g. State Farm" />
+                    <input value={form.cargoInsuranceCompany} onChange={(e) => setF("cargoInsuranceCompany", e.target.value)} onBlur={(e) => setF("cargoInsuranceStatus", e.target.value.trim() ? "active" : "none")} style={inputStyle} placeholder="e.g. State Farm" />
                   </div>
                 </div>
               </div>

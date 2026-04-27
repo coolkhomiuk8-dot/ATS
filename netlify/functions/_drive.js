@@ -135,6 +135,17 @@ export async function ensureDriverFolder(drive, driverKey) {
   return { folderId: created.id, folderName: safeKey };
 }
 
+export async function ensureTruckFolder(drive, truckKey) {
+  const safeKey = normalizeFolderPart(`truck_unit_${truckKey}`) || "truck_unknown";
+  const rootId = await ensureRootFolder(drive);
+
+  const existing = await findChildFolder(drive, rootId, safeKey);
+  if (existing?.id) return { folderId: existing.id, folderName: safeKey };
+
+  const created = await createFolder(drive, rootId, safeKey);
+  return { folderId: created.id, folderName: safeKey };
+}
+
 export async function makeFilePublicReadable(drive, fileId) {
   await drive.permissions.create({
     fileId,
