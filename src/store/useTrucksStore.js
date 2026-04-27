@@ -74,6 +74,7 @@ function ensureTruckShape(truck) {
     statusNote: "",
     homeLocation: "",
     fuelCard: "",
+    platesExpiry: "",
     lastOilChange: 0,
     currentOdometer: 0,
     assignedDriverId: null,

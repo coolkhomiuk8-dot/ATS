@@ -68,6 +68,8 @@ function ensureDriverShape(driver) {
     createdAt: null,
     qualifications: [],
     stageHistory: [],
+    dlExpiry: "",
+    hireDate: "",
     ...driver,
   };
 }

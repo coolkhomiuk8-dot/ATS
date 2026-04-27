@@ -44,6 +44,11 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    match /trucks/{truckId} {
+      allow read: if isUser();
+      allow create, update, delete: if isAdmin();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { AVAILABILITY_OPTIONS, DOC_LIST, FLAGS_OPT, SOURCES, STAGES, TRUCK_TYPES } from "../constants/data";
-import { fmtDate, minutesUntil } from "../utils/date";
+import { fmtDate, minutesUntil, expiryStatus, tenureLabel } from "../utils/date";
 import { fmtSize } from "../utils/file";
 import { Btn, FL } from "./UiBits";
 import { useTrucksStore } from "../store/useTrucksStore";
@@ -453,6 +453,27 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                     </select>
                   </div>
 
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div>
+                      <FL t="Driver License Expires" />
+                      <input
+                        type="date"
+                        value={editData.dlExpiry || ""}
+                        onChange={(e) => setEditData((prev) => ({ ...prev, dlExpiry: e.target.value }))}
+                        style={{ width: "100%", padding: "8px 10px", fontSize: 13, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-secondary)", outline: "none", boxSizing: "border-box" }}
+                      />
+                    </div>
+                    <div>
+                      <FL t="Hire Date" />
+                      <input
+                        type="date"
+                        value={editData.hireDate || ""}
+                        onChange={(e) => setEditData((prev) => ({ ...prev, hireDate: e.target.value }))}
+                        style={{ width: "100%", padding: "8px 10px", fontSize: 13, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-secondary)", outline: "none", boxSizing: "border-box" }}
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <FL t="Truck Type" />
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
@@ -523,6 +544,41 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                       }
                     </div>
                   </div>
+                  {/* DL Expiry + Hire Date badges */}
+                  {(driver.dlExpiry || driver.hireDate) && (() => {
+                    const dlExp = expiryStatus(driver.dlExpiry);
+                    const tenure = tenureLabel(driver.hireDate);
+                    return (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {driver.dlExpiry && (
+                          <div style={{ background: dlExp ? dlExp.bg : "var(--bg-raised)", border: `1px solid ${dlExp ? dlExp.border : "var(--border)"}`, borderRadius: 9, padding: "10px 13px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <div>
+                              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 2 }}>Driver License Expires</div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{fmtDate(driver.dlExpiry)}</div>
+                            </div>
+                            {dlExp && (
+                              <span style={{ fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 20, background: dlExp.color + "22", color: dlExp.color, border: `1px solid ${dlExp.border}`, flexShrink: 0 }}>
+                                {dlExp.label}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {driver.hireDate && (
+                          <div style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 9, padding: "10px 13px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <div>
+                              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 2 }}>Hire Date</div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{fmtDate(driver.hireDate)}</div>
+                            </div>
+                            {tenure && (
+                              <span style={{ fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 20, background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", flexShrink: 0 }}>
+                                🗓 {tenure}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                   <Btn label="Edit Info" onClick={() => { setEditData({ ...driver }); setEditing(true); }} />
                 </>
               )}

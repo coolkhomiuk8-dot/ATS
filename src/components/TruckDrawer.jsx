@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { TRUCK_STATUSES, TRUCK_DOC_LIST, DRIVER_DOC_LIST, OIL_CHANGE_INTERVAL, OIL_WARN_SOON, OIL_WARN_URGENT } from "../constants/truckData";
 import { useDriversStore } from "../store/useDriversStore";
 import { useTrucksStore } from "../store/useTrucksStore";
+import { expiryStatus, tenureLabel, fmtDate } from "../utils/date";
 
 function FL({ t }) {
   return <div style={{ fontSize: 11, color: "var(--text-faint)", marginBottom: 3, fontWeight: 600 }}>{t}</div>;
@@ -307,9 +308,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                       {[
                         ["unitNumber", "Unit #"],
                         ["year", "Year"],
-                        ["maxWeight", "Max Weight (lbs)"],
                         ["vinNumber", "VIN"],
-                        ["eldId", "ELD ID"],
                         ["homeLocation", "Home Location"],
                         ["fuelCard", "Fuel Card"],
                       ].map(([key, label]) => (
@@ -318,6 +317,10 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                           <input value={editData[key] || ""} onChange={(e) => setED(key, e.target.value)} style={inputStyle} />
                         </div>
                       ))}
+                      <div>
+                        <FL t="Plates Expiry" />
+                        <input type="date" value={editData.platesExpiry || ""} onChange={(e) => setED("platesExpiry", e.target.value)} style={inputStyle} />
+                      </div>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
                       <button onClick={saveEdit} style={{ flex: 1, padding: "9px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Save</button>
@@ -325,14 +328,35 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                     </div>
                   </div>
                 ) : (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                    <InfoBox label="Year" value={truck.year} />
-                    <InfoBox label="Max Weight" value={truck.maxWeight ? `${truck.maxWeight} lbs` : null} />
-                    <InfoBox label="ELD ID" value={truck.eldId} />
-                    <InfoBox label="VIN" value={truck.vinNumber} />
-                    <InfoBox label="Home Location" value={truck.homeLocation} />
-                    <InfoBox label="Fuel Card" value={truck.fuelCard} />
-                  </div>
+                  <>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      <InfoBox label="Year" value={truck.year} />
+                      <InfoBox label="VIN" value={truck.vinNumber} />
+                      <InfoBox label="Home Location" value={truck.homeLocation} />
+                      <InfoBox label="Fuel Card" value={truck.fuelCard} />
+                    </div>
+                    {/* Plates expiry */}
+                    {(() => {
+                      const exp = expiryStatus(truck.platesExpiry);
+                      return (
+                        <div style={{ background: exp ? exp.bg : "var(--bg-raised)", border: `1px solid ${exp ? exp.border : "var(--border)"}`, borderRadius: 8, padding: "9px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 2 }}>
+                          <div>
+                            <div style={{ fontSize: 10, color: "var(--text-faint)", fontWeight: 600, marginBottom: 2 }}>PLATES EXPIRY</div>
+                            <div style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 600 }}>
+                              {truck.platesExpiry ? fmtDate(truck.platesExpiry) : "Not set"}
+                            </div>
+                          </div>
+                          {exp ? (
+                            <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 20, background: exp.color + "22", color: exp.color, border: `1px solid ${exp.border}` }}>
+                              {exp.label}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-disabled)" }}>Set expiry date ↑</span>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </>
                 )}
               </div>
 
@@ -559,8 +583,37 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
 
                 {assignedDriver ? (
                   <div style={{ background: "var(--color-primary-light)", border: "1px solid var(--color-primary-border)", borderRadius: 10, padding: "12px 14px" }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-primary-dark)" }}>{assignedDriver.name}</div>
-                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{assignedDriver.phone}</div>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-primary-dark)" }}>{assignedDriver.name}</div>
+                        <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{assignedDriver.phone}</div>
+                      </div>
+                      {/* Tenure badge */}
+                      {(() => {
+                        const t = tenureLabel(assignedDriver.hireDate);
+                        return t ? (
+                          <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 20, background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", flexShrink: 0 }}>
+                            🗓 {t}
+                          </span>
+                        ) : null;
+                      })()}
+                    </div>
+                    {/* DL expiry row */}
+                    {(() => {
+                      const exp = expiryStatus(assignedDriver.dlExpiry);
+                      return (
+                        <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 11, color: "var(--text-faint)", fontWeight: 600 }}>DL expires:</span>
+                          {assignedDriver.dlExpiry ? (
+                            <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: exp ? exp.color + "22" : "var(--bg-hover)", color: exp ? exp.color : "var(--text-muted)", border: `1px solid ${exp ? exp.border : "var(--border)"}` }}>
+                              {fmtDate(assignedDriver.dlExpiry)} · {exp?.label || ""}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: 11, color: "var(--text-disabled)" }}>Not set</span>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                       <button
                         onClick={() => setShowAssignPicker(true)}

@@ -2,6 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import { useTrucksStore } from "../store/useTrucksStore";
 import { useDriversStore } from "../store/useDriversStore";
 import { TRUCK_STATUSES, TRUCK_DOC_LIST, DRIVER_DOC_LIST, OIL_CHANGE_INTERVAL, OIL_WARN_SOON, OIL_WARN_URGENT } from "../constants/truckData";
+import { expiryStatus } from "../utils/date";
 import TruckDrawer from "../components/TruckDrawer";
 
 function StatusBadge({ status }) {
@@ -126,7 +127,7 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc }) {
       onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
     >
       {/* Col 1 — Unit + status */}
-      <div style={{ minWidth: 110, flexShrink: 0, paddingRight: 16, borderRight: "1px solid var(--border)" }}>
+      <div style={{ minWidth: 120, flexShrink: 0, paddingRight: 16, borderRight: "1px solid var(--border)" }}>
         <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-1px", lineHeight: 1.1 }}>
           Unit {truck.unitNumber || "—"}
         </div>
@@ -135,6 +136,20 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc }) {
         </div>
         {truck.year && <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 4 }}>{truck.year}</div>}
         {vinShort !== "—" && <div style={{ fontSize: 10, color: "var(--text-faint)", fontFamily: "monospace", marginTop: 2 }}>...{vinShort}</div>}
+        {/* Plates expiry badge */}
+        {(() => {
+          const exp = expiryStatus(truck.platesExpiry);
+          if (!truck.platesExpiry) return (
+            <span style={{ marginTop: 5, display: "inline-block", fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 4, background: "var(--bg-hover)", color: "var(--text-disabled)", border: "1px solid var(--border)" }}>
+              Plates —
+            </span>
+          );
+          return (
+            <span style={{ marginTop: 5, display: "inline-block", fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: exp.color + "18", color: exp.color, border: `1px solid ${exp.border}` }}>
+              🪪 {exp.daysLeft < 0 ? "Plates EXP" : exp.daysLeft <= 60 ? `Plates ${exp.daysLeft}d` : "Plates ✓"}
+            </span>
+          );
+        })()}
       </div>
 
       {/* Col 2 — Insurance */}
@@ -209,7 +224,16 @@ export default function TrucksView() {
   const [showAdd, setShowAdd] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("unit_asc");
   const [lightbox, setLightbox] = useState(null); // { url, name }
+
+  const SORT_OPTIONS = [
+    { id: "unit_asc",     label: "Unit # ↑",          icon: "🔢" },
+    { id: "unit_desc",    label: "Unit # ↓",          icon: "🔢" },
+    { id: "newest",       label: "Newest first",       icon: "🕐" },
+    { id: "oldest",       label: "Oldest first",       icon: "🕐" },
+    { id: "oil_critical", label: "Oil: most urgent",   icon: "🛢" },
+  ];
 
   async function handleDocUpload(truckId, rawFile, docName, category) {
     const fileObj = {
@@ -228,8 +252,8 @@ export default function TrucksView() {
     if (truck) updateTruck(truckId, { docs: { ...(truck.docs || {}), [docName]: true } });
   }
   const [form, setForm] = useState({
-    unitNumber: "", year: "", maxWeight: "", vinNumber: "",
-    eldId: "", status: "active",
+    unitNumber: "", year: "", vinNumber: "",
+    status: "active",
     statusNote: "", homeLocation: "", fuelCard: "",
     lastOilChange: "", currentOdometer: "", notes: "",
     autoLiabilityStatus: "none", autoLiabilityCompany: "",
@@ -242,8 +266,8 @@ export default function TrucksView() {
     if (!form.unitNumber.trim()) return;
     await addTruck(form);
     setForm({
-      unitNumber: "", year: "", maxWeight: "", vinNumber: "",
-      eldId: "", status: "active",
+      unitNumber: "", year: "", vinNumber: "",
+      status: "active",
       statusNote: "", homeLocation: "", fuelCard: "",
       lastOilChange: "", currentOdometer: "", notes: "",
       autoLiabilityStatus: "none", autoLiabilityCompany: "",
@@ -256,7 +280,7 @@ export default function TrucksView() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return trucks.filter((t) => {
+    const list = trucks.filter((t) => {
       if (statusFilter !== "all" && t.status !== statusFilter) return false;
       if (!q) return true;
       const driverName = t.assignedDriverId
@@ -268,7 +292,27 @@ export default function TrucksView() {
         driverName.includes(q)
       );
     });
-  }, [trucks, search, statusFilter, drivers]);
+
+    return [...list].sort((a, b) => {
+      if (sortBy === "unit_asc") {
+        return String(a.unitNumber).localeCompare(String(b.unitNumber), undefined, { numeric: true });
+      }
+      if (sortBy === "unit_desc") {
+        return String(b.unitNumber).localeCompare(String(a.unitNumber), undefined, { numeric: true });
+      }
+      if (sortBy === "newest") {
+        return (b.createdAt || "").localeCompare(a.createdAt || "");
+      }
+      if (sortBy === "oldest") {
+        return (a.createdAt || "").localeCompare(b.createdAt || "");
+      }
+      if (sortBy === "oil_critical") {
+        const oilLeft = (t) => OIL_CHANGE_INTERVAL - (Number(t.currentOdometer) - Number(t.lastOilChange));
+        return oilLeft(a) - oilLeft(b); // lowest (most urgent) first
+      }
+      return 0;
+    });
+  }, [trucks, search, statusFilter, sortBy, drivers]);
 
   // Stats
   const total = trucks.length;
@@ -313,7 +357,7 @@ export default function TrucksView() {
         </div>
 
         {/* Search */}
-        <div style={{ position: "relative", flex: "0 0 240px", marginLeft: "auto" }}>
+        <div style={{ position: "relative", flex: "0 0 220px", marginLeft: "auto" }}>
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -328,8 +372,31 @@ export default function TrucksView() {
             <button onClick={() => setSearch("")} style={{
               position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
               background: "none", border: "none", color: "var(--text-faint)", fontSize: 14, cursor: "pointer", padding: 0,
-            }}>x</button>
+            }}>×</button>
           )}
+        </div>
+
+        {/* Sort */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--text-faint)" strokeWidth="1.8" strokeLinecap="round">
+            <line x1="2" y1="4" x2="14" y2="4"/>
+            <line x1="4" y1="8" x2="12" y2="8"/>
+            <line x1="6" y1="12" x2="10" y2="12"/>
+          </svg>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            style={{
+              padding: "8px 10px", fontSize: 12, fontWeight: 600,
+              background: "var(--bg-raised)", border: "1px solid var(--border)",
+              borderRadius: 9, color: "var(--text-secondary)", outline: "none",
+              cursor: "pointer",
+            }}
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.id} value={o.id}>{o.icon} {o.label}</option>
+            ))}
+          </select>
         </div>
 
         <button
@@ -453,17 +520,9 @@ export default function TrucksView() {
                   <div style={labelStyle}>Year</div>
                   <input value={form.year} onChange={(e) => setF("year", e.target.value)} style={inputStyle} placeholder="2023" />
                 </div>
-                <div>
+                <div style={{ gridColumn: "1 / -1" }}>
                   <div style={labelStyle}>VIN</div>
                   <input value={form.vinNumber} onChange={(e) => setF("vinNumber", e.target.value)} style={inputStyle} placeholder="1FUJGLDR5CLBF7272" />
-                </div>
-                <div>
-                  <div style={labelStyle}>Max Weight</div>
-                  <input value={form.maxWeight} onChange={(e) => setF("maxWeight", e.target.value)} style={inputStyle} placeholder="5900" />
-                </div>
-                <div>
-                  <div style={labelStyle}>ELD ID</div>
-                  <input value={form.eldId} onChange={(e) => setF("eldId", e.target.value)} style={inputStyle} placeholder="EZ" />
                 </div>
                 <div>
                   <div style={labelStyle}>Status</div>
@@ -483,7 +542,7 @@ export default function TrucksView() {
                   <div style={labelStyle}>Last Oil Change (mi)</div>
                   <input type="number" value={form.lastOilChange} onChange={(e) => setF("lastOilChange", e.target.value)} style={inputStyle} placeholder="0" />
                 </div>
-                <div style={{ gridColumn: "1 / -1" }}>
+                <div>
                   <div style={labelStyle}>Current Odometer (mi)</div>
                   <input type="number" value={form.currentOdometer} onChange={(e) => setF("currentOdometer", e.target.value)} style={inputStyle} placeholder="0" />
                 </div>
