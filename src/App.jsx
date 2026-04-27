@@ -259,156 +259,256 @@ export default function App() {
     return <FirebaseAuthGate />;
   }
 
+  const NAV_ICONS = {
+    pipeline: (
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="3" width="4" height="14" rx="1.5"/>
+        <rect x="8" y="3" width="4" height="9" rx="1.5"/>
+        <rect x="14" y="3" width="4" height="11" rx="1.5"/>
+      </svg>
+    ),
+    dispatchers: (
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="7" cy="7" r="3"/>
+        <path d="M1 17c0-3.3 2.7-6 6-6"/>
+        <circle cx="14" cy="7" r="3"/>
+        <path d="M13 17c0-3.3 2.7-6 6-6" strokeOpacity=".4"/>
+        <line x1="17" y1="14" x2="17" y2="18"/><line x1="15" y1="16" x2="19" y2="16"/>
+      </svg>
+    ),
+    fleet: (
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="1" y="7" width="12" height="8" rx="1.5"/>
+        <path d="M13 10h3l3 3v2h-6V10z"/>
+        <circle cx="5" cy="17" r="1.5" fill="currentColor" stroke="none"/>
+        <circle cx="15" cy="17" r="1.5" fill="currentColor" stroke="none"/>
+      </svg>
+    ),
+    dashboard: (
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="2" width="7" height="7" rx="1.5"/>
+        <rect x="11" y="2" width="7" height="7" rx="1.5"/>
+        <rect x="2" y="11" width="7" height="7" rx="1.5"/>
+        <rect x="11" y="11" width="7" height="7" rx="1.5"/>
+      </svg>
+    ),
+    templates: (
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="2" width="14" height="16" rx="2"/>
+        <line x1="7" y1="7" x2="13" y2="7"/>
+        <line x1="7" y1="10" x2="13" y2="10"/>
+        <line x1="7" y1="13" x2="11" y2="13"/>
+      </svg>
+    ),
+  };
+
+  const LINK_ICONS = {
+    offer: (
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V6z"/>
+        <polyline points="14,2 14,7 19,7" strokeOpacity=".5"/>
+        <line x1="7" y1="10" x2="13" y2="10"/>
+        <line x1="7" y1="13" x2="11" y2="13"/>
+      </svg>
+    ),
+    drive: (
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 17l3.5-6L10 17H3z"/><path d="M10 17l3.5-6 3.5 6H10z"/>
+        <path d="M6.5 11L10 5l3.5 6"/>
+      </svg>
+    ),
+    w9: (
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="2" width="14" height="16" rx="2"/>
+        <line x1="7" y1="8" x2="13" y2="8"/>
+        <line x1="7" y1="11" x2="13" y2="11"/>
+        <line x1="7" y1="14" x2="10" y2="14"/>
+        <circle cx="15" cy="5" r="2" fill="var(--color-primary)" stroke="none"/>
+      </svg>
+    ),
+    med: (
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="14" height="14" rx="2"/>
+        <line x1="10" y1="8" x2="10" y2="14"/><line x1="7" y1="11" x2="13" y2="11"/>
+        <path d="M7 4V3a1 1 0 011-1h4a1 1 0 011 1v1"/>
+      </svg>
+    ),
+  };
+
   return (
-    <div style={{ display: "flex", height: "100vh", background: "var(--bg-app)", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", width: "100vw", background: "var(--bg-app)", overflow: "hidden" }}>
       <aside
         style={{
-          width: sidebarExpanded ? 200 : 58,
+          width: sidebarExpanded ? 220 : 52,
           background: "var(--bg-surface)",
           borderRight: "1px solid var(--border)",
           display: "flex",
           flexDirection: "column",
-          alignItems: sidebarExpanded ? "flex-start" : "center",
-          padding: "14px 0",
-          gap: 4,
+          padding: "10px 0 14px",
+          gap: 2,
           flexShrink: 0,
-          transition: "width .2s ease",
+          transition: "width .2s cubic-bezier(.4,0,.2,1)",
           overflow: "hidden",
+          userSelect: "none",
         }}
       >
-        {/* Logo + toggle */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: sidebarExpanded ? "0 10px" : "0", marginBottom: 14, justifyContent: sidebarExpanded ? "space-between" : "center" }}>
-          <div style={{ width: 34, height: 34, background: "var(--color-primary)", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#fff", fontWeight: 700, flexShrink: 0 }}>
-            CRM
+        {/* Logo row */}
+        <div style={{ display: "flex", alignItems: "center", height: 44, padding: sidebarExpanded ? "0 12px" : "0", justifyContent: sidebarExpanded ? "space-between" : "center", marginBottom: 6, flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <div style={{ width: 32, height: 32, background: "linear-gradient(135deg,#2563eb,#7c3aed)", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 2px 8px rgba(37,99,235,.3)" }}>
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="1" y="7" width="12" height="8" rx="1.5"/>
+                <path d="M13 10h3l3 3v2h-6V10z"/>
+                <circle cx="5" cy="17" r="1.5" fill="#fff" stroke="none"/>
+                <circle cx="15" cy="17" r="1.5" fill="#fff" stroke="none"/>
+              </svg>
+            </div>
+            {sidebarExpanded && (
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", whiteSpace: "nowrap" }}>Driver ATS</div>
+                <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 1 }}>Fleet & Hiring</div>
+              </div>
+            )}
           </div>
-          {sidebarExpanded && <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>Driver CRM</span>}
-          <button onClick={() => setSidebarExpanded(v => !v)} title={sidebarExpanded ? "Collapse" : "Expand"} style={{ width: 26, height: 26, border: "1px solid var(--border)", borderRadius: 6, background: "var(--bg-raised)", cursor: "pointer", color: "var(--text-muted)", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            {sidebarExpanded ? "←" : "→"}
-          </button>
+          {sidebarExpanded && (
+            <button onClick={() => setSidebarExpanded(false)} style={{ width: 24, height: 24, border: "1px solid var(--border)", borderRadius: 6, background: "var(--bg-raised)", cursor: "pointer", color: "var(--text-faint)", fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M8 2L4 6l4 4"/></svg>
+            </button>
+          )}
+          {!sidebarExpanded && (
+            <button onClick={() => setSidebarExpanded(true)} style={{ position: "absolute", left: 30, top: 18, width: 18, height: 18, border: "1px solid var(--border)", borderRadius: 5, background: "var(--bg-raised)", cursor: "pointer", color: "var(--text-faint)", fontSize: 9, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 2l4 4-4 4"/></svg>
+            </button>
+          )}
         </div>
 
-        {/* Nav items */}
-        {/* HR section */}
-        {sidebarExpanded && <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".08em", padding: "8px 12px 2px" }}>HR</div>}
+        {/* Section: HR */}
+        {sidebarExpanded && <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".1em", padding: "6px 14px 3px" }}>HR</div>}
+        {!sidebarExpanded && <div style={{ height: 1, background: "var(--border)", margin: "4px 10px 6px" }} />}
+
         {[
-          { id: "pipeline", icon: "PL", title: "Pipeline" },
-          { id: "dispatchers", icon: "DS", title: "Team Hire" },
+          { id: "pipeline", title: "Pipeline" },
+          { id: "dispatchers", title: "Team Hire" },
         ].map((item) => (
           <button
             key={item.id}
-            className="nav-item"
-            title={item.title}
+            title={!sidebarExpanded ? item.title : undefined}
             onClick={() => setView(item.id)}
             style={{
-              width: sidebarExpanded ? "calc(100% - 16px)" : 38,
-              height: 38,
-              margin: sidebarExpanded ? "0 8px" : "0",
+              width: sidebarExpanded ? "calc(100% - 16px)" : 36,
+              height: 36,
+              margin: sidebarExpanded ? "1px 8px" : "1px auto",
               border: "none",
-              borderRadius: 9,
-              background: view === item.id ? "var(--color-primary-light)" : "transparent",
-              color: view === item.id ? "var(--color-primary)" : "var(--text-muted)",
+              borderRadius: 8,
+              background: view === item.id ? "var(--color-primary-light, #eff6ff)" : "transparent",
+              color: view === item.id ? "var(--color-primary, #2563eb)" : "var(--text-muted)",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               gap: 10,
               padding: sidebarExpanded ? "0 10px" : "0",
               justifyContent: sidebarExpanded ? "flex-start" : "center",
-              fontWeight: view === item.id ? 700 : 500,
-              fontSize: sidebarExpanded ? 13 : 11,
+              fontWeight: view === item.id ? 600 : 400,
+              fontSize: 13,
               transition: "all .15s",
               flexShrink: 0,
             }}
+            onMouseEnter={(e) => { if (view !== item.id) e.currentTarget.style.background = "var(--bg-hover)"; }}
+            onMouseLeave={(e) => { if (view !== item.id) e.currentTarget.style.background = "transparent"; }}
           >
-            <span style={{ flexShrink: 0, width: 18, textAlign: "center" }}>{item.icon}</span>
-            {sidebarExpanded && <span>{item.title}</span>}
+            <span style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", width: 18 }}>{NAV_ICONS[item.id]}</span>
+            {sidebarExpanded && <span style={{ whiteSpace: "nowrap" }}>{item.title}</span>}
           </button>
         ))}
 
-        {/* Divider */}
-        <div style={{ height: 1, background: "var(--border)", margin: "6px 8px" }} />
+        {/* Section: Operations */}
+        <div style={{ height: 1, background: "var(--border)", margin: "6px 10px" }} />
+        {sidebarExpanded && <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".1em", padding: "2px 14px 3px" }}>Operations</div>}
 
-        {/* Operations section */}
-        {sidebarExpanded && <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".08em", padding: "2px 12px 2px" }}>Operations</div>}
         {[
-          { id: "fleet", icon: "🚛", title: "Fleet" },
-          { id: "dashboard", icon: "DB", title: "Dashboard" },
-          { id: "templates", icon: "TP", title: "Templates" },
+          { id: "fleet", title: "Fleet" },
+          { id: "dashboard", title: "Dashboard" },
+          { id: "templates", title: "Templates" },
         ].map((item) => (
           <button
             key={item.id}
-            className="nav-item"
-            title={item.title}
+            title={!sidebarExpanded ? item.title : undefined}
             onClick={() => setView(item.id)}
             style={{
-              width: sidebarExpanded ? "calc(100% - 16px)" : 38,
-              height: 38,
-              margin: sidebarExpanded ? "0 8px" : "0",
+              width: sidebarExpanded ? "calc(100% - 16px)" : 36,
+              height: 36,
+              margin: sidebarExpanded ? "1px 8px" : "1px auto",
               border: "none",
-              borderRadius: 9,
-              background: view === item.id ? "var(--color-primary-light)" : "transparent",
-              color: view === item.id ? "var(--color-primary)" : "var(--text-faint)",
-              fontSize: 11,
-              fontWeight: 700,
+              borderRadius: 8,
+              background: view === item.id ? "var(--color-primary-light, #eff6ff)" : "transparent",
+              color: view === item.id ? "var(--color-primary, #2563eb)" : "var(--text-muted)",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
-              justifyContent: sidebarExpanded ? "flex-start" : "center",
-              gap: 8,
+              gap: 10,
               padding: sidebarExpanded ? "0 10px" : "0",
+              justifyContent: sidebarExpanded ? "flex-start" : "center",
+              fontWeight: view === item.id ? 600 : 400,
+              fontSize: 13,
               transition: "all .15s",
-              whiteSpace: "nowrap",
+              flexShrink: 0,
             }}
+            onMouseEnter={(e) => { if (view !== item.id) e.currentTarget.style.background = "var(--bg-hover)"; }}
+            onMouseLeave={(e) => { if (view !== item.id) e.currentTarget.style.background = "transparent"; }}
           >
-            <span>{item.icon}</span>
-            {sidebarExpanded && <span style={{ fontSize: 13 }}>{item.title}</span>}
+            <span style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", width: 18 }}>{NAV_ICONS[item.id]}</span>
+            {sidebarExpanded && <span style={{ whiteSpace: "nowrap" }}>{item.title}</span>}
           </button>
         ))}
 
         {/* Quick links */}
+        <div style={{ height: 1, background: "var(--border)", margin: "6px 10px" }} />
+        {sidebarExpanded && <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".1em", padding: "2px 14px 3px" }}>Quick Links</div>}
+
         {[
-          { icon: "📄", title: "Send Offer", url: "https://docs.google.com/document/d/1Rul2ihq6Pih4HnZVnYRAK03rDjUmmhciMRSGCmSNrOY/edit?tab=t.0" },
-          { icon: "📁", title: "Driver Docs", url: "https://drive.google.com/drive/u/0/folders/1PyX6wwLcVwBQCZDqpUQb3sIN8ISerkRV" },
-          { icon: "📝", title: "W-9 Request", url: "https://drive.google.com/file/d/1VViK6x1BxvRbMuIZhP5_H8y7iLlRMcWk/view?requestEsignature=true" },
-          { icon: "🏥", title: "Medstop", url: "https://employer.med-stop.com/dashboard" },
+          { key: "offer", icon: LINK_ICONS.offer, title: "Send Offer", url: "https://docs.google.com/document/d/1Rul2ihq6Pih4HnZVnYRAK03rDjUmmhciMRSGCmSNrOY/edit?tab=t.0" },
+          { key: "drive", icon: LINK_ICONS.drive, title: "Driver Docs", url: "https://drive.google.com/drive/u/0/folders/1PyX6wwLcVwBQCZDqpUQb3sIN8ISerkRV" },
+          { key: "w9", icon: LINK_ICONS.w9, title: "W-9 Request", url: "https://drive.google.com/file/d/1VViK6x1BxvRbMuIZhP5_H8y7iLlRMcWk/view?requestEsignature=true" },
+          { key: "med", icon: LINK_ICONS.med, title: "Medstop", url: "https://employer.med-stop.com/dashboard" },
         ].map((link) => (
           <a
-            key={link.title}
+            key={link.key}
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
-            title={link.title}
+            title={!sidebarExpanded ? link.title : undefined}
             style={{
-              width: sidebarExpanded ? "calc(100% - 16px)" : 38,
-              height: 38,
-              margin: sidebarExpanded ? "2px 8px" : "2px 0",
-              border: "1px solid var(--border)",
-              borderRadius: 9,
-              background: "var(--bg-raised)",
+              width: sidebarExpanded ? "calc(100% - 16px)" : 36,
+              height: 34,
+              margin: sidebarExpanded ? "1px 8px" : "1px auto",
+              border: "none",
+              borderRadius: 8,
+              background: "transparent",
               color: "var(--text-muted)",
-              fontSize: 11,
-              fontWeight: 600,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
-              justifyContent: sidebarExpanded ? "flex-start" : "center",
-              gap: 8,
+              gap: 10,
               padding: sidebarExpanded ? "0 10px" : "0",
+              justifyContent: sidebarExpanded ? "flex-start" : "center",
+              fontSize: 12,
               textDecoration: "none",
               transition: "all .15s",
-              whiteSpace: "nowrap",
               flexShrink: 0,
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; e.currentTarget.style.borderRadius = "8px"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
-            <span style={{ fontSize: 15 }}>{link.icon}</span>
-            {sidebarExpanded && <span style={{ fontSize: 12 }}>{link.title}</span>}
+            <span style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", width: 18 }}>{link.icon}</span>
+            {sidebarExpanded && <span style={{ whiteSpace: "nowrap" }}>{link.title}</span>}
           </a>
         ))}
 
         {/* Stage navigator — only when expanded and pipeline */}
         {sidebarExpanded && view === "pipeline" && (
-          <div style={{ width: "100%", marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", letterSpacing: ".06em", textTransform: "uppercase", padding: "0 14px", marginBottom: 6 }}>Columns</div>
-            <div style={{ overflowY: "auto", maxHeight: "calc(100vh - 280px)" }}>
+          <div style={{ flex: 1, marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 8, minHeight: 0 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", letterSpacing: ".1em", textTransform: "uppercase", padding: "0 14px", marginBottom: 4 }}>Columns</div>
+            <div style={{ overflowY: "auto", maxHeight: "calc(100vh - 380px)" }}>
               {STAGES.map((stage) => {
                 const count = drivers.filter(d => d.stage === stage.id).length;
                 return (
@@ -424,22 +524,13 @@ export default function App() {
                         setTimeout(() => col.classList.remove("stage-pulse"), 1500);
                       }
                     }}
-                    style={{
-                      width: "100%",
-                      padding: "6px 14px",
-                      border: "none",
-                      background: "transparent",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 7,
-                      textAlign: "left",
-                      borderRadius: 0,
-                    }}
+                    style={{ width: "100%", padding: "5px 14px", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, textAlign: "left", borderRadius: 0 }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                   >
-                    <div style={{ width: 7, height: 7, borderRadius: "50%", background: stage.color, flexShrink: 0 }} />
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: stage.color, flexShrink: 0 }} />
                     <span style={{ fontSize: 12, color: "var(--text-secondary)", flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{stage.label}</span>
-                    {count > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: stage.color, borderRadius: 10, padding: "1px 6px", flexShrink: 0 }}>{count}</span>}
+                    {count > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: stage.color, borderRadius: 10, padding: "1px 5px", flexShrink: 0 }}>{count}</span>}
                   </button>
                 );
               })}
@@ -800,7 +891,7 @@ export default function App() {
           </div>
         )}
 
-        <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
+        <div style={{ flex: 1, overflow: "hidden", display: "flex", minWidth: 0 }}>
           {view === "pipeline" && (
             <PipelineView
               stages={STAGES}
@@ -810,13 +901,13 @@ export default function App() {
             />
           )}
 
-          {view === "dispatchers" && <DispatchersView />}
+          {view === "dispatchers" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}><DispatchersView /></div>}
 
-          {view === "fleet" && <TrucksView />}
+          {view === "fleet" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}><TrucksView /></div>}
 
-          {view === "dashboard" && <DashboardView drivers={drivers} />}
+          {view === "dashboard" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}><DashboardView drivers={drivers} /></div>}
 
-          {view === "templates" && <TemplatesView copiedTpl={copiedTpl} onCopy={copyTpl} />}
+          {view === "templates" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}><TemplatesView copiedTpl={copiedTpl} onCopy={copyTpl} /></div>}
         </div>
       </div>
 
