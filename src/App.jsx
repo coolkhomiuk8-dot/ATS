@@ -288,9 +288,48 @@ export default function App() {
         </div>
 
         {/* Nav items */}
+        {/* HR section */}
+        {sidebarExpanded && <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".08em", padding: "8px 12px 2px" }}>HR</div>}
         {[
           { id: "pipeline", icon: "PL", title: "Pipeline" },
           { id: "dispatchers", icon: "DS", title: "Team Hire" },
+        ].map((item) => (
+          <button
+            key={item.id}
+            className="nav-item"
+            title={item.title}
+            onClick={() => setView(item.id)}
+            style={{
+              width: sidebarExpanded ? "calc(100% - 16px)" : 38,
+              height: 38,
+              margin: sidebarExpanded ? "0 8px" : "0",
+              border: "none",
+              borderRadius: 9,
+              background: view === item.id ? "var(--color-primary-light)" : "transparent",
+              color: view === item.id ? "var(--color-primary)" : "var(--text-muted)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: sidebarExpanded ? "0 10px" : "0",
+              justifyContent: sidebarExpanded ? "flex-start" : "center",
+              fontWeight: view === item.id ? 700 : 500,
+              fontSize: sidebarExpanded ? 13 : 11,
+              transition: "all .15s",
+              flexShrink: 0,
+            }}
+          >
+            <span style={{ flexShrink: 0, width: 18, textAlign: "center" }}>{item.icon}</span>
+            {sidebarExpanded && <span>{item.title}</span>}
+          </button>
+        ))}
+
+        {/* Divider */}
+        <div style={{ height: 1, background: "var(--border)", margin: "6px 8px" }} />
+
+        {/* Operations section */}
+        {sidebarExpanded && <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".08em", padding: "2px 12px 2px" }}>Operations</div>}
+        {[
           { id: "fleet", icon: "🚛", title: "Fleet" },
           { id: "dashboard", icon: "DB", title: "Dashboard" },
           { id: "templates", icon: "TP", title: "Templates" },
