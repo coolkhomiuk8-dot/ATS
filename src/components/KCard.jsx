@@ -208,8 +208,8 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
         </div>
       )}
 
-      {/* Insurance warning — red badge if not on insurance */}
-      {(!driver.insuranceStatus || driver.insuranceStatus === "none") && driver.stage !== "trash" && driver.stage !== "fired" && (
+      {/* Insurance warning — only for hired drivers */}
+      {driver.stage === "hired" && (!driver.insuranceStatus || driver.insuranceStatus === "none") && (
         <div style={{ marginTop: 5 }}>
           <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>
             ⚠ No Insurance
