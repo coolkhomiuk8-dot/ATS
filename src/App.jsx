@@ -12,6 +12,7 @@ import PipelineView from "./components/PipelineView";
 import DashboardView from "./views/DashboardView";
 import TemplatesView from "./views/TemplatesView";
 import DispatchersView from "./views/DispatchersView";
+import TrucksView from "./views/TrucksView";
 import DriverDrawer from "./components/DriverDrawer";
 import AddModal from "./components/AddModal";
 import ImportIndeedModal from "./components/ImportIndeedModal";
@@ -22,10 +23,12 @@ import FirebaseAuthGate from "./components/FirebaseAuthGate";
 import RoleManagerModal from "./components/RoleManagerModal";
 import { auth, db, isFirebaseConfigured } from "./lib/firebase";
 import { useDispatchersStore } from "./store/useDispatchersStore";
+import { useTrucksStore } from "./store/useTrucksStore";
 
 export default function App() {
   const { drivers, upd, addNote, addFile, removeFile, addDriver, deleteDriver, initDrivers, stopDriversSync, isLoading, syncError } = useDriversStore();
   const { subscribe: subDispatchers, unsubscribe: unsubDispatchers } = useDispatchersStore();
+  const { subscribeTrucks, unsubscribeTrucks } = useTrucksStore();
   const [firebaseUser, setFirebaseUser] = useState(() => auth?.currentUser || null);
   const [authLoading, setAuthLoading] = useState(isFirebaseConfigured);
 
@@ -110,8 +113,9 @@ export default function App() {
 
     initDrivers();
     subDispatchers();
-    return () => { stopDriversSync(); unsubDispatchers(); };
-  }, [firebaseUser, initDrivers, stopDriversSync, subDispatchers, unsubDispatchers]);
+    subscribeTrucks();
+    return () => { stopDriversSync(); unsubDispatchers(); unsubscribeTrucks(); };
+  }, [firebaseUser, initDrivers, stopDriversSync, subDispatchers, unsubDispatchers, subscribeTrucks, unsubscribeTrucks]);
 
   const searchResults = useMemo(() => {
     if (!search.trim()) return [];
@@ -287,6 +291,7 @@ export default function App() {
         {[
           { id: "pipeline", icon: "PL", title: "Pipeline" },
           { id: "dispatchers", icon: "DS", title: "Team Hire" },
+          { id: "fleet", icon: "🚛", title: "Fleet" },
           { id: "dashboard", icon: "DB", title: "Dashboard" },
           { id: "templates", icon: "TP", title: "Templates" },
         ].map((item) => (
@@ -767,6 +772,8 @@ export default function App() {
           )}
 
           {view === "dispatchers" && <DispatchersView />}
+
+          {view === "fleet" && <TrucksView />}
 
           {view === "dashboard" && <DashboardView drivers={drivers} />}
 

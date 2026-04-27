@@ -3,6 +3,8 @@ import { AVAILABILITY_OPTIONS, DOC_LIST, FLAGS_OPT, SOURCES, STAGES, TRUCK_TYPES
 import { fmtDate, minutesUntil } from "../utils/date";
 import { fmtSize } from "../utils/file";
 import { Btn, FL } from "./UiBits";
+import { useTrucksStore } from "../store/useTrucksStore";
+import { useDriversStore } from "../store/useDriversStore";
 
 export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, onDeleteFile, onStageChange, onDelete, canManageFiles }) {
   const [tab, setTab] = useState("info");
@@ -17,7 +19,38 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const [openDocPickerIndex, setOpenDocPickerIndex] = useState(null);
   const [deleteModal, setDeleteModal] = useState(null);
+  const [showTruckPicker, setShowTruckPicker] = useState(false);
+  const [truckPickerSearch, setTruckPickerSearch] = useState("");
   const fileRef = useRef(null);
+
+  const { trucks, assignDriver, unassignDriver } = useTrucksStore();
+  const { upd: updDriver } = useDriversStore();
+
+  const assignedTruck = driver.assignedTruckId
+    ? trucks.find((t) => t.id === driver.assignedTruckId)
+    : null;
+
+  async function handleAssignTruck(truck) {
+    await assignDriver(truck.id, driver.id);
+    updDriver(driver.id, { assignedTruckId: truck.id });
+    setShowTruckPicker(false);
+    setTruckPickerSearch("");
+  }
+
+  async function handleUnassignTruck() {
+    if (assignedTruck) await unassignDriver(assignedTruck.id);
+    updDriver(driver.id, { assignedTruckId: null });
+  }
+
+  const filteredTrucksForPicker = trucks.filter((t) => {
+    if (!truckPickerSearch.trim()) return true;
+    const q = truckPickerSearch.trim().toLowerCase();
+    return (
+      String(t.unitNumber).toLowerCase().includes(q) ||
+      String(t.year).toLowerCase().includes(q) ||
+      String(t.truckCompany).toLowerCase().includes(q)
+    );
+  });
 
   const stage = STAGES.find((item) => item.id === driver.stage) || STAGES[0];
   const mins = minutesUntil(driver);
@@ -492,6 +525,87 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                   </div>
                   <Btn label="Edit Info" onClick={() => { setEditData({ ...driver }); setEditing(true); }} />
                 </>
+              )}
+
+              {/* ── TRUCK ASSIGNMENT (hired drivers only) ── */}
+              {driver.stage === "hired" && (
+                <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, marginTop: 4 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", marginBottom: 10, textTransform: "uppercase" }}>
+                    Truck Assignment
+                  </div>
+                  {assignedTruck ? (
+                    <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 10, padding: "12px 14px" }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#15803d" }}>Unit {assignedTruck.unitNumber}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                        {assignedTruck.year || "—"} · {assignedTruck.truckCompany || "—"}
+                      </div>
+                      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                        <button
+                          onClick={() => setShowTruckPicker(true)}
+                          style={{ padding: "7px 14px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                        >
+                          Change Truck
+                        </button>
+                        <button
+                          onClick={handleUnassignTruck}
+                          style={{ padding: "7px 14px", background: "var(--bg-hover)", color: "var(--text-muted)", border: "1px solid var(--border)", borderRadius: 7, fontSize: 12, cursor: "pointer" }}
+                        >
+                          Unassign
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px" }}>
+                      <div style={{ fontSize: 13, color: "var(--text-faint)", marginBottom: 10 }}>No truck assigned</div>
+                      <button
+                        onClick={() => setShowTruckPicker(true)}
+                        style={{ padding: "8px 16px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                      >
+                        Assign Truck
+                      </button>
+                    </div>
+                  )}
+
+                  {showTruckPicker && (
+                    <div style={{ marginTop: 10, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,.12)" }}>
+                      <div style={{ padding: "10px 12px", borderBottom: "1px solid var(--border)" }}>
+                        <input
+                          autoFocus
+                          value={truckPickerSearch}
+                          onChange={(e) => setTruckPickerSearch(e.target.value)}
+                          placeholder="Search trucks..."
+                          style={{ width: "100%", padding: "7px 10px", fontSize: 13, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 7, outline: "none", color: "var(--text-primary)", boxSizing: "border-box" }}
+                        />
+                      </div>
+                      <div style={{ maxHeight: 220, overflowY: "auto" }}>
+                        {filteredTrucksForPicker.length === 0 ? (
+                          <div style={{ padding: "14px", fontSize: 13, color: "var(--text-faint)", textAlign: "center" }}>No trucks found</div>
+                        ) : filteredTrucksForPicker.map((t) => (
+                          <button
+                            key={t.id}
+                            onClick={() => handleAssignTruck(t)}
+                            style={{
+                              width: "100%", padding: "10px 14px", border: "none", borderBottom: "1px solid var(--border)",
+                              background: "transparent", cursor: "pointer", textAlign: "left",
+                              display: "flex", justifyContent: "space-between", alignItems: "center",
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-hover)"}
+                            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                          >
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Unit {t.unitNumber}</span>
+                            <span style={{ fontSize: 11, color: "var(--text-faint)" }}>{t.year} · {t.truckCompany}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => { setShowTruckPicker(false); setTruckPickerSearch(""); }}
+                        style={{ width: "100%", padding: "9px", background: "var(--bg-raised)", border: "none", borderTop: "1px solid var(--border)", cursor: "pointer", fontSize: 12, color: "var(--text-muted)" }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* ── LOG ── */}

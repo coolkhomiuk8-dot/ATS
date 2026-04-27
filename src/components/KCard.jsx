@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { DOC_LIST, FLAGS_OPT } from "../constants/data";
 import { minutesUntil } from "../utils/date";
 import { useTick } from "../hooks/useTick";
+import { useTrucksStore } from "../store/useTrucksStore";
 
 const FLAG_STYLES = {
   green: { background: "var(--color-success-bg)", color: "var(--color-success-text)", border: "1px solid var(--color-success-border)" },
@@ -14,6 +15,11 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
   useTick();
   const [dlPreview, setDlPreview] = useState(null); // {x, y}
   const hoverTimer = useRef(null);
+
+  const { trucks } = useTrucksStore();
+  const assignedTruck = driver.assignedTruckId
+    ? trucks.find((t) => t.id === driver.assignedTruckId)
+    : null;
 
   const dlFile = (driver.files || []).find(f => f.linkedDoc === "Driver License");
   // Try thumbnail first, fall back to direct URL
@@ -198,6 +204,23 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
             border: `1px solid ${driver.trainedBy === "Trained by Bogdan" ? "var(--color-success-border)" : "var(--color-danger-border)"}`,
           }}>
             {driver.trainedBy}
+          </span>
+        </div>
+      )}
+
+      {/* Truck unit badge — only for Hired drivers with assigned truck */}
+      {driver.stage === "hired" && assignedTruck && (
+        <div style={{ marginTop: 5 }}>
+          <span style={{
+            fontSize: 10,
+            fontWeight: 700,
+            padding: "2px 8px",
+            borderRadius: 5,
+            background: "#ccfbf1",
+            color: "#0f766e",
+            border: "1px solid #99f6e4",
+          }}>
+            Unit {assignedTruck.unitNumber}
           </span>
         </div>
       )}
