@@ -143,6 +143,10 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
   const [isUploading, setIsUploading] = useState(false);
   const [uploadCategory, setUploadCategory] = useState(null); // "truck" | "driver"
   const [lightbox, setLightbox] = useState(null); // { url, name }
+  // Insurance inputs — must live at top level to keep hook count stable across tab switches
+  const [alInput, setAlInput] = useState("");
+  const [cgInput, setCgInput] = useState("");
+  const [drvInsInput, setDrvInsInput] = useState("");
   const truckFileRef = useRef(null);
   const driverFileRef = useRef(null);
 
@@ -443,13 +447,11 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
 
               {/* Insurance */}
               {(() => {
-                const [alInput, setAlInput] = useState("");
-                const [cgInput, setCgInput] = useState("");
-                const [drvInsInput, setDrvInsInput] = useState("");
-
-                const alCompany = truck.autoLiabilityCompany || "";
-                const cgCompany = truck.cargoInsuranceCompany || "";
+                const alCompany    = truck.autoLiabilityCompany || "";
+                const cgCompany    = truck.cargoInsuranceCompany || "";
                 const drvCompanies = assignedDriver?.insuranceCompanies || [];
+                const insRow = { background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 };
+                const lbl2   = { fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em" };
 
                 function addDrvIns() {
                   if (!assignedDriver) return;
@@ -463,25 +465,14 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                   updateDriver(assignedDriver.id, { insuranceCompanies: drvCompanies.filter((x) => x !== c) });
                 }
 
-                const insRowStyle = {
-                  background: "var(--bg-raised)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 10,
-                  padding: "12px 14px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 8,
-                };
-                const labelStyle2 = { fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em" };
-
                 return (
                   <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 12 }}>Insurance</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
 
                       {/* Auto Liability */}
-                      <div style={insRowStyle}>
-                        <div style={labelStyle2}>Auto Liability</div>
+                      <div style={insRow}>
+                        <div style={lbl2}>Auto Liability</div>
                         {alCompany ? (
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 6, background: "#f0fdf4", color: "#15803d", border: "1px solid #86efac" }}>
@@ -493,23 +484,18 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                           <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 5, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", alignSelf: "flex-start" }}>⚠ Not set</span>
                         )}
                         <div style={{ display: "flex", gap: 6 }}>
-                          <input
-                            value={alInput}
-                            onChange={(e) => setAlInput(e.target.value)}
+                          <input value={alInput} onChange={(e) => setAlInput(e.target.value)}
                             onKeyDown={(e) => { if (e.key === "Enter" && alInput.trim()) { onUpd(truck.id, { autoLiabilityCompany: alInput.trim(), autoLiabilityStatus: "active" }); setAlInput(""); } }}
                             placeholder={alCompany ? "Change company..." : "Enter company name..."}
-                            style={{ flex: 1, padding: "7px 10px", fontSize: 13, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-primary)", outline: "none" }}
-                          />
-                          <button
-                            onClick={() => { if (alInput.trim()) { onUpd(truck.id, { autoLiabilityCompany: alInput.trim(), autoLiabilityStatus: "active" }); setAlInput(""); } }}
-                            style={{ padding: "7px 12px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-                          >Set</button>
+                            style={{ flex: 1, padding: "7px 10px", fontSize: 13, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-primary)", outline: "none" }} />
+                          <button onClick={() => { if (alInput.trim()) { onUpd(truck.id, { autoLiabilityCompany: alInput.trim(), autoLiabilityStatus: "active" }); setAlInput(""); } }}
+                            style={{ padding: "7px 12px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Set</button>
                         </div>
                       </div>
 
                       {/* Cargo Insurance */}
-                      <div style={insRowStyle}>
-                        <div style={labelStyle2}>Cargo Insurance</div>
+                      <div style={insRow}>
+                        <div style={lbl2}>Cargo Insurance</div>
                         {cgCompany ? (
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 6, background: "#f0fdf4", color: "#15803d", border: "1px solid #86efac" }}>
@@ -521,33 +507,26 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                           <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 5, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", alignSelf: "flex-start" }}>⚠ Not set</span>
                         )}
                         <div style={{ display: "flex", gap: 6 }}>
-                          <input
-                            value={cgInput}
-                            onChange={(e) => setCgInput(e.target.value)}
+                          <input value={cgInput} onChange={(e) => setCgInput(e.target.value)}
                             onKeyDown={(e) => { if (e.key === "Enter" && cgInput.trim()) { onUpd(truck.id, { cargoInsuranceCompany: cgInput.trim(), cargoInsuranceStatus: "active" }); setCgInput(""); } }}
                             placeholder={cgCompany ? "Change company..." : "Enter company name..."}
-                            style={{ flex: 1, padding: "7px 10px", fontSize: 13, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-primary)", outline: "none" }}
-                          />
-                          <button
-                            onClick={() => { if (cgInput.trim()) { onUpd(truck.id, { cargoInsuranceCompany: cgInput.trim(), cargoInsuranceStatus: "active" }); setCgInput(""); } }}
-                            style={{ padding: "7px 12px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-                          >Set</button>
+                            style={{ flex: 1, padding: "7px 10px", fontSize: 13, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-primary)", outline: "none" }} />
+                          <button onClick={() => { if (cgInput.trim()) { onUpd(truck.id, { cargoInsuranceCompany: cgInput.trim(), cargoInsuranceStatus: "active" }); setCgInput(""); } }}
+                            style={{ padding: "7px 12px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Set</button>
                         </div>
                       </div>
 
                       {/* Driver Insurance */}
-                      <div style={insRowStyle}>
+                      <div style={insRow}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <div style={labelStyle2}>Driver Insurance</div>
+                          <div style={lbl2}>Driver Insurance</div>
                           {assignedDriver && <span style={{ fontSize: 10, color: "var(--text-faint)" }}>{assignedDriver.name}</span>}
                         </div>
                         {!assignedDriver ? (
                           <span style={{ fontSize: 12, color: "var(--text-disabled)" }}>No driver assigned</span>
                         ) : (
                           <>
-                            {drvCompanies.length === 0 && (
-                              <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 5, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", alignSelf: "flex-start" }}>⚠ Not set</span>
-                            )}
+                            {drvCompanies.length === 0 && <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 5, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", alignSelf: "flex-start" }}>⚠ Not set</span>}
                             {drvCompanies.length > 0 && (
                               <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                                 {drvCompanies.map((c) => (
@@ -559,13 +538,10 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                               </div>
                             )}
                             <div style={{ display: "flex", gap: 6 }}>
-                              <input
-                                value={drvInsInput}
-                                onChange={(e) => setDrvInsInput(e.target.value)}
+                              <input value={drvInsInput} onChange={(e) => setDrvInsInput(e.target.value)}
                                 onKeyDown={(e) => e.key === "Enter" && addDrvIns()}
                                 placeholder="Add insurance company..."
-                                style={{ flex: 1, padding: "7px 10px", fontSize: 13, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-primary)", outline: "none" }}
-                              />
+                                style={{ flex: 1, padding: "7px 10px", fontSize: 13, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-primary)", outline: "none" }} />
                               <button onClick={addDrvIns} style={{ padding: "7px 12px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>+ Add</button>
                             </div>
                           </>
