@@ -372,7 +372,11 @@ export default function App() {
       >
         {/* Logo row */}
         <div style={{ display: "flex", alignItems: "center", height: 44, padding: sidebarExpanded ? "0 12px" : "0", justifyContent: sidebarExpanded ? "space-between" : "center", marginBottom: 6, flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+          <div
+            onClick={() => setSidebarExpanded(v => !v)}
+            title={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
+            style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, cursor: "pointer" }}
+          >
             <div style={{ width: 32, height: 32, background: "linear-gradient(135deg,#2563eb,#7c3aed)", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 2px 8px rgba(37,99,235,.3)" }}>
               <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="1" y="7" width="12" height="8" rx="1.5"/>
@@ -391,11 +395,6 @@ export default function App() {
           {sidebarExpanded && (
             <button onClick={() => setSidebarExpanded(false)} style={{ width: 24, height: 24, border: "1px solid var(--border)", borderRadius: 6, background: "var(--bg-raised)", cursor: "pointer", color: "var(--text-faint)", fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M8 2L4 6l4 4"/></svg>
-            </button>
-          )}
-          {!sidebarExpanded && (
-            <button onClick={() => setSidebarExpanded(true)} style={{ position: "absolute", left: 30, top: 18, width: 18, height: 18, border: "1px solid var(--border)", borderRadius: 5, background: "var(--bg-raised)", cursor: "pointer", color: "var(--text-faint)", fontSize: 9, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 2l4 4-4 4"/></svg>
             </button>
           )}
         </div>
