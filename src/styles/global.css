@@ -856,3 +856,7 @@ button {
   font-weight: 700;
   cursor: pointer;
 }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

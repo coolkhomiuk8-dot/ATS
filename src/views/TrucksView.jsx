@@ -51,6 +51,9 @@ function OilBar({ last, current }) {
 
 function DocBadge({ docName, category, files, onUpload, onPreview }) {
   const fileRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+
   const linked = (files || []).find((f) => f.linkedDoc === docName);
   const isImg = linked && (linked.type === "image" || /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(linked.name || ""));
   const thumbUrl = linked?.driveFileId
@@ -60,6 +63,8 @@ function DocBadge({ docName, category, files, onUpload, onPreview }) {
 
   function handleClick(e) {
     e.stopPropagation();
+    if (uploading) return;
+    setUploadError(null);
     if (hasFile) {
       if (isImg && thumbUrl) onPreview(linked);
       else window.open(linked.url || linked.data, "_blank");
@@ -68,37 +73,61 @@ function DocBadge({ docName, category, files, onUpload, onPreview }) {
     }
   }
 
+  async function handleChange(e) {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    setUploading(true);
+    setUploadError(null);
+    try {
+      await onUpload(f, docName, category);
+    } catch (err) {
+      const msg = String(err?.message || "Upload failed");
+      setUploadError(msg);
+      console.error(`DocBadge upload error [${docName}]:`, err);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  const bg     = uploadError ? "#fef2f2" : uploading ? "#eff6ff" : hasFile ? "#dcfce7" : "var(--bg-raised)";
+  const color  = uploadError ? "#dc2626" : uploading ? "#2563eb" : hasFile ? "#16a34a" : "var(--text-muted)";
+  const border = uploadError ? "#fecaca" : uploading ? "#bfdbfe" : hasFile ? "#86efac" : "var(--border)";
+
   return (
     <span
       onClick={handleClick}
-      title={hasFile ? `Open ${docName}` : `Upload ${docName}`}
+      title={
+        uploading    ? "Uploading…" :
+        uploadError  ? `Error: ${uploadError}` :
+        hasFile      ? `Open ${docName}` :
+                       `Upload ${docName}`
+      }
       style={{
         position: "relative",
         display: "inline-flex", alignItems: "center", gap: 3,
         fontSize: 9, padding: "2px 6px", borderRadius: 5, fontWeight: 600,
-        background: hasFile ? "#dcfce7" : "var(--bg-raised)",
-        color: hasFile ? "#16a34a" : "var(--text-muted)",
-        border: `1px solid ${hasFile ? "#86efac" : "var(--border)"}`,
-        whiteSpace: "nowrap", cursor: "pointer",
-        transition: "all .1s",
+        background: bg, color, border: `1px solid ${border}`,
+        whiteSpace: "nowrap", cursor: uploading ? "wait" : "pointer",
+        transition: "background .15s, color .15s",
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.opacity = ".75"; }}
+      onMouseEnter={(e) => { if (!uploading) e.currentTarget.style.opacity = ".75"; }}
       onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
     >
-      {isImg && thumbUrl
-        ? <img src={thumbUrl} alt="" style={{ width: 14, height: 14, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
-        : hasFile ? "📄" : "⬆"}
+      {uploading
+        ? <span style={{ display: "inline-block", width: 10, height: 10, border: "1.5px solid #2563eb", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .6s linear infinite", flexShrink: 0 }} />
+        : uploadError ? "⚠"
+        : isImg && thumbUrl
+          ? <img src={thumbUrl} alt="" style={{ width: 14, height: 14, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
+          : hasFile ? "📄" : "⬆"
+      }
       {docName.split(" ")[0]}
       <input
         ref={fileRef}
         type="file"
         accept="image/*,.pdf"
         style={{ display: "none" }}
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) onUpload(f, docName, category);
-          e.target.value = "";
-        }}
+        onChange={handleChange}
       />
     </span>
   );
