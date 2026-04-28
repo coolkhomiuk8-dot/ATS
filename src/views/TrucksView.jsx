@@ -384,7 +384,7 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
                 key={doc} docName={doc} category="truck"
                 files={files} docs={truck.docs}
                 onUpload={onUploadDoc} onPreview={onPreviewDoc}
-                onCustomOpen={(doc === "Registration" || doc === "Plates") ? () => onRegClick(doc) : undefined}
+                onCustomOpen={doc === "Registration" ? () => onRegClick(doc) : undefined}
               />
             ))}
           </div>
