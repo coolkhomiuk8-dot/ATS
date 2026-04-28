@@ -961,6 +961,15 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                         <FL t="Plates Expiry" />
                         <input type="date" value={editData.platesExpiry || ""} onChange={(e) => setED("platesExpiry", e.target.value)} style={inputStyle} />
                       </div>
+                      <div style={{ gridColumn: "1 / -1" }}>
+                        <FL t="Samsara Vehicle ID" />
+                        <input
+                          value={editData.samsaraId || ""}
+                          onChange={(e) => setED("samsaraId", e.target.value.trim() || null)}
+                          style={inputStyle}
+                          placeholder="e.g. 281474978004685 (auto-filled on sync)"
+                        />
+                      </div>
                     </div>
                     {editError && (
                       <div style={{ fontSize: 12, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", padding: "7px 10px", borderRadius: 7 }}>
@@ -1101,6 +1110,67 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                   );
                 })()}
               </div>
+
+              {/* Samsara — Fault Codes */}
+              {(() => {
+                const faults = truck.faultCodes || [];
+                const syncedAt = truck.lastSamsaraSync;
+                if (!truck.samsaraId && faults.length === 0) return null;
+                function fmtSync(iso) {
+                  if (!iso) return "never";
+                  const diff = Math.round((Date.now() - new Date(iso)) / 60000);
+                  if (diff < 1)   return "just now";
+                  if (diff < 60)  return `${diff}m ago`;
+                  if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
+                  return `${Math.floor(diff / 1440)}d ago`;
+                }
+                const lampColor = (lamp) => lamp === "red" ? "#dc2626" : lamp === "amber" ? "#f97316" : "#6366f1";
+                const lampBg    = (lamp) => lamp === "red" ? "#fef2f2" : lamp === "amber" ? "#fff7ed" : "#eef2ff";
+                return (
+                  <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase" }}>
+                        📡 Samsara
+                      </div>
+                      {syncedAt && (
+                        <span style={{ fontSize: 10, color: "var(--text-faint)" }}>
+                          synced {fmtSync(syncedAt)}
+                        </span>
+                      )}
+                    </div>
+                    {faults.length === 0 ? (
+                      <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 600 }}>✅ No active fault codes</div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {faults.map((f, i) => (
+                          <div key={i} style={{
+                            display: "flex", alignItems: "center", gap: 10,
+                            background: lampBg(f.lamp), border: `1px solid ${lampColor(f.lamp)}33`,
+                            borderRadius: 8, padding: "8px 12px",
+                          }}>
+                            <span style={{ fontSize: 16 }}>
+                              {f.lamp === "red" ? "🔴" : f.lamp === "amber" ? "🟡" : "🔵"}
+                            </span>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: lampColor(f.lamp) }}>
+                                SPN {f.j1939Spn} &nbsp;·&nbsp; FMI {f.j1939Fmi}
+                                <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 8, background: lampColor(f.lamp) + "22", color: lampColor(f.lamp), textTransform: "uppercase" }}>
+                                  {f.lamp || "info"}
+                                </span>
+                              </div>
+                              {f.updatedAtTime && (
+                                <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 2 }}>
+                                  {new Date(f.updatedAtTime).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Status & Note */}
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>

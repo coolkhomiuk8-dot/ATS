@@ -91,6 +91,9 @@ function ensureTruckShape(truck) {
     driverHistory: [],   // [{ driverId, driverName, from, to }]
     statusHistory: [],   // [{ status, from, to }]
     oilChangeLog: [],    // [{ date, odometer, fileName?, fileUrl?, viewUrl?, driveFileId?, fileType? }]
+    samsaraId: null,     // Samsara vehicle ID (linked manually or auto-matched by VIN)
+    faultCodes: [],      // [{ j1939Spn, j1939Fmi, lamp, txId, updatedAtTime }]
+    lastSamsaraSync: null,
     ...truck,
   };
 }

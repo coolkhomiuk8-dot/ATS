@@ -6,7 +6,9 @@ import { expiryStatus } from "../utils/date";
 import TruckDrawer from "../components/TruckDrawer";
 import { auth } from "../lib/firebase";
 
-const driveMigrateEndpoint = import.meta.env.VITE_DRIVE_MIGRATE_ENDPOINT || "/.netlify/functions/driveMigrate";
+const driveMigrateEndpoint   = import.meta.env.VITE_DRIVE_MIGRATE_ENDPOINT   || "/.netlify/functions/driveMigrate";
+const samsaraSyncEndpoint    = import.meta.env.VITE_SAMSARA_SYNC_ENDPOINT    || "/.netlify/functions/samsaraSync";
+const samsaraVehiclesEndpoint = import.meta.env.VITE_SAMSARA_VEHICLES_ENDPOINT || "/.netlify/functions/samsaraVehicles";
 
 function StatusBadge({ status }) {
   const s = TRUCK_STATUSES.find((x) => x.id === status) || TRUCK_STATUSES[3];
@@ -363,7 +365,7 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
         )}
       </div>
 
-      {/* Col 4 — Oil */}
+      {/* Col 4 — Oil + Faults */}
       <div style={{ minWidth: 180, flexShrink: 0, padding: "0 16px", borderRight: "1px solid var(--border)" }}>
         <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>Oil Change</div>
         {(truck.lastOilChange || truck.currentOdometer)
@@ -371,6 +373,24 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
           : <span style={{ fontSize: 11, color: "var(--text-disabled)" }}>No data</span>
         }
         {truck.fuelCard && <div style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "monospace", marginTop: 5 }}>⛽ {truck.fuelCard}</div>}
+
+        {/* Fault codes from Samsara */}
+        {(() => {
+          const faults = truck.faultCodes || [];
+          if (faults.length === 0) return null;
+          const hasRed = faults.some((f) => f.lamp === "red");
+          const color  = hasRed ? "#dc2626" : "#f97316";
+          const bg     = hasRed ? "#fef2f2" : "#fff7ed";
+          const border = hasRed ? "#fecaca" : "#fed7aa";
+          return (
+            <div
+              title={faults.map((f) => `SPN ${f.j1939Spn} FMI ${f.j1939Fmi}${f.lamp ? ` (${f.lamp})` : ""}`).join("\n")}
+              style={{ marginTop: 6, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5, background: bg, color, border: `1px solid ${border}`, cursor: "default" }}
+            >
+              ⚠ {faults.length} fault{faults.length !== 1 ? "s" : ""}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Col 5 — Docs */}
@@ -429,6 +449,34 @@ export default function TrucksView({ onAddDriver }) {
   }
   const [sortBy, setSortBy] = useState("unit_asc");
   const [lightbox, setLightbox] = useState(null); // { url, name }
+
+  // ── Samsara sync ───────────────────────────────────────────────────────────
+  const [samsaraRunning, setSamsaraRunning] = useState(false);
+  const [samsaraResult,  setSamsaraResult]  = useState(null);
+  const [showSamsara,    setShowSamsara]    = useState(false);
+
+  async function handleSamsaraSync() {
+    if (samsaraRunning) return;
+    setSamsaraRunning(true);
+    setSamsaraResult(null);
+    try {
+      if (!auth?.currentUser) throw new Error("Not signed in.");
+      const idToken = await auth.currentUser.getIdToken();
+      const res = await fetch(samsaraSyncEndpoint, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || `Sync failed (${res.status})`);
+      setSamsaraResult(data);
+    } catch (err) {
+      setSamsaraResult({ error: String(err?.message || "Unknown error") });
+    } finally {
+      setSamsaraRunning(false);
+    }
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+
   const [showMigrate, setShowMigrate]   = useState(false);
   const [migrateRunning, setMigrateRunning] = useState(false);
   const [migrateResult, setMigrateResult]   = useState(null); // null | { success, totalMoved, report } | { error }
@@ -684,6 +732,22 @@ export default function TrucksView({ onAddDriver }) {
         </div>
 
         <button
+          onClick={() => { setSamsaraResult(null); setShowSamsara(true); }}
+          title="Sync odometer & fault codes from Samsara"
+          style={{
+            background: samsaraRunning ? "#eff6ff" : "var(--bg-raised)",
+            border: "1px solid var(--border)", color: "var(--text-secondary)",
+            padding: "8px 14px", borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: "pointer",
+            flexShrink: 0, display: "flex", alignItems: "center", gap: 5,
+          }}
+        >
+          {samsaraRunning
+            ? <span style={{ display: "inline-block", width: 12, height: 12, border: "2px solid #2563eb", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .6s linear infinite" }} />
+            : "📡"}
+          Samsara
+        </button>
+
+        <button
           onClick={() => { setMigrateResult(null); setShowMigrate(true); }}
           title="Reorganise all Drive files into the current folder structure"
           style={{
@@ -889,6 +953,78 @@ export default function TrucksView({ onAddDriver }) {
                 style={{ padding: "11px 16px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--bg-raised)", color: "var(--text-muted)", fontSize: 13, cursor: "pointer" }}
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Samsara sync modal */}
+      {showSamsara && (
+        <div
+          onClick={() => { if (!samsaraRunning) setShowSamsara(false); }}
+          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.5)", zIndex: 450, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: "var(--bg-surface)", borderRadius: 16, width: "100%", maxWidth: 440, padding: 28, boxShadow: "0 20px 60px rgba(0,0,0,.28)" }}
+          >
+            <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>📡 Samsara Sync</div>
+            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20, lineHeight: 1.6 }}>
+              Pulls live data from Samsara and updates your trucks:
+              <ul style={{ margin: "8px 0 0 18px", padding: 0, lineHeight: 1.9 }}>
+                <li><strong>Odometer</strong> — updates Current Odometer (mi) from OBD</li>
+                <li><strong>Fault Codes</strong> — active DTCs shown as ⚠ badge on card</li>
+                <li><strong>Auto-link</strong> — matches trucks by VIN automatically</li>
+              </ul>
+            </div>
+
+            {samsaraResult && !samsaraResult.error && (
+              <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
+                <div style={{ fontWeight: 700, color: "#15803d", marginBottom: 8 }}>✅ Sync complete</div>
+                <div style={{ fontSize: 12, color: "#166534", lineHeight: 1.8 }}>
+                  {(() => {
+                    const r = samsaraResult.report || {};
+                    return <>
+                      <div>✓ {r.synced} truck{r.synced !== 1 ? "s" : ""} updated</div>
+                      {r.autoLinked > 0 && <div>🔗 {r.autoLinked} auto-linked by VIN</div>}
+                      {r.noMatch > 0  && <div style={{ color: "#92400e" }}>⚠ {r.noMatch} truck{r.noMatch !== 1 ? "s" : ""} not matched (no Samsara ID or VIN)</div>}
+                      {(r.errors || []).map((e, i) => <div key={i} style={{ color: "#dc2626" }}>✗ {e}</div>)}
+                    </>;
+                  })()}
+                </div>
+              </div>
+            )}
+            {samsaraResult?.error && (
+              <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "12px 14px", marginBottom: 18, fontSize: 13, color: "#dc2626", fontWeight: 600 }}>
+                ⚠ {samsaraResult.error}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 8 }}>
+              {!samsaraResult?.success && (
+                <button
+                  onClick={handleSamsaraSync}
+                  disabled={samsaraRunning}
+                  style={{
+                    flex: 1, padding: "11px", borderRadius: 9, border: "none", fontSize: 14, fontWeight: 600,
+                    cursor: samsaraRunning ? "wait" : "pointer",
+                    background: samsaraRunning ? "#93c5fd" : "var(--color-primary)", color: "#fff",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  }}
+                >
+                  {samsaraRunning
+                    ? <><span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .6s linear infinite" }} /> Syncing…</>
+                    : "▶ Run Sync"
+                  }
+                </button>
+              )}
+              <button
+                onClick={() => { setShowSamsara(false); setSamsaraResult(null); }}
+                disabled={samsaraRunning}
+                style={{ padding: "11px 18px", background: "var(--bg-raised)", color: "var(--text-muted)", border: "1px solid var(--border)", borderRadius: 9, fontSize: 13, cursor: samsaraRunning ? "not-allowed" : "pointer" }}
+              >
+                {samsaraResult?.success ? "Close" : "Cancel"}
               </button>
             </div>
           </div>
