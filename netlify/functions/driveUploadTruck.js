@@ -1,6 +1,6 @@
 import Busboy from "busboy";
 import { Readable } from "node:stream";
-import { getDriveClient, ensureTruckFolder, makeFilePublicReadable } from "./_drive.js";
+import { getDriveClient, ensureTruckFolder, ensureFolderInParent, makeFilePublicReadable } from "./_drive.js";
 import { requireAdminOrRoot } from "./_auth.js";
 
 function json(statusCode, body) {
@@ -55,6 +55,7 @@ export const handler = async (event) => {
     const { fields, file } = await parseMultipart(event);
     const truckId    = String(fields.truckId    || "").trim();
     const unitNumber = String(fields.unitNumber || "").trim() || truckId;
+    const subFolder  = String(fields.subFolder  || "").trim(); // e.g. "Oil Change"
 
     if (!truckId) return json(400, { error: "truckId is required." });
     if (!file || !file.buffer || file.buffer.length === 0) return json(400, { error: "file is required." });
@@ -63,8 +64,13 @@ export const handler = async (event) => {
     // Always use unitNumber for folder naming (truck_unit_101, etc.)
     const { folderId, folderName } = await ensureTruckFolder(drive, unitNumber);
 
+    // If a sub-folder is requested (e.g. "Oil Change"), nest the file inside it
+    const targetFolderId = subFolder
+      ? await ensureFolderInParent(drive, folderId, subFolder)
+      : folderId;
+
     const created = await drive.files.create({
-      requestBody: { name: file.filename, parents: [folderId] },
+      requestBody: { name: file.filename, parents: [targetFolderId] },
       media: { mimeType: file.mimeType, body: Readable.from(file.buffer) },
       fields: "id,name,webViewLink,webContentLink,mimeType,size",
       supportsAllDrives: true,

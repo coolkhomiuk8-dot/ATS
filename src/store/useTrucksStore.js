@@ -35,6 +35,7 @@ async function uploadTruckFile(truckId, unitNumber, fileObj) {
   formData.append("file", fileObj.rawFile, fileObj.name);
   formData.append("truckId", String(truckId));
   formData.append("unitNumber", String(unitNumber || truckId));
+  if (fileObj.subFolder) formData.append("subFolder", String(fileObj.subFolder));
 
   const response = await fetch(driveUploadTruckEndpoint, {
     method: "POST",
@@ -323,8 +324,10 @@ export const useTrucksStore = create((set, get) => ({
     if (fileObj) {
       const truck = get().trucks.find((t) => t.id === truckId);
       const unitNumber = String(truck?.unitNumber || truckId);
+      // Always store oil-change proof inside the "Oil Change" sub-folder
+      const oilFileObj = { ...fileObj, subFolder: "Oil Change" };
       try {
-        fileData = await uploadTruckFile(truckId, unitNumber, fileObj);
+        fileData = await uploadTruckFile(truckId, unitNumber, oilFileObj);
       } catch (error) {
         set({ syncError: error.message || "Failed to upload oil change file." });
         throw error;

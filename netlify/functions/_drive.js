@@ -149,6 +149,14 @@ async function ensureSubFolder(drive, name) {
   return created.id;
 }
 
+// Creates (or reuses) a named child folder inside any parent folder ID.
+export async function ensureFolderInParent(drive, parentId, name) {
+  const existing = await findChildFolder(drive, parentId, name);
+  if (existing?.id) return existing.id;
+  const created = await createFolder(drive, parentId, name);
+  return created.id;
+}
+
 // storage/
 // ├── Truck Units/   ← all truck sub-folders
 // └── Drivers/       ← all driver sub-folders
