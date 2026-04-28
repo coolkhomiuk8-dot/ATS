@@ -277,7 +277,7 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc }) {
   );
 }
 
-export default function TrucksView() {
+export default function TrucksView({ onAddDriver }) {
   const { trucks, addTruck, updateTruck, deleteTruck, assignDriver, unassignDriver, addTruckFile } = useTrucksStore();
   const { drivers } = useDriversStore();
 
@@ -467,6 +467,18 @@ export default function TrucksView() {
           </select>
         </div>
 
+        {onAddDriver && (
+          <button
+            onClick={onAddDriver}
+            style={{
+              background: "var(--bg-raised)", border: "1px solid var(--border)", color: "var(--text-secondary)",
+              padding: "9px 16px", borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: "pointer",
+              flexShrink: 0,
+            }}
+          >
+            + Add Driver
+          </button>
+        )}
         <button
           onClick={() => setShowAdd(true)}
           style={{

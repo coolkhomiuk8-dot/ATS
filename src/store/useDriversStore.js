@@ -70,6 +70,9 @@ function ensureDriverShape(driver) {
     stageHistory: [],
     dlExpiry: "",
     hireDate: "",
+    emptyMilesRate: 0,
+    loadedMilesRate: 0,
+    enabled: true,
     ...driver,
   };
 }

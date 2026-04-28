@@ -13,6 +13,7 @@ import DashboardView from "./views/DashboardView";
 import TemplatesView from "./views/TemplatesView";
 import DispatchersView from "./views/DispatchersView";
 import TrucksView from "./views/TrucksView";
+import DriversView from "./views/DriversView";
 import DriverDrawer from "./components/DriverDrawer";
 import AddModal from "./components/AddModal";
 import ImportIndeedModal from "./components/ImportIndeedModal";
@@ -32,7 +33,7 @@ export default function App() {
   const [firebaseUser, setFirebaseUser] = useState(() => auth?.currentUser || null);
   const [authLoading, setAuthLoading] = useState(isFirebaseConfigured);
 
-  const VALID_VIEWS = ["pipeline", "dispatchers", "fleet", "dashboard", "templates"];
+  const VALID_VIEWS = ["pipeline", "dispatchers", "fleet", "drivers", "dashboard", "templates"];
   function getInitialView() {
     const hash = window.location.hash.replace("#", "");
     return VALID_VIEWS.includes(hash) ? hash : "pipeline";
@@ -302,6 +303,12 @@ export default function App() {
         <circle cx="15" cy="17" r="1.5" fill="currentColor" stroke="none"/>
       </svg>
     ),
+    drivers: (
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="10" cy="7" r="3.5"/>
+        <path d="M3 18c0-3.9 3.1-7 7-7s7 3.1 7 7"/>
+      </svg>
+    ),
     dashboard: (
       <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="2" width="7" height="7" rx="1.5"/>
@@ -443,9 +450,10 @@ export default function App() {
         {sidebarExpanded && <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".1em", padding: "2px 14px 3px" }}>Operations</div>}
 
         {[
-          { id: "fleet", title: "Fleet" },
-          { id: "dashboard", title: "Dashboard" },
-          { id: "templates", title: "Templates" },
+          { id: "fleet",      title: "Fleet" },
+          { id: "drivers",    title: "Drivers" },
+          { id: "dashboard",  title: "Dashboard" },
+          { id: "templates",  title: "Templates" },
         ].map((item) => (
           <button
             key={item.id}
@@ -920,7 +928,9 @@ export default function App() {
 
           {view === "dispatchers" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}><DispatchersView /></div>}
 
-          {view === "fleet" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}><TrucksView /></div>}
+          {view === "fleet" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}><TrucksView onAddDriver={() => setShowAdd(true)} /></div>}
+
+          {view === "drivers" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}><DriversView onSelectDriver={setSelectedId} /></div>}
 
           {view === "dashboard" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}><DashboardView drivers={drivers} /></div>}
 
