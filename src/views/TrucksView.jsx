@@ -211,7 +211,7 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc }) {
       </div>
 
       {/* Col 2 — Insurance */}
-      <div style={{ minWidth: 160, flexShrink: 0, padding: "0 16px", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ minWidth: 180, flexShrink: 0, padding: "0 16px", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 4 }}>
         <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 2 }}>Insurance</div>
         <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: truck.autoLiabilityCompany ? "#f0fdf4" : "#fef2f2", color: truck.autoLiabilityCompany ? "#15803d" : "#dc2626", border: `1px solid ${truck.autoLiabilityCompany ? "#86efac" : "#fecaca"}`, whiteSpace: "nowrap" }}>
           {truck.autoLiabilityCompany ? `✓ AL: ${truck.autoLiabilityCompany}` : "⚠ Auto Liability"}
@@ -219,24 +219,27 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc }) {
         <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: truck.cargoInsuranceCompany ? "#f0fdf4" : "#fef2f2", color: truck.cargoInsuranceCompany ? "#15803d" : "#dc2626", border: `1px solid ${truck.cargoInsuranceCompany ? "#86efac" : "#fecaca"}`, whiteSpace: "nowrap" }}>
           {truck.cargoInsuranceCompany ? `✓ Cargo: ${truck.cargoInsuranceCompany}` : "⚠ Cargo"}
         </span>
+        {/* Driver insurance — same style */}
+        {driver && (driver.insuranceCompanies || []).length > 0
+          ? (driver.insuranceCompanies || []).map((c) => (
+              <span key={c} style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "#f0fdf4", color: "#15803d", border: "1px solid #86efac", whiteSpace: "nowrap" }}>
+                ✓ Driver: {c}
+              </span>
+            ))
+          : driver && (
+              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", whiteSpace: "nowrap" }}>
+                ⚠ Driver ins.
+              </span>
+            )
+        }
       </div>
 
       {/* Col 3 — Driver */}
-      <div style={{ minWidth: 180, flexShrink: 0, padding: "0 16px", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ minWidth: 160, flexShrink: 0, padding: "0 16px", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 4 }}>
         <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 2 }}>Driver</div>
         <div style={{ fontSize: 12, fontWeight: driver ? 600 : 400, color: driver ? "var(--color-primary-dark)" : "var(--text-faint)" }}>
           {driver ? `🚗 ${driver.name}` : "Available"}
         </div>
-        {driver && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-            {(driver.insuranceCompanies || []).length === 0
-              ? <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 4, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>⚠ No Ins.</span>
-              : (driver.insuranceCompanies || []).map((c) => (
-                  <span key={c} style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 4, background: "#f0fdf4", color: "#15803d", border: "1px solid #86efac" }}>✓ {c}</span>
-                ))
-            }
-          </div>
-        )}
       </div>
 
       {/* Col 4 — Oil */}
