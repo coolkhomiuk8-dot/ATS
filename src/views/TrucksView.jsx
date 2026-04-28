@@ -281,7 +281,14 @@ export default function TrucksView() {
   const [selectedId, setSelectedId] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState(
+    () => localStorage.getItem("fleet_statusFilter") || "all"
+  );
+
+  function setStatusFilterPersist(val) {
+    localStorage.setItem("fleet_statusFilter", val);
+    setStatusFilter(val);
+  }
   const [sortBy, setSortBy] = useState("unit_asc");
   const [lightbox, setLightbox] = useState(null); // { url, name }
 
@@ -477,7 +484,7 @@ export default function TrucksView() {
         {[{ id: "all", label: "All" }, ...TRUCK_STATUSES].map((s) => (
           <button
             key={s.id}
-            onClick={() => setStatusFilter(s.id)}
+            onClick={() => setStatusFilterPersist(s.id)}
             style={{
               padding: "10px 16px", border: "none", borderBottom: statusFilter === s.id ? "2px solid var(--color-primary)" : "2px solid transparent",
               background: "transparent", cursor: "pointer", fontSize: 13, fontWeight: statusFilter === s.id ? 700 : 500,
