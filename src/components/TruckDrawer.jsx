@@ -436,6 +436,7 @@ function OilChangeModal({ truck, onClose, onConfirm }) {
   async function handleConfirm() {
     if (!odometer || Number(odometer) <= 0) { setError("Enter a valid mileage."); return; }
     if (!date) { setError("Enter the date."); return; }
+    if (!file) { setError("Please add a proof photo or receipt."); return; }
     setUploading(true);
     setError(null);
     try {
@@ -448,10 +449,10 @@ function OilChangeModal({ truck, onClose, onConfirm }) {
 
   return (
     <div
-      onClick={(e) => { if (e.target === e.currentTarget && !uploading) onClose(); }}
+      onClick={(e) => { e.stopPropagation(); if (e.target === e.currentTarget && !uploading) onClose(); }}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 4500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
     >
-      <div style={{ background: "var(--bg-surface)", borderRadius: 16, width: 400, padding: "24px 24px 20px", boxShadow: "0 24px 60px rgba(0,0,0,.3)" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--bg-surface)", borderRadius: 16, width: 400, padding: "24px 24px 20px", boxShadow: "0 24px 60px rgba(0,0,0,.3)" }}>
         <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text-primary)", marginBottom: 3 }}>🔧 Record Oil Change</div>
         <div style={{ fontSize: 12, color: "var(--text-faint)", marginBottom: 20 }}>Unit {truck.unitNumber}</div>
 
@@ -472,22 +473,43 @@ function OilChangeModal({ truck, onClose, onConfirm }) {
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={inputSt} />
           </div>
           <div>
-            <div style={labelSt}>Proof (photo or receipt) — optional</div>
+            <div style={labelSt}>
+              Proof photo or receipt *
+              {file && (
+                <button
+                  type="button"
+                  onClick={() => setFile(null)}
+                  style={{ marginLeft: 8, background: "none", border: "none", cursor: "pointer", color: "#dc2626", fontSize: 12, fontWeight: 700, padding: 0 }}
+                >
+                  ✕ Remove
+                </button>
+              )}
+            </div>
             <div
               onClick={() => !uploading && fileRef.current?.click()}
               style={{
-                padding: "12px 14px", borderRadius: 9, cursor: uploading ? "default" : "pointer",
+                padding: "14px 14px", borderRadius: 9, cursor: uploading ? "default" : "pointer",
                 textAlign: "center", fontSize: 13,
-                border: `2px dashed ${file ? "var(--color-primary)" : "var(--border)"}`,
-                background: file ? "var(--color-primary-light, #eff6ff)" : "var(--bg-raised)",
-                color: file ? "var(--text-secondary)" : "var(--text-disabled)",
+                border: `2px dashed ${file ? "#16a34a" : "var(--border)"}`,
+                background: file ? "#f0fdf4" : "var(--bg-raised)",
+                color: file ? "#15803d" : "var(--text-disabled)",
                 transition: "all .15s",
               }}
             >
               {file ? (
-                <span>📄 <strong>{file.name}</strong> <span style={{ fontSize: 11, color: "var(--text-faint)", fontWeight: 400 }}>({fmtSize(file.size)})</span></span>
+                <div>
+                  <div style={{ fontSize: 22, marginBottom: 4 }}>
+                    {file.type.startsWith("image/") ? "🖼" : "📄"}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#15803d" }}>{file.name}</div>
+                  <div style={{ fontSize: 11, color: "#16a34a", marginTop: 2 }}>{fmtSize(file.size)} · ready to upload</div>
+                </div>
               ) : (
-                <span>Click to add photo or receipt…</span>
+                <div>
+                  <div style={{ fontSize: 22, marginBottom: 4 }}>📎</div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>Click to add photo or receipt</div>
+                  <div style={{ fontSize: 11, marginTop: 2 }}>Image or PDF</div>
+                </div>
               )}
             </div>
             <input ref={fileRef} type="file" accept="image/*,.pdf" style={{ display: "none" }}
@@ -512,7 +534,7 @@ function OilChangeModal({ truck, onClose, onConfirm }) {
               cursor: uploading ? "default" : "pointer", transition: "background .15s",
             }}
           >
-            {uploading ? "Saving…" : "Record Oil Change"}
+            {uploading ? "Uploading & saving…" : "Record Oil Change"}
           </button>
           <button
             onClick={onClose}
@@ -784,8 +806,12 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
   }
 
   async function handleOilChangeConfirm({ odometer, date, file }) {
-    const fileObj = file ? {
-      name: file.name,
+    // Rename file to "oil_change_YYYY-MM-DD.ext" so Drive folder stays tidy
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const fileName = `oil_change_${date}.${ext}`;
+
+    const fileObj = {
+      name: fileName,
       type: file.type.startsWith("image/") ? "image" : "file",
       mime: file.type,
       size: file.size,
@@ -793,7 +819,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
       category: "truck",
       linkedDoc: "Oil Change",
       date: new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
-    } : null;
+    };
     await addOilChange(truck.id, { odometer, date, fileObj });
     setShowOilChangeModal(false);
   }
