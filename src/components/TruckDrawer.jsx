@@ -701,11 +701,28 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
               {/* Status & Note */}
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 10 }}>Status</div>
+                {!assignedDriver && (
+                  <div style={{ marginBottom: 10, fontSize: 11, color: "#92400e", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 7, padding: "6px 10px" }}>
+                    ⚠ Active status requires an assigned driver
+                  </div>
+                )}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div>
                     <FL t="Status" />
-                    <select value={truck.status} onChange={(e) => onUpd(truck.id, { status: e.target.value })} style={{ ...inputStyle, cursor: "pointer" }}>
-                      {TRUCK_STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                    <select
+                      value={truck.status}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "active" && !assignedDriver) return;
+                        onUpd(truck.id, { status: val });
+                      }}
+                      style={{ ...inputStyle, cursor: "pointer" }}
+                    >
+                      {TRUCK_STATUSES.map((s) => (
+                        <option key={s.id} value={s.id} disabled={s.id === "active" && !assignedDriver}>
+                          {s.label}{s.id === "active" && !assignedDriver ? " — assign driver first" : ""}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>

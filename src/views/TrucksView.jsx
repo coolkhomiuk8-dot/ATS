@@ -321,7 +321,7 @@ export default function TrucksView({ onAddDriver }) {
   }
   const [form, setForm] = useState({
     unitNumber: "", year: "", vinNumber: "",
-    status: "active",
+    status: "available",
     statusNote: "", homeLocation: "", fuelCard: "",
     lastOilChange: "", currentOdometer: "", notes: "",
     autoLiabilityStatus: "none", autoLiabilityCompany: "",
@@ -335,7 +335,7 @@ export default function TrucksView({ onAddDriver }) {
     await addTruck(form);
     setForm({
       unitNumber: "", year: "", vinNumber: "",
-      status: "active",
+      status: "available",
       statusNote: "", homeLocation: "", fuelCard: "",
       lastOilChange: "", currentOdometer: "", notes: "",
       autoLiabilityStatus: "none", autoLiabilityCompany: "",
@@ -607,7 +607,11 @@ export default function TrucksView({ onAddDriver }) {
                 <div>
                   <div style={labelStyle}>Status</div>
                   <select value={form.status} onChange={(e) => setF("status", e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                    {TRUCK_STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                    {TRUCK_STATUSES.map((s) => (
+                      <option key={s.id} value={s.id} disabled={s.id === "active"}>
+                        {s.label}{s.id === "active" ? " — assign driver first" : ""}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
