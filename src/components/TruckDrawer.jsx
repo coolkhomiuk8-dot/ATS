@@ -168,7 +168,7 @@ function UploadModal({ category, docList, onClose, onSave }) {
 }
 
 /* ── Doc Section ── */
-function DocSection({ title, subtitle, docList, truck, files, onOpenUpload, onDeleteFile, onPreview, allFiles }) {
+function DocSection({ title, subtitle, docList, truck, files, onOpenUpload, onDeleteFile, onPreview, allFiles, deletingSet }) {
   const received = docList.filter((d) => truck.docs?.[d]).length;
   const isImage = (f) => f.type === "image" || /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(f.name || "");
 
@@ -237,25 +237,44 @@ function DocSection({ title, subtitle, docList, truck, files, onOpenUpload, onDe
         <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
           {files.map((file) => {
             const globalIdx = allFiles.indexOf(file);
+            const isDeleting = deletingSet?.has(globalIdx);
             const img = isImage(file) && (file.driveFileId ? `https://drive.google.com/thumbnail?id=${file.driveFileId}&sz=w80` : (file.url || file.data));
             return (
-              <div key={globalIdx} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 8 }}>
-                {img ? (
+              <div key={globalIdx} style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "7px 10px",
+                background: isDeleting ? "#eff6ff" : "var(--bg-surface)",
+                border: `1px solid ${isDeleting ? "#bfdbfe" : "var(--border)"}`,
+                borderRadius: 8, transition: "background .2s, border-color .2s",
+              }}>
+                {/* Thumbnail or file icon */}
+                {isDeleting ? (
+                  <div style={{ width: 36, height: 36, borderRadius: 5, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: 20, height: 20, border: "2.5px solid #2563eb", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .6s linear infinite" }} />
+                  </div>
+                ) : img ? (
                   <img src={img} alt={file.name} onClick={() => onPreview(file)} style={{ width: 36, height: 36, borderRadius: 5, objectFit: "cover", cursor: "zoom-in", flexShrink: 0 }} />
                 ) : (
                   <div style={{ width: 36, height: 36, background: "var(--color-primary-light)", borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "var(--color-primary-dark)", flexShrink: 0 }}>FILE</div>
                 )}
+
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{file.name}</div>
-                  <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 1 }}>
-                    {file.linkedDoc && <span style={{ fontWeight: 700, color: "#15803d" }}>{file.linkedDoc} · </span>}
-                    {fmtSize(file.size)} · {file.date}
+                  <div style={{ fontSize: 12, fontWeight: 600, color: isDeleting ? "#2563eb" : "var(--text-secondary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{file.name}</div>
+                  <div style={{ fontSize: 10, color: isDeleting ? "#93c5fd" : "var(--text-faint)", marginTop: 1 }}>
+                    {isDeleting
+                      ? "Deleting from Drive…"
+                      : <>{file.linkedDoc && <span style={{ fontWeight: 700, color: "#15803d" }}>{file.linkedDoc} · </span>}{fmtSize(file.size)} · {file.date}</>
+                    }
                   </div>
                 </div>
+
                 <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
-                  {img && <button onClick={() => onPreview(file)} style={{ fontSize: 11, color: "var(--color-primary)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>View</button>}
-                  {(file.url || file.data) && !img && <a href={file.url || file.data} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "var(--color-primary)", textDecoration: "none", fontWeight: 600 }}>Open</a>}
-                  <button onClick={() => onDeleteFile(globalIdx)} style={{ fontSize: 11, color: "var(--color-danger, #dc2626)", background: "none", border: "none", cursor: "pointer" }}>✕</button>
+                  {!isDeleting && img && <button onClick={() => onPreview(file)} style={{ fontSize: 11, color: "var(--color-primary)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>View</button>}
+                  {!isDeleting && (file.url || file.data) && !img && <a href={file.url || file.data} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "var(--color-primary)", textDecoration: "none", fontWeight: 600 }}>Open</a>}
+                  <button
+                    onClick={() => !isDeleting && onDeleteFile(globalIdx)}
+                    disabled={isDeleting}
+                    style={{ fontSize: 11, color: isDeleting ? "#93c5fd" : "var(--color-danger, #dc2626)", background: "none", border: "none", cursor: isDeleting ? "default" : "pointer", opacity: isDeleting ? .5 : 1 }}
+                  >✕</button>
                 </div>
               </div>
             );
@@ -289,6 +308,8 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
 
   // Upload modal state — null = closed, { category: "truck"|"driver" } = open
   const [uploadModal, setUploadModal] = useState(null);
+  // Set of globalIdx values currently being deleted (Drive in progress)
+  const [deletingSet, setDeletingSet] = useState(new Set());
 
   // Insurance inputs — top-level to keep hook count stable across tab switches
   const [alInput, setAlInput] = useState("");
@@ -326,16 +347,24 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
     onUpd(truck.id, { docs: { ...(truck.docs || {}), [docName]: true } });
   }
 
-  /* Delete a file and uncheck its linked doc */
-  function handleDeleteFile(globalIdx) {
+  /* Delete a file — uncheck doc immediately, show spinner while Drive deletes */
+  async function handleDeleteFile(globalIdx) {
     const file = (truck.files || [])[globalIdx];
-    deleteTruckFile(truck.id, globalIdx);
+
+    // Immediately uncheck the doc → card badge goes gray right away
     if (file?.linkedDoc) {
-      // Only uncheck if no other files are linked to the same doc
       const remaining = (truck.files || []).filter((f, i) => i !== globalIdx && f.linkedDoc === file.linkedDoc);
       if (remaining.length === 0) {
         onUpd(truck.id, { docs: { ...(truck.docs || {}), [file.linkedDoc]: false } });
       }
+    }
+
+    // Mark as deleting → row shows blue spinner
+    setDeletingSet((prev) => { const next = new Set(prev); next.add(globalIdx); return next; });
+    try {
+      await deleteTruckFile(truck.id, globalIdx);
+    } finally {
+      setDeletingSet((prev) => { const next = new Set(prev); next.delete(globalIdx); return next; });
     }
   }
 
@@ -756,6 +785,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                 onDeleteFile={handleDeleteFile}
                 onPreview={(file) => setLightbox({ url: file.driveFileId ? `https://drive.google.com/thumbnail?id=${file.driveFileId}&sz=w1200` : (file.url || file.data), name: file.name })}
                 allFiles={truck.files || []}
+                deletingSet={deletingSet}
               />
               <DocSection
                 title="Driver Documents"
@@ -767,6 +797,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                 onDeleteFile={handleDeleteFile}
                 onPreview={(file) => setLightbox({ url: file.driveFileId ? `https://drive.google.com/thumbnail?id=${file.driveFileId}&sz=w1200` : (file.url || file.data), name: file.name })}
                 allFiles={truck.files || []}
+                deletingSet={deletingSet}
               />
             </div>
           )}
