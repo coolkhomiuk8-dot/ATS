@@ -440,6 +440,9 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
   const [assignConfirm, setAssignConfirm] = useState(null); // { driverId }
   // Set of globalIdx values currently being deleted (Drive in progress)
   const [deletingSet, setDeletingSet] = useState(new Set());
+  // When user tries to set status → Active without a driver, open picker and set this flag
+  // so that after successful assign the status is also flipped to "active"
+  const [pendingActiveStatus, setPendingActiveStatus] = useState(false);
 
   // Insurance inputs — top-level to keep hook count stable across tab switches
   const [alInput, setAlInput] = useState("");
@@ -701,11 +704,6 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
               {/* Status & Note */}
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 10 }}>Status</div>
-                {!assignedDriver && (
-                  <div style={{ marginBottom: 10, fontSize: 11, color: "#92400e", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 7, padding: "6px 10px" }}>
-                    ⚠ Active status requires an assigned driver
-                  </div>
-                )}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div>
                     <FL t="Status" />
@@ -713,19 +711,29 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                       value={truck.status}
                       onChange={(e) => {
                         const val = e.target.value;
-                        if (val === "active" && !assignedDriver) return;
+                        if (val === "active" && !assignedDriver) {
+                          // Prompt to assign a driver first, then activate
+                          setPendingActiveStatus(true);
+                          setShowAssignPicker(true);
+                          return;
+                        }
                         onUpd(truck.id, { status: val });
                       }}
                       style={{ ...inputStyle, cursor: "pointer" }}
                     >
                       {TRUCK_STATUSES.map((s) => (
-                        <option key={s.id} value={s.id} disabled={s.id === "active" && !assignedDriver}>
+                        <option key={s.id} value={s.id}>
                           {s.label}{s.id === "active" && !assignedDriver ? " — assign driver first" : ""}
                         </option>
                       ))}
                     </select>
                   </div>
                 </div>
+                {!assignedDriver && (
+                  <div style={{ marginTop: -4, marginBottom: 8, fontSize: 11, color: "#92400e", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 7, padding: "6px 10px" }}>
+                    ⚠ To set Active — assign a driver first
+                  </div>
+                )}
                 <div>
                   <FL t="Maintenance / Status Note" />
                   <input value={truck.statusNote || ""} onChange={(e) => onUpd(truck.id, { statusNote: e.target.value })} style={inputStyle} placeholder="e.g. На ремонті дилер IL (Addison)" />
@@ -889,6 +897,11 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
 
                 {showAssignPicker && (
                   <div style={{ marginTop: 10, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,.12)" }}>
+                    {pendingActiveStatus && (
+                      <div style={{ padding: "9px 12px", background: "#eff6ff", borderBottom: "1px solid #bfdbfe", fontSize: 12, color: "#1d4ed8", fontWeight: 600 }}>
+                        Assign a driver to set this truck to Active
+                      </div>
+                    )}
                     <div style={{ padding: "10px 12px", borderBottom: "1px solid var(--border)" }}>
                       <input autoFocus value={assignSearch} onChange={(e) => setAssignSearch(e.target.value)} placeholder="Search hired drivers…" style={{ width: "100%", padding: "7px 10px", fontSize: 13, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 7, outline: "none", color: "var(--text-primary)", boxSizing: "border-box" }} />
                     </div>
@@ -906,7 +919,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                         </button>
                       ))}
                     </div>
-                    <button onClick={() => { setShowAssignPicker(false); setAssignSearch(""); }} style={{ width: "100%", padding: "9px", background: "var(--bg-raised)", border: "none", borderTop: "1px solid var(--border)", cursor: "pointer", fontSize: 12, color: "var(--text-muted)" }}>Cancel</button>
+                    <button onClick={() => { setShowAssignPicker(false); setAssignSearch(""); setPendingActiveStatus(false); }} style={{ width: "100%", padding: "9px", background: "var(--bg-raised)", border: "none", borderTop: "1px solid var(--border)", cursor: "pointer", fontSize: 12, color: "var(--text-muted)" }}>Cancel</button>
                   </div>
                 )}
               </div>
@@ -979,7 +992,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
         return (
           <AssignConfirmModal
             driver={d}
-            onClose={() => setAssignConfirm(null)}
+            onClose={() => { setAssignConfirm(null); setPendingActiveStatus(false); }}
             onConfirm={(fields) => {
               // Save updated driver fields
               updateDriver(d.id, {
@@ -991,6 +1004,11 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
               });
               // Complete the assignment
               onAssignDriver(truck.id, d.id);
+              // If triggered from status → Active, flip truck to active now
+              if (pendingActiveStatus) {
+                onUpd(truck.id, { status: "active" });
+                setPendingActiveStatus(false);
+              }
               setAssignConfirm(null);
             }}
           />
