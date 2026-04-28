@@ -298,15 +298,7 @@ export default function DriversView({ onSelectDriver }) {
   const { trucks } = useTrucksStore();
 
   const [search, setSearch] = useState("");
-  const [stageFilter, setStageFilter] = useState(
-    () => localStorage.getItem("driversView_stageFilter") || "all"
-  );
   const [showAdd, setShowAdd] = useState(false);
-
-  function setStage(v) {
-    localStorage.setItem("driversView_stageFilter", v);
-    setStageFilter(v);
-  }
 
   // driverId → assigned truck
   const driverToTruck = useMemo(() => {
@@ -318,8 +310,7 @@ export default function DriversView({ onSelectDriver }) {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return drivers
-      .filter((d) => d.stage !== "trash")
-      .filter((d) => stageFilter === "all" || d.stage === stageFilter)
+      .filter((d) => d.stage === "hired")
       .filter((d) => {
         if (!q) return true;
         return (
@@ -330,18 +321,12 @@ export default function DriversView({ onSelectDriver }) {
         );
       })
       .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  }, [drivers, stageFilter, search]);
+  }, [drivers, search]);
 
   // Stats
-  const visible = drivers.filter((d) => d.stage !== "trash");
-  const hiredCount = visible.filter((d) => d.stage === "hired").length;
-  const enabledCount = visible.filter((d) => d.enabled !== false && d.stage === "hired").length;
-
-  // Stage options for dropdown
-  const stageOptions = [
-    { id: "all", label: "All stages" },
-    ...STAGES.filter((s) => s.id !== "trash"),
-  ];
+  const hired = drivers.filter((d) => d.stage === "hired");
+  const enabledCount = hired.filter((d) => d.enabled !== false).length;
+  const disabledCount = hired.filter((d) => d.enabled === false).length;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--bg-app)", overflow: "hidden" }}>
@@ -353,15 +338,15 @@ export default function DriversView({ onSelectDriver }) {
       }}>
         <div style={{ flexShrink: 0 }}>
           <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>Drivers</div>
-          <div style={{ fontSize: 12, color: "var(--text-faint)", marginTop: 1 }}>{visible.length} total</div>
+          <div style={{ fontSize: 12, color: "var(--text-faint)", marginTop: 1 }}>Hired only</div>
         </div>
 
         {/* Stats pills */}
         <div style={{ display: "flex", gap: 6 }}>
           {[
-            { label: "Total", count: visible.length, color: "#6366f1", bg: "#eef2ff" },
-            { label: "Hired", count: hiredCount, color: "#16a34a", bg: "#f0fdf4" },
-            { label: "Active", count: enabledCount, color: "#2563eb", bg: "#eff6ff" },
+            { label: "Hired",    count: hired.length,   color: "#16a34a", bg: "#f0fdf4" },
+            { label: "Enabled",  count: enabledCount,   color: "#2563eb", bg: "#eff6ff" },
+            { label: "Disabled", count: disabledCount,  color: "#94a3b8", bg: "#f1f5f9" },
           ].map((s) => (
             <span key={s.label} style={{
               fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 20,
@@ -389,19 +374,6 @@ export default function DriversView({ onSelectDriver }) {
           )}
         </div>
 
-        {/* Stage filter */}
-        <select
-          value={stageFilter}
-          onChange={(e) => setStage(e.target.value)}
-          style={{
-            padding: "8px 10px", fontSize: 12, fontWeight: 600,
-            background: "var(--bg-raised)", border: "1px solid var(--border)",
-            borderRadius: 9, color: "var(--text-secondary)", outline: "none", cursor: "pointer",
-          }}
-        >
-          {stageOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-        </select>
-
         {/* Add Driver */}
         <button
           onClick={() => setShowAdd(true)}
@@ -419,9 +391,9 @@ export default function DriversView({ onSelectDriver }) {
       <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
         {filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 0", fontSize: 14, color: "var(--text-faint)" }}>
-            {visible.length === 0
-              ? "No drivers yet — click + Add Driver to get started."
-              : "No drivers match your search or filter."}
+            {hired.length === 0
+              ? "No hired drivers yet — click + Add Driver to get started."
+              : "No drivers match your search."}
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
