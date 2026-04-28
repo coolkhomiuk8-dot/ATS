@@ -122,7 +122,7 @@ function DocBadge({ docName, category, files, docs, onUpload, onPreview }) {
           ? <img src={thumbUrl} alt="" style={{ width: 14, height: 14, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
           : hasFile ? "📄" : "⬆"
       }
-      {docName.split(" ")[0]}
+      {docName}
       <input
         ref={fileRef}
         type="file"
