@@ -414,9 +414,23 @@ function UploadModal({ category, docList, onClose, onSave }) {
 }
 
 /* ── Doc Section ── */
-function DocSection({ title, subtitle, docList, truck, files, onOpenUpload, onDeleteFile, onPreview, allFiles, deletingSet }) {
-  const received = docList.filter((d) => truck.docs?.[d]).length;
+function DocSection({ title, subtitle, docList, truck, files, onOpenUpload, onDeleteFile, onPreview, allFiles, deletingSet, onUpdDoc }) {
+  const [ssnInput, setSsnInput] = useState("");
+  const [ssnEditing, setSsnEditing] = useState(false);
+
+  const received = docList.filter((d) => !!truck.docs?.[d]).length;
   const isImage = (f) => f.type === "image" || /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(f.name || "");
+
+  // SSN stored as digit string in truck.docs.SSN (truthy → checkbox green)
+  const ssnSaved = typeof truck.docs?.SSN === "string" && truck.docs.SSN.length > 0 ? truck.docs.SSN : null;
+
+  function saveSsn() {
+    const digits = ssnInput.replace(/\D/g, "");
+    if (!digits) return;
+    onUpdDoc?.({ SSN: digits });
+    setSsnInput("");
+    setSsnEditing(false);
+  }
 
   return (
     <div style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
@@ -473,6 +487,41 @@ function DocSection({ title, subtitle, docList, truck, files, onOpenUpload, onDe
                   </div>
                 )}
               </div>
+
+              {/* SSN — inline number entry (OR upload via + Upload) */}
+              {docName === "SSN" && (
+                <div style={{ padding: "0 14px 10px 40px" }}>
+                  {ssnSaved && !ssnEditing ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 13, fontFamily: "monospace", fontWeight: 700, color: "#15803d", letterSpacing: "0.08em" }}>
+                        ***-**-{ssnSaved.slice(-4)}
+                      </span>
+                      <button
+                        onClick={() => { setSsnInput(ssnSaved); setSsnEditing(true); }}
+                        style={{ fontSize: 11, color: "var(--color-primary)", background: "none", border: "none", cursor: "pointer", fontWeight: 600, padding: "1px 4px" }}
+                      >Edit</button>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <input
+                        value={ssnInput}
+                        onChange={(e) => setSsnInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && saveSsn()}
+                        placeholder="Enter SSN digits…"
+                        style={{
+                          flex: 1, padding: "5px 9px", fontSize: 12, fontFamily: "monospace",
+                          background: "var(--bg-surface)", border: "1px solid var(--border)",
+                          borderRadius: 6, color: "var(--text-primary)", outline: "none",
+                        }}
+                      />
+                      <button onClick={saveSsn} style={{ padding: "5px 11px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Save</button>
+                      {ssnEditing && (
+                        <button onClick={() => { setSsnEditing(false); setSsnInput(""); }} style={{ padding: "5px 8px", background: "var(--bg-hover)", border: "none", borderRadius: 6, fontSize: 13, cursor: "pointer", color: "var(--text-muted)" }}>×</button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
@@ -1067,7 +1116,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
               />
               <DocSection
                 title="Driver Documents"
-                subtitle="Driver License · MVR · Criminal Record"
+                subtitle="License · MVR · Criminal · SSN · W9 · Agreement"
                 docList={DRIVER_DOC_LIST}
                 truck={truck}
                 files={(truck.files || []).filter((f) => f.category === "driver")}
@@ -1076,6 +1125,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                 onPreview={(file) => setLightbox({ url: file.driveFileId ? `https://drive.google.com/thumbnail?id=${file.driveFileId}&sz=w1200` : (file.url || file.data), name: file.name })}
                 allFiles={truck.files || []}
                 deletingSet={deletingSet}
+                onUpdDoc={(patch) => onUpd(truck.id, { docs: { ...(truck.docs || {}), ...patch } })}
               />
             </div>
           )}

@@ -19,6 +19,9 @@ export const DRIVER_DOC_LIST = [
   "Driver License",
   "MVR",
   "Criminal Record",
+  "SSN",
+  "W9 Form",
+  "Job Agreement",
 ];
 
 export const OIL_CHANGE_INTERVAL = 6000;
