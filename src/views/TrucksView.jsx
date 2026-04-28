@@ -148,7 +148,7 @@ function fmtPhone(raw) {
   return `(${local.slice(0, 3)}) ${local.slice(3, 6)}-${local.slice(6)}`;
 }
 
-function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPlatesExpiry, onRegClick }) {
+function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPlatesExpiry, onRegClick, onUploadDriverDoc }) {
   const vinShort = truck.vinNumber ? truck.vinNumber.slice(-4) : null;
   const oilLeft = OIL_CHANGE_INTERVAL - (Number(truck.currentOdometer) - Number(truck.lastOilChange));
   const files = truck.files || [];
@@ -390,11 +390,20 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
         </div>
         <div>
           <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Driver Docs</div>
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-            {DRIVER_DOC_LIST.map((doc) => (
-              <DocBadge key={doc} docName={doc} category="driver" files={files} docs={truck.docs} onUpload={onUploadDoc} onPreview={onPreviewDoc} />
-            ))}
-          </div>
+          {driver ? (
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+              {DRIVER_DOC_LIST.map((doc) => (
+                <DocBadge
+                  key={doc} docName={doc} category="driver"
+                  files={driver.files || []} docs={driver.docs || {}}
+                  onUpload={(rawFile, docName, category) => onUploadDriverDoc(driver.id, rawFile, docName, category)}
+                  onPreview={onPreviewDoc}
+                />
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 11, color: "var(--text-disabled)", fontStyle: "italic" }}>No driver assigned</div>
+          )}
         </div>
         {truck.eldId && <div style={{ fontSize: 10, color: "var(--text-muted)" }}>ELD: {truck.eldId}</div>}
         {truck.statusNote && <div style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic" }}>{truck.statusNote}</div>}
@@ -405,7 +414,7 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
 
 export default function TrucksView({ onAddDriver }) {
   const { trucks, addTruck, updateTruck, deleteTruck, assignDriver, unassignDriver, addTruckFile } = useTrucksStore();
-  const { drivers } = useDriversStore();
+  const { drivers, addFile: addDriverFile, upd: updDriver } = useDriversStore();
 
   const [selectedId, setSelectedId] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -500,6 +509,26 @@ export default function TrucksView({ onAddDriver }) {
     const truck = trucks.find((t) => t.id === truckId);
     if (truck) updateTruck(truckId, { docs: { ...(truck.docs || {}), [docName]: true } });
   }
+
+  async function handleDriverDocUpload(driverId, rawFile, docName, category) {
+    const driver = drivers.find((d) => d.id === driverId);
+    if (!driver) return;
+    const fileObj = {
+      name: rawFile.name,
+      type: rawFile.type.startsWith("image/") ? "image" : "file",
+      mime: rawFile.type,
+      size: rawFile.size,
+      rawFile,
+      category,
+      linkedDoc: docName,
+      date: new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
+    };
+    await addDriverFile(driverId, fileObj);
+    // mark doc as received on the driver
+    const fresh = drivers.find((d) => d.id === driverId);
+    if (fresh) updDriver(driverId, { docs: { ...(fresh.docs || {}), [docName]: true } });
+  }
+
   const [form, setForm] = useState({
     unitNumber: "", year: "", vinNumber: "",
     status: "available",
@@ -731,6 +760,7 @@ export default function TrucksView({ onAddDriver }) {
                   }}
                   onSetPlatesExpiry={(date) => updateTruck(truck.id, { platesExpiry: date })}
                   onRegClick={(docName) => openRegModal(truck.id, docName)}
+                  onUploadDriverDoc={handleDriverDocUpload}
                 />
               );
             })}
