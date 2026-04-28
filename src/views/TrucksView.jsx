@@ -250,8 +250,7 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
           const label = !truck.platesExpiry
             ? "Plates —"
             : exp.daysLeft < 0 ? "Plates EXP"
-            : exp.daysLeft <= 60 ? `Plates ${exp.daysLeft}d`
-            : "Plates ✓";
+            : `Plates ${exp.daysLeft}d`;
           return (
             <div ref={platesRef} style={{ position: "relative", marginTop: 5, display: "inline-block" }}>
               <span
