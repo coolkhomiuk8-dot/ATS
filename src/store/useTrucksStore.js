@@ -86,8 +86,9 @@ function ensureTruckShape(truck) {
     docs: {},
     files: [],
     createdAt: null,
-    driverHistory: [],  // [{ driverId, driverName, from, to }]
-    statusHistory: [],  // [{ status, from, to }]
+    driverHistory: [],   // [{ driverId, driverName, from, to }]
+    statusHistory: [],   // [{ status, from, to }]
+    oilChangeLog: [],    // [{ date, odometer, fileName?, fileUrl?, viewUrl?, driveFileId?, fileType? }]
     ...truck,
   };
 }
@@ -292,6 +293,37 @@ export const useTrucksStore = create((set, get) => ({
     if (!truck) return;
     const files = [...(truck.files || []), uploaded];
     return get().updateTruck(truckId, { files });
+  },
+
+  addOilChange: async (truckId, { odometer, date, fileObj }) => {
+    let fileData = null;
+
+    if (fileObj) {
+      try {
+        fileData = await uploadTruckFile(truckId, fileObj);
+      } catch (error) {
+        set({ syncError: error.message || "Failed to upload oil change file." });
+        throw error;
+      }
+    }
+
+    const truck = get().trucks.find((t) => t.id === truckId);
+    if (!truck) return;
+
+    const entry = stripUndefined({
+      date,
+      odometer: Number(odometer),
+      ...(fileData ? {
+        fileName:    fileData.name        || null,
+        fileUrl:     fileData.url         || fileData.data || null,
+        viewUrl:     fileData.viewUrl     || null,
+        driveFileId: fileData.driveFileId || null,
+        fileType:    fileData.type        || "file",
+      } : {}),
+    });
+
+    const oilChangeLog = [...(truck.oilChangeLog || []), entry];
+    return get().updateTruck(truckId, { lastOilChange: Number(odometer), oilChangeLog });
   },
 
   deleteTruckFile: async (truckId, fileIdx) => {

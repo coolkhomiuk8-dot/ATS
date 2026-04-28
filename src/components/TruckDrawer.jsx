@@ -413,6 +413,120 @@ function UploadModal({ category, docList, onClose, onSave }) {
   );
 }
 
+/* ── Oil Change Modal ── */
+function OilChangeModal({ truck, onClose, onConfirm }) {
+  const today = new Date().toISOString().split("T")[0];
+  const [odometer, setOdometer] = useState(String(truck.currentOdometer || ""));
+  const [date, setDate] = useState(today);
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState(null);
+  const fileRef = useRef(null);
+
+  const inputSt = {
+    width: "100%", padding: "9px 11px", fontSize: 13,
+    background: "var(--bg-raised)", border: "1px solid var(--border)",
+    borderRadius: 7, color: "var(--text-primary)", outline: "none", boxSizing: "border-box",
+  };
+  const labelSt = {
+    fontSize: 11, fontWeight: 700, color: "var(--text-faint)",
+    textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 5, display: "block",
+  };
+
+  async function handleConfirm() {
+    if (!odometer || Number(odometer) <= 0) { setError("Enter a valid mileage."); return; }
+    if (!date) { setError("Enter the date."); return; }
+    setUploading(true);
+    setError(null);
+    try {
+      await onConfirm({ odometer: Number(odometer), date, file });
+    } catch (err) {
+      setError(String(err?.message || "Failed to record oil change."));
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div
+      onClick={(e) => { if (e.target === e.currentTarget && !uploading) onClose(); }}
+      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 4500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+    >
+      <div style={{ background: "var(--bg-surface)", borderRadius: 16, width: 400, padding: "24px 24px 20px", boxShadow: "0 24px 60px rgba(0,0,0,.3)" }}>
+        <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text-primary)", marginBottom: 3 }}>🔧 Record Oil Change</div>
+        <div style={{ fontSize: 12, color: "var(--text-faint)", marginBottom: 20 }}>Unit {truck.unitNumber}</div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div>
+            <div style={labelSt}>Odometer at change (mi) *</div>
+            <input
+              autoFocus
+              type="number"
+              value={odometer}
+              onChange={(e) => setOdometer(e.target.value)}
+              placeholder="e.g. 255000"
+              style={inputSt}
+            />
+          </div>
+          <div>
+            <div style={labelSt}>Date *</div>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={inputSt} />
+          </div>
+          <div>
+            <div style={labelSt}>Proof (photo or receipt) — optional</div>
+            <div
+              onClick={() => !uploading && fileRef.current?.click()}
+              style={{
+                padding: "12px 14px", borderRadius: 9, cursor: uploading ? "default" : "pointer",
+                textAlign: "center", fontSize: 13,
+                border: `2px dashed ${file ? "var(--color-primary)" : "var(--border)"}`,
+                background: file ? "var(--color-primary-light, #eff6ff)" : "var(--bg-raised)",
+                color: file ? "var(--text-secondary)" : "var(--text-disabled)",
+                transition: "all .15s",
+              }}
+            >
+              {file ? (
+                <span>📄 <strong>{file.name}</strong> <span style={{ fontSize: 11, color: "var(--text-faint)", fontWeight: 400 }}>({fmtSize(file.size)})</span></span>
+              ) : (
+                <span>Click to add photo or receipt…</span>
+              )}
+            </div>
+            <input ref={fileRef} type="file" accept="image/*,.pdf" style={{ display: "none" }}
+              onChange={(e) => { setFile(e.target.files?.[0] || null); e.target.value = ""; }} />
+          </div>
+
+          {error && (
+            <div style={{ fontSize: 12, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", padding: "7px 10px", borderRadius: 7 }}>
+              ⚠ {error}
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
+          <button
+            onClick={handleConfirm}
+            disabled={uploading}
+            style={{
+              flex: 1, padding: "11px",
+              background: uploading ? "var(--text-disabled)" : "#16a34a",
+              color: "#fff", border: "none", borderRadius: 9, fontSize: 14, fontWeight: 700,
+              cursor: uploading ? "default" : "pointer", transition: "background .15s",
+            }}
+          >
+            {uploading ? "Saving…" : "Record Oil Change"}
+          </button>
+          <button
+            onClick={onClose}
+            disabled={uploading}
+            style={{ padding: "11px 18px", background: "var(--bg-raised)", color: "var(--text-muted)", border: "1px solid var(--border)", borderRadius: 9, fontSize: 13, cursor: uploading ? "default" : "pointer" }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Doc Section ── */
 function DocSection({ title, subtitle, docList, truck, files, onOpenUpload, onDeleteFile, onPreview, allFiles, deletingSet, onUpdDoc }) {
   const [ssnInput, setSsnInput] = useState("");
@@ -591,7 +705,7 @@ function DocSection({ title, subtitle, docList, truck, files, onOpenUpload, onDe
 ══════════════════════════════════════════════ */
 export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignDriver, onUnassignDriver }) {
   const { drivers, upd: updateDriver } = useDriversStore();
-  const { addTruckFile, deleteTruckFile } = useTrucksStore();
+  const { addTruckFile, deleteTruckFile, addOilChange } = useTrucksStore();
 
   const [tab, setTab] = useState("info");
   const [editing, setEditing] = useState(false);
@@ -610,6 +724,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
   // When user tries to set status → Active without a driver, open picker and set this flag
   // so that after successful assign the status is also flipped to "active"
   const [pendingActiveStatus, setPendingActiveStatus] = useState(false);
+  const [showOilChangeModal, setShowOilChangeModal] = useState(false);
 
   // Insurance inputs — top-level to keep hook count stable across tab switches
   const [alInput, setAlInput] = useState("");
@@ -666,6 +781,21 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
     } finally {
       setDeletingSet((prev) => { const next = new Set(prev); next.delete(globalIdx); return next; });
     }
+  }
+
+  async function handleOilChangeConfirm({ odometer, date, file }) {
+    const fileObj = file ? {
+      name: file.name,
+      type: file.type.startsWith("image/") ? "image" : "file",
+      mime: file.type,
+      size: file.size,
+      rawFile: file,
+      category: "truck",
+      linkedDoc: "Oil Change",
+      date: new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
+    } : null;
+    await addOilChange(truck.id, { odometer, date, fileObj });
+    setShowOilChangeModal(false);
   }
 
   const hiredDrivers = drivers.filter((d) => d.stage === "hired");
@@ -840,7 +970,15 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
 
               {/* Odometer & Oil Change */}
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 10 }}>Odometer & Oil Change</div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase" }}>Odometer & Oil Change</div>
+                  <button
+                    onClick={() => setShowOilChangeModal(true)}
+                    style={{ padding: "5px 12px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                  >
+                    🔧 Do Oil Change
+                  </button>
+                </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div>
                     <FL t="Last Oil Change (mi)" />
@@ -866,6 +1004,65 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                     {truck.lastOilChange ? ` · Last change at ${Number(truck.lastOilChange).toLocaleString()} mi` : ""}
                   </div>
                 </div>
+
+                {/* Oil Change Log */}
+                {(truck.oilChangeLog || []).length > 0 && (() => {
+                  const log = [...(truck.oilChangeLog || [])].reverse();
+                  function fmtLogDate(d) {
+                    if (!d) return "—";
+                    const dt = new Date(d + "T00:00:00");
+                    return isNaN(dt) ? d : dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+                  }
+                  return (
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 7 }}>
+                        Oil Change Log
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                        {log.map((entry, i) => {
+                          const isImage = entry.fileType === "image" || /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(entry.fileName || "");
+                          const thumbUrl = entry.driveFileId
+                            ? `https://drive.google.com/thumbnail?id=${entry.driveFileId}&sz=w80`
+                            : (isImage ? (entry.fileUrl || entry.viewUrl) : null);
+                          const openUrl = entry.viewUrl || entry.fileUrl;
+                          const isCurrent = i === 0;
+                          return (
+                            <div key={i} style={{
+                              display: "flex", alignItems: "center", gap: 10,
+                              padding: "8px 12px", borderRadius: 9,
+                              background: isCurrent ? "#f0fdf4" : "var(--bg-raised)",
+                              border: `1px solid ${isCurrent ? "#86efac" : "var(--border)"}`,
+                            }}>
+                              {/* Proof thumbnail or icon */}
+                              {thumbUrl ? (
+                                <img
+                                  src={thumbUrl}
+                                  alt={entry.fileName}
+                                  onClick={() => setLightbox({ url: entry.driveFileId ? `https://drive.google.com/thumbnail?id=${entry.driveFileId}&sz=w1200` : entry.fileUrl, name: entry.fileName })}
+                                  style={{ width: 34, height: 34, borderRadius: 5, objectFit: "cover", cursor: "zoom-in", flexShrink: 0, border: "1px solid #86efac" }}
+                                />
+                              ) : entry.fileName ? (
+                                <a href={openUrl} target="_blank" rel="noopener noreferrer" style={{ width: 34, height: 34, flexShrink: 0, borderRadius: 5, background: "#eff6ff", border: "1px solid #bfdbfe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#2563eb", textDecoration: "none" }}>DOC</a>
+                              ) : (
+                                <div style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: isCurrent ? "#16a34a" : "var(--text-disabled)", margin: "0 13px" }} />
+                              )}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: isCurrent ? "#15803d" : "var(--text-primary)" }}>
+                                  {Number(entry.odometer).toLocaleString()} mi
+                                  {isCurrent && <span style={{ marginLeft: 7, fontSize: 10, fontWeight: 700, color: "#16a34a", background: "#dcfce7", padding: "1px 6px", borderRadius: 10 }}>Latest</span>}
+                                </div>
+                                <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 1 }}>
+                                  {fmtLogDate(entry.date)}
+                                  {entry.fileName && <span style={{ marginLeft: 5, color: "#2563eb", fontWeight: 600 }}>· {entry.fileName}</span>}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Status & Note */}
@@ -1251,6 +1448,15 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
           )}
         </div>
       </div>
+
+      {/* Oil Change Modal */}
+      {showOilChangeModal && (
+        <OilChangeModal
+          truck={truck}
+          onClose={() => setShowOilChangeModal(false)}
+          onConfirm={handleOilChangeConfirm}
+        />
+      )}
 
       {/* Upload Modal */}
       {uploadModal && (
