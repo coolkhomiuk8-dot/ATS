@@ -1,9 +1,12 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useTrucksStore } from "../store/useTrucksStore";
 import { useDriversStore } from "../store/useDriversStore";
 import { TRUCK_STATUSES, TRUCK_DOC_LIST, DRIVER_DOC_LIST, OIL_CHANGE_INTERVAL, OIL_WARN_SOON, OIL_WARN_URGENT } from "../constants/truckData";
 import { expiryStatus } from "../utils/date";
 import TruckDrawer from "../components/TruckDrawer";
+import { auth } from "../lib/firebase";
+
+const driveMigrateEndpoint = import.meta.env.VITE_DRIVE_MIGRATE_ENDPOINT || "/.netlify/functions/driveMigrate";
 
 function StatusBadge({ status }) {
   const s = TRUCK_STATUSES.find((x) => x.id === status) || TRUCK_STATUSES[3];
@@ -49,7 +52,7 @@ function OilBar({ last, current }) {
   );
 }
 
-function DocBadge({ docName, category, files, docs, onUpload, onPreview }) {
+function DocBadge({ docName, category, files, docs, onUpload, onPreview, onCustomOpen }) {
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
@@ -66,6 +69,8 @@ function DocBadge({ docName, category, files, docs, onUpload, onPreview }) {
     e.stopPropagation();
     if (uploading) return;
     setUploadError(null);
+    // Custom handler overrides everything (e.g. Registration modal)
+    if (onCustomOpen) { onCustomOpen(); return; }
     if (hasFile) {
       if (isImg && thumbUrl) onPreview(linked);
       else window.open(linked.url || linked.data, "_blank");
@@ -143,12 +148,33 @@ function fmtPhone(raw) {
   return `(${local.slice(0, 3)}) ${local.slice(3, 6)}-${local.slice(6)}`;
 }
 
-function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc }) {
+function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPlatesExpiry, onRegClick }) {
   const vinShort = truck.vinNumber ? truck.vinNumber.slice(-4) : null;
   const oilLeft = OIL_CHANGE_INTERVAL - (Number(truck.currentOdometer) - Number(truck.lastOilChange));
   const files = truck.files || [];
   const [vinCopied, setVinCopied] = useState(false);
   const [phoneCopied, setPhoneCopied] = useState(false);
+  const [platesEdit, setPlatesEdit] = useState(false);
+  const [platesDate, setPlatesDate] = useState(truck.platesExpiry || "");
+  const [platesSaving, setPlatesSaving] = useState(false);
+  const platesRef = useRef(null);
+
+  useEffect(() => {
+    if (!platesEdit) return;
+    function handleOutside(e) {
+      if (platesRef.current && !platesRef.current.contains(e.target)) setPlatesEdit(false);
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [platesEdit]);
+
+  async function handleSavePlates(e) {
+    e.stopPropagation();
+    if (!platesDate) return;
+    setPlatesSaving(true);
+    try { await onSetPlatesExpiry(platesDate); } finally { setPlatesSaving(false); }
+    setPlatesEdit(false);
+  }
 
   function handleCopyVin(e) {
     e.stopPropagation();
@@ -215,18 +241,78 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc }) {
             {vinCopied ? "✓ " : "VIN "}{vinShort}
           </div>
         )}
-        {/* Plates expiry badge */}
+        {/* Plates expiry badge + inline popover */}
         {(() => {
           const exp = expiryStatus(truck.platesExpiry);
-          if (!truck.platesExpiry) return (
-            <span style={{ marginTop: 5, display: "inline-block", fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 4, background: "var(--bg-hover)", color: "var(--text-disabled)", border: "1px solid var(--border)" }}>
-              Plates —
-            </span>
-          );
+          const badgeStyle = truck.platesExpiry
+            ? { background: exp.color + "18", color: exp.color, border: `1px solid ${exp.border}` }
+            : { background: "var(--bg-hover)", color: "var(--text-disabled)", border: "1px solid var(--border)" };
+          const label = !truck.platesExpiry
+            ? "Plates —"
+            : exp.daysLeft < 0 ? "Plates EXP"
+            : exp.daysLeft <= 60 ? `Plates ${exp.daysLeft}d`
+            : "Plates ✓";
           return (
-            <span style={{ marginTop: 5, display: "inline-block", fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: exp.color + "18", color: exp.color, border: `1px solid ${exp.border}` }}>
-              🪪 {exp.daysLeft < 0 ? "Plates EXP" : exp.daysLeft <= 60 ? `Plates ${exp.daysLeft}d` : "Plates ✓"}
-            </span>
+            <div ref={platesRef} style={{ position: "relative", marginTop: 5, display: "inline-block" }}>
+              <span
+                onClick={(e) => { e.stopPropagation(); setPlatesDate(truck.platesExpiry || ""); setPlatesEdit((v) => !v); }}
+                title="Set plates expiry date"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 3,
+                  fontSize: 9, fontWeight: truck.platesExpiry ? 700 : 600,
+                  padding: "2px 6px", borderRadius: 4, cursor: "pointer",
+                  userSelect: "none", ...badgeStyle,
+                }}
+              >
+                {truck.platesExpiry ? "🪪 " : "📋 "}{label}
+              </span>
+
+              {platesEdit && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 500,
+                    background: "var(--bg-surface)", border: "1px solid var(--border)",
+                    borderRadius: 10, padding: "12px 14px", boxShadow: "0 8px 32px rgba(0,0,0,.18)",
+                    minWidth: 210,
+                  }}
+                >
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 7 }}>
+                    📋 Plates Expiry Date
+                  </div>
+                  <input
+                    type="date"
+                    value={platesDate}
+                    onChange={(e) => setPlatesDate(e.target.value)}
+                    autoFocus
+                    style={{
+                      width: "100%", padding: "7px 9px", fontSize: 13, boxSizing: "border-box",
+                      background: "var(--bg-raised)", border: "1px solid var(--border)",
+                      borderRadius: 7, color: "var(--text-primary)", outline: "none", marginBottom: 9,
+                    }}
+                  />
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      onClick={handleSavePlates}
+                      disabled={!platesDate || platesSaving}
+                      style={{
+                        flex: 1, padding: "7px", borderRadius: 7, border: "none", fontSize: 12,
+                        fontWeight: 700, cursor: platesDate && !platesSaving ? "pointer" : "default",
+                        background: platesDate ? "var(--color-primary)" : "var(--text-disabled)", color: "#fff",
+                      }}
+                    >
+                      {platesSaving ? "Saving…" : "Save"}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setPlatesEdit(false); }}
+                      style={{ padding: "7px 11px", borderRadius: 7, border: "1px solid var(--border)", background: "var(--bg-raised)", color: "var(--text-muted)", fontSize: 12, cursor: "pointer" }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           );
         })()}
       </div>
@@ -294,7 +380,12 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc }) {
           <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Truck Docs</div>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
             {TRUCK_DOC_LIST.map((doc) => (
-              <DocBadge key={doc} docName={doc} category="truck" files={files} docs={truck.docs} onUpload={onUploadDoc} onPreview={onPreviewDoc} />
+              <DocBadge
+                key={doc} docName={doc} category="truck"
+                files={files} docs={truck.docs}
+                onUpload={onUploadDoc} onPreview={onPreviewDoc}
+                onCustomOpen={(doc === "Registration" || doc === "Plates") ? () => onRegClick(doc) : undefined}
+              />
             ))}
           </div>
         </div>
@@ -330,6 +421,30 @@ export default function TrucksView({ onAddDriver }) {
   }
   const [sortBy, setSortBy] = useState("unit_asc");
   const [lightbox, setLightbox] = useState(null); // { url, name }
+  const [showMigrate, setShowMigrate]   = useState(false);
+  const [migrateRunning, setMigrateRunning] = useState(false);
+  const [migrateResult, setMigrateResult]   = useState(null); // null | { success, totalMoved, report } | { error }
+
+  async function handleRunMigration() {
+    if (migrateRunning) return;
+    setMigrateRunning(true);
+    setMigrateResult(null);
+    try {
+      if (!auth?.currentUser) throw new Error("Not signed in.");
+      const idToken = await auth.currentUser.getIdToken();
+      const res = await fetch(driveMigrateEndpoint, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || `Migration failed (${res.status})`);
+      setMigrateResult(data);
+    } catch (err) {
+      setMigrateResult({ error: String(err?.message || "Unknown error") });
+    } finally {
+      setMigrateRunning(false);
+    }
+  }
 
   const SORT_OPTIONS = [
     { id: "unit_asc",     label: "Unit # ↑",          icon: "🔢" },
@@ -338,6 +453,38 @@ export default function TrucksView({ onAddDriver }) {
     { id: "oldest",       label: "Oldest first",       icon: "🕐" },
     { id: "oil_critical", label: "Oil: most urgent",   icon: "🛢" },
   ];
+
+  // Registration / Plates modal
+  const [regModal, setRegModal] = useState(null); // { truckId, docName } | null
+  const [regDate, setRegDate] = useState("");
+  const [regFile, setRegFile] = useState(null);   // raw File object
+  const [regSaving, setRegSaving] = useState(false);
+  const [regError, setRegError] = useState(null);
+  const regFileRef = useRef(null);
+
+  function openRegModal(truckId, docName) {
+    const truck = trucks.find((t) => t.id === truckId);
+    setRegDate(truck?.platesExpiry || "");
+    setRegFile(null);
+    setRegError(null);
+    setRegModal({ truckId, docName });
+  }
+
+  async function handleSaveReg() {
+    if (!regModal) return;
+    setRegSaving(true);
+    setRegError(null);
+    try {
+      const { truckId, docName } = regModal;
+      if (regFile) await handleDocUpload(truckId, regFile, docName, "truck");
+      if (regDate) await updateTruck(truckId, { platesExpiry: regDate });
+      setRegModal(null);
+    } catch (err) {
+      setRegError(String(err?.message || "Failed to save."));
+    } finally {
+      setRegSaving(false);
+    }
+  }
 
   async function handleDocUpload(truckId, rawFile, docName, category) {
     const fileObj = {
@@ -351,7 +498,6 @@ export default function TrucksView({ onAddDriver }) {
       date: new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
     };
     await addTruckFile(truckId, fileObj);
-    // also mark doc as received
     const truck = trucks.find((t) => t.id === truckId);
     if (truck) updateTruck(truckId, { docs: { ...(truck.docs || {}), [docName]: true } });
   }
@@ -510,6 +656,18 @@ export default function TrucksView({ onAddDriver }) {
         </div>
 
         <button
+          onClick={() => { setMigrateResult(null); setShowMigrate(true); }}
+          title="Reorganise all Drive files into the current folder structure"
+          style={{
+            background: "var(--bg-raised)", border: "1px solid var(--border)", color: "var(--text-secondary)",
+            padding: "8px 14px", borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: "pointer",
+            flexShrink: 0, display: "flex", alignItems: "center", gap: 5,
+          }}
+        >
+          🗂 Drive Sync
+        </button>
+
+        <button
           onClick={() => { setAddError(null); setShowAdd(true); }}
           style={{
             background: "var(--color-primary)", border: "none", color: "#fff",
@@ -572,6 +730,8 @@ export default function TrucksView({ onAddDriver }) {
                       : (file.url || file.data);
                     setLightbox({ url, name: file.name });
                   }}
+                  onSetPlatesExpiry={(date) => updateTruck(truck.id, { platesExpiry: date })}
+                  onRegClick={(docName) => openRegModal(truck.id, docName)}
                 />
               );
             })}
@@ -604,6 +764,185 @@ export default function TrucksView({ onAddDriver }) {
             onUnassignDriver={unassignDriver}
           />
         </>
+      )}
+
+      {/* Registration / Plates modal */}
+      {regModal && (
+        <div
+          onClick={() => { if (!regSaving) setRegModal(null); }}
+          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.5)", zIndex: 600, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: "var(--bg-surface)", borderRadius: 16, width: "100%", maxWidth: 400, padding: "26px 28px", boxShadow: "0 20px 60px rgba(0,0,0,.25)" }}
+          >
+            <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text-primary)", marginBottom: 18 }}>
+              🪪 {regModal.docName}
+            </div>
+
+            {/* Expiry date */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 6 }}>EXPIRY DATE</div>
+              <input
+                type="date"
+                value={regDate}
+                onChange={(e) => setRegDate(e.target.value)}
+                autoFocus
+                style={{
+                  width: "100%", padding: "10px 12px", fontSize: 14, boxSizing: "border-box",
+                  background: "var(--bg-raised)", border: "1px solid var(--border)",
+                  borderRadius: 9, color: "var(--text-primary)", outline: "none",
+                }}
+              />
+            </div>
+
+            {/* File upload area */}
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 6 }}>DOCUMENT / PHOTO</div>
+              {regFile ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 9, padding: "10px 12px" }}>
+                  <span style={{ fontSize: 20 }}>{regFile.type.startsWith("image/") ? "🖼" : "📄"}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{regFile.name}</div>
+                    <div style={{ fontSize: 11, color: "var(--text-faint)" }}>{(regFile.size / 1024).toFixed(0)} KB</div>
+                  </div>
+                  <button onClick={() => setRegFile(null)} style={{ background: "none", border: "none", color: "var(--text-faint)", fontSize: 16, cursor: "pointer", padding: "0 4px" }}>✕</button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => regFileRef.current?.click()}
+                  style={{
+                    border: "2px dashed var(--border)", borderRadius: 9, padding: "20px",
+                    textAlign: "center", cursor: "pointer", color: "var(--text-muted)",
+                    fontSize: 13, transition: "border-color .15s, background .15s",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-primary)"; e.currentTarget.style.background = "var(--bg-hover)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "transparent"; }}
+                >
+                  <div style={{ fontSize: 22, marginBottom: 4 }}>⬆</div>
+                  Click to upload photo or PDF
+                </div>
+              )}
+              <input
+                ref={regFileRef}
+                type="file"
+                accept="image/*,.pdf"
+                style={{ display: "none" }}
+                onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) setRegFile(f); }}
+              />
+            </div>
+
+            {regError && (
+              <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "8px 12px", fontSize: 13, color: "#dc2626", marginBottom: 14 }}>
+                ⚠ {regError}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={handleSaveReg}
+                disabled={(!regDate && !regFile) || regSaving}
+                style={{
+                  flex: 1, padding: "11px", borderRadius: 9, border: "none", fontSize: 14,
+                  fontWeight: 700, cursor: (regDate || regFile) && !regSaving ? "pointer" : "default",
+                  background: (regDate || regFile) ? "var(--color-primary)" : "var(--text-disabled)", color: "#fff",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                }}
+              >
+                {regSaving
+                  ? <><span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .6s linear infinite" }} /> Saving…</>
+                  : "Save"
+                }
+              </button>
+              <button
+                onClick={() => setRegModal(null)}
+                disabled={regSaving}
+                style={{ padding: "11px 16px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--bg-raised)", color: "var(--text-muted)", fontSize: 13, cursor: "pointer" }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Drive Sync / Migration modal */}
+      {showMigrate && (
+        <div
+          onClick={() => { if (!migrateRunning) { setShowMigrate(false); setMigrateResult(null); } }}
+          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.55)", zIndex: 450, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: "var(--bg-surface)", borderRadius: 16, width: "100%", maxWidth: 480, padding: 28, boxShadow: "0 20px 60px rgba(0,0,0,.28)" }}
+          >
+            <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>🗂 Drive Sync</div>
+            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20, lineHeight: 1.6 }}>
+              Moves all existing Google Drive files into the current folder structure:
+              <ul style={{ margin: "8px 0 0 18px", padding: 0, lineHeight: 1.8 }}>
+                <li><code>Truck Units / truck_unit_101 /</code> — truck files</li>
+                <li><code>Truck Units / truck_unit_101 / Oil Change /</code> — oil receipts</li>
+                <li><code>Drivers / John Doe /</code> — driver files</li>
+              </ul>
+              Files already in the correct folder are skipped. Firestore metadata is updated automatically.
+            </div>
+
+            {/* Result panel */}
+            {migrateResult && !migrateResult.error && (
+              <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
+                <div style={{ fontWeight: 700, color: "#15803d", marginBottom: 8 }}>
+                  ✅ Done — {migrateResult.totalMoved} file{migrateResult.totalMoved !== 1 ? "s" : ""} moved
+                </div>
+                {(() => {
+                  const { trucks: t, drivers: d } = migrateResult.report || {};
+                  return (
+                    <div style={{ fontSize: 12, color: "#166534", lineHeight: 1.7 }}>
+                      <div>🚛 Trucks: {t?.processed} processed, {t?.filesMoved} moved, {t?.skipped} skipped{t?.errors?.length ? `, ${t.errors.length} error(s)` : ""}</div>
+                      <div>👤 Drivers: {d?.processed} processed, {d?.filesMoved} moved, {d?.skipped} skipped{d?.errors?.length ? `, ${d.errors.length} error(s)` : ""}</div>
+                      {[...(t?.errors || []), ...(d?.errors || [])].map((e, i) => (
+                        <div key={i} style={{ color: "#dc2626", marginTop: 4 }}>⚠ {e}</div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+            {migrateResult?.error && (
+              <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "12px 14px", marginBottom: 18, fontSize: 13, color: "#dc2626", fontWeight: 600 }}>
+                ⚠ {migrateResult.error}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 8 }}>
+              {!migrateResult?.success && (
+                <button
+                  onClick={handleRunMigration}
+                  disabled={migrateRunning}
+                  style={{
+                    flex: 1, padding: "11px", borderRadius: 9, border: "none", fontSize: 14, fontWeight: 600, cursor: migrateRunning ? "wait" : "pointer",
+                    background: migrateRunning ? "#93c5fd" : "var(--color-primary)", color: "#fff",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  }}
+                >
+                  {migrateRunning
+                    ? <><span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .6s linear infinite" }} /> Running…</>
+                    : "▶ Run Migration"
+                  }
+                </button>
+              )}
+              <button
+                onClick={() => { setShowMigrate(false); setMigrateResult(null); }}
+                disabled={migrateRunning}
+                style={{
+                  padding: "11px 18px", background: "var(--bg-raised)", color: "var(--text-muted)",
+                  border: "1px solid var(--border)", borderRadius: 9, fontSize: 13, cursor: migrateRunning ? "not-allowed" : "pointer",
+                }}
+              >
+                {migrateResult?.success ? "Close" : "Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Add truck modal */}
