@@ -134,11 +134,21 @@ function DocBadge({ docName, category, files, docs, onUpload, onPreview }) {
   );
 }
 
+function fmtPhone(raw) {
+  if (!raw) return null;
+  const digits = String(raw).replace(/\D/g, "");
+  // strip leading 1 (US country code)
+  const local = digits.startsWith("1") && digits.length === 11 ? digits.slice(1) : digits;
+  if (local.length !== 10) return raw; // can't format — return as-is
+  return `(${local.slice(0, 3)}) ${local.slice(3, 6)}-${local.slice(6)}`;
+}
+
 function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc }) {
   const vinShort = truck.vinNumber ? truck.vinNumber.slice(-4) : null;
   const oilLeft = OIL_CHANGE_INTERVAL - (Number(truck.currentOdometer) - Number(truck.lastOilChange));
   const files = truck.files || [];
   const [vinCopied, setVinCopied] = useState(false);
+  const [phoneCopied, setPhoneCopied] = useState(false);
 
   function handleCopyVin(e) {
     e.stopPropagation();
@@ -146,6 +156,17 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc }) {
     navigator.clipboard.writeText(truck.vinNumber).then(() => {
       setVinCopied(true);
       setTimeout(() => setVinCopied(false), 1500);
+    });
+  }
+
+  function handleCopyPhone(e) {
+    e.stopPropagation();
+    if (!driver?.phone) return;
+    const digits = driver.phone.replace(/\D/g, "");
+    const local = digits.startsWith("1") && digits.length === 11 ? digits.slice(1) : digits;
+    navigator.clipboard.writeText(local.length === 10 ? local : driver.phone).then(() => {
+      setPhoneCopied(true);
+      setTimeout(() => setPhoneCopied(false), 1500);
     });
   }
 
@@ -240,6 +261,21 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc }) {
         <div style={{ fontSize: 12, fontWeight: driver ? 600 : 400, color: driver ? "var(--color-primary-dark)" : "var(--text-faint)" }}>
           {driver ? `🚗 ${driver.name}` : "Available"}
         </div>
+        {driver?.phone && (
+          <div
+            onClick={handleCopyPhone}
+            title={phoneCopied ? "Copied!" : "Copy phone"}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              fontSize: 12, fontWeight: 500, fontFamily: "monospace", letterSpacing: "0.03em",
+              color: phoneCopied ? "#16a34a" : "var(--text-secondary)",
+              cursor: "pointer", userSelect: "none",
+              transition: "color .15s",
+            }}
+          >
+            {phoneCopied ? "✓ Copied" : fmtPhone(driver.phone)}
+          </div>
+        )}
       </div>
 
       {/* Col 4 — Oil */}
