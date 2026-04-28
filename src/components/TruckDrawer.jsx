@@ -38,20 +38,37 @@ function fmtSize(bytes) {
 
 /* ── Assign Confirm Modal ── */
 function AssignConfirmModal({ driver, onClose, onConfirm }) {
+  const hasRates = (driver.emptyMilesRate != null && driver.emptyMilesRate !== 0) &&
+                   (driver.loadedMilesRate != null && driver.loadedMilesRate !== 0);
+
+  const initContacts = Array.isArray(driver.emergencyContacts) && driver.emergencyContacts.length > 0
+    ? driver.emergencyContacts.map((c) => ({ name: c.name || "", phone: c.phone || "" }))
+    : [{ name: "", phone: "" }];
+
   const [form, setForm] = useState({
     dlExpiry:        driver.dlExpiry        || "",
     emptyMilesRate:  driver.emptyMilesRate  != null && driver.emptyMilesRate !== 0 ? String(driver.emptyMilesRate) : "",
     loadedMilesRate: driver.loadedMilesRate != null && driver.loadedMilesRate !== 0 ? String(driver.loadedMilesRate) : "",
-    citizen:        driver.citizen        ?? null,  // true | false | null
-    militaryLoads:  driver.militaryLoads  ?? null,  // "yes" | "no" | "not_sure" | null
+    citizen:        driver.citizen        ?? null,
+    militaryLoads:  driver.militaryLoads  ?? null,
   });
-  function setF(k, v) { setForm((p) => ({ ...p, [k]: v })); }
+  const [contacts, setContacts] = useState(initContacts);
+  const [errors, setErrors] = useState({});
+
+  function setF(k, v) { setForm((p) => ({ ...p, [k]: v })); setErrors((p) => ({ ...p, [k]: false })); }
+  function setC(idx, key, val) {
+    setContacts((prev) => prev.map((c, i) => i === idx ? { ...c, [key]: val } : c));
+    setErrors((p) => ({ ...p, [`c_${idx}_${key}`]: false }));
+  }
+  function addContact() { setContacts((prev) => [...prev, { name: "", phone: "" }]); }
+  function removeContact(idx) { setContacts((prev) => prev.filter((_, i) => i !== idx)); }
 
   const inputStyle = {
     width: "100%", padding: "8px 10px", fontSize: 13,
     background: "var(--bg-raised)", border: "1px solid var(--border)",
     borderRadius: 7, color: "var(--text-primary)", outline: "none", boxSizing: "border-box",
   };
+  const errStyle = { ...inputStyle, border: "1.5px solid #fca5a5" };
   const labelStyle = { fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 };
 
   function RadioGroup({ value, onChange, options }) {
@@ -69,13 +86,24 @@ function AssignConfirmModal({ driver, onClose, onConfirm }) {
                 background: active ? opt.bg : "var(--bg-raised)", color: active ? opt.color : "var(--text-muted)",
                 transition: "all .12s",
               }}
-            >
-              {opt.label}
-            </button>
+            >{opt.label}</button>
           );
         })}
       </div>
     );
+  }
+
+  function handleConfirm() {
+    const e = {};
+    if (!form.dlExpiry)                                       e.dlExpiry = true;
+    if (!form.emptyMilesRate || Number(form.emptyMilesRate) <= 0)  e.emptyMilesRate = true;
+    if (!form.loadedMilesRate || Number(form.loadedMilesRate) <= 0) e.loadedMilesRate = true;
+    contacts.forEach((c, i) => {
+      if (!c.name.trim())  e[`c_${i}_name`] = true;
+      if (!c.phone.trim()) e[`c_${i}_phone`] = true;
+    });
+    if (Object.keys(e).length > 0) { setErrors(e); return; }
+    onConfirm({ ...form, emergencyContacts: contacts });
   }
 
   return (
@@ -84,8 +112,9 @@ function AssignConfirmModal({ driver, onClose, onConfirm }) {
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 5000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
     >
       <div onClick={(e) => e.stopPropagation()} style={{
-        background: "var(--bg-surface)", borderRadius: 16, width: 420, padding: "24px 24px 20px",
-        boxShadow: "0 24px 60px rgba(0,0,0,.3)",
+        background: "var(--bg-surface)", borderRadius: 16, width: 440,
+        padding: "24px 24px 20px", boxShadow: "0 24px 60px rgba(0,0,0,.3)",
+        maxHeight: "90vh", overflowY: "auto",
       }}>
         {/* Header */}
         <div style={{ marginBottom: 18 }}>
@@ -99,19 +128,42 @@ function AssignConfirmModal({ driver, onClose, onConfirm }) {
 
           {/* DL Expiry */}
           <div>
-            <div style={labelStyle}>Driver License Expiry</div>
-            <input type="date" value={form.dlExpiry} onChange={(e) => setF("dlExpiry", e.target.value)} style={inputStyle} />
+            <div style={labelStyle}>
+              Driver License Expiry{!driver.dlExpiry && <span style={{ color: "#dc2626" }}> *</span>}
+            </div>
+            <input
+              type="date"
+              value={form.dlExpiry}
+              onChange={(e) => setF("dlExpiry", e.target.value)}
+              style={errors.dlExpiry ? errStyle : inputStyle}
+            />
           </div>
 
           {/* Rates */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <div>
-              <div style={labelStyle}>Empty miles rate (¢)</div>
-              <input type="number" min="0" step="1" value={form.emptyMilesRate} onChange={(e) => setF("emptyMilesRate", e.target.value)} placeholder="e.g. 55" style={inputStyle} />
+              <div style={labelStyle}>
+                Empty miles rate (¢){!hasRates && <span style={{ color: "#dc2626" }}> *</span>}
+              </div>
+              <input
+                type="number" min="0" step="1"
+                value={form.emptyMilesRate}
+                onChange={(e) => setF("emptyMilesRate", e.target.value)}
+                placeholder="e.g. 55"
+                style={errors.emptyMilesRate ? errStyle : inputStyle}
+              />
             </div>
             <div>
-              <div style={labelStyle}>Loaded miles rate (¢)</div>
-              <input type="number" min="0" step="1" value={form.loadedMilesRate} onChange={(e) => setF("loadedMilesRate", e.target.value)} placeholder="e.g. 75" style={inputStyle} />
+              <div style={labelStyle}>
+                Loaded miles rate (¢){!hasRates && <span style={{ color: "#dc2626" }}> *</span>}
+              </div>
+              <input
+                type="number" min="0" step="1"
+                value={form.loadedMilesRate}
+                onChange={(e) => setF("loadedMilesRate", e.target.value)}
+                placeholder="e.g. 75"
+                style={errors.loadedMilesRate ? errStyle : inputStyle}
+              />
             </div>
           </div>
 
@@ -142,12 +194,78 @@ function AssignConfirmModal({ driver, onClose, onConfirm }) {
             />
           </div>
 
+          {/* Emergency Contacts */}
+          <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em" }}>
+                  Emergency Contacts
+                  {!(Array.isArray(driver.emergencyContacts) && driver.emergencyContacts.length > 0) && (
+                    <span style={{ color: "#dc2626" }}> *</span>
+                  )}
+                </div>
+                {Array.isArray(driver.emergencyContacts) && driver.emergencyContacts.length > 0 && (
+                  <div style={{ fontSize: 10, color: "#16a34a", marginTop: 2 }}>Auto-filled from driver profile</div>
+                )}
+              </div>
+              <button
+                onClick={addContact}
+                style={{ padding: "4px 10px", background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, fontWeight: 600, color: "var(--color-primary)", cursor: "pointer" }}
+              >+ Add</button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {contacts.map((c, i) => (
+                <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                  <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <div>
+                      {i === 0 && <div style={{ ...labelStyle, marginBottom: 4 }}>Name</div>}
+                      <input
+                        value={c.name}
+                        onChange={(e) => setC(i, "name", e.target.value)}
+                        placeholder="John Miller"
+                        style={errors[`c_${i}_name`] ? errStyle : inputStyle}
+                      />
+                    </div>
+                    <div>
+                      {i === 0 && <div style={{ ...labelStyle, marginBottom: 4 }}>Phone</div>}
+                      <input
+                        value={c.phone}
+                        onChange={(e) => setC(i, "phone", e.target.value)}
+                        placeholder="(999) 999-9999"
+                        style={errors[`c_${i}_phone`] ? errStyle : inputStyle}
+                      />
+                    </div>
+                  </div>
+                  {contacts.length > 1 && (
+                    <button
+                      onClick={() => removeContact(i)}
+                      style={{
+                        marginTop: i === 0 ? 20 : 0,
+                        width: 30, height: 36, flexShrink: 0,
+                        background: "#fef2f2", border: "1px solid #fecaca",
+                        borderRadius: 6, cursor: "pointer", color: "#dc2626", fontSize: 14,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}
+                    >×</button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Validation error */}
+          {Object.keys(errors).length > 0 && (
+            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 7, padding: "7px 10px", fontSize: 12, color: "#dc2626" }}>
+              ⚠ Please fill in all required fields
+            </div>
+          )}
+
         </div>
 
         {/* Actions */}
         <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
           <button
-            onClick={() => onConfirm(form)}
+            onClick={handleConfirm}
             style={{ flex: 1, padding: "11px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 9, fontSize: 14, fontWeight: 700, cursor: "pointer" }}
           >
             Assign Driver
@@ -996,11 +1114,12 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
             onConfirm={(fields) => {
               // Save updated driver fields
               updateDriver(d.id, {
-                dlExpiry:        fields.dlExpiry || d.dlExpiry || "",
-                emptyMilesRate:  fields.emptyMilesRate  !== "" ? Number(fields.emptyMilesRate)  : d.emptyMilesRate,
-                loadedMilesRate: fields.loadedMilesRate !== "" ? Number(fields.loadedMilesRate) : d.loadedMilesRate,
-                citizen:        fields.citizen,
-                militaryLoads:  fields.militaryLoads,
+                dlExpiry:          fields.dlExpiry || d.dlExpiry || "",
+                emptyMilesRate:    fields.emptyMilesRate  !== "" ? Number(fields.emptyMilesRate)  : d.emptyMilesRate,
+                loadedMilesRate:   fields.loadedMilesRate !== "" ? Number(fields.loadedMilesRate) : d.loadedMilesRate,
+                citizen:           fields.citizen,
+                militaryLoads:     fields.militaryLoads,
+                emergencyContacts: fields.emergencyContacts || d.emergencyContacts || [],
               });
               // Complete the assignment
               onAssignDriver(truck.id, d.id);
