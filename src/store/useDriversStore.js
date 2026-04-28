@@ -132,7 +132,7 @@ async function preflightFirestoreRead() {
   await Promise.race([getDocs(probeQuery), timeoutPromise]);
 }
 
-async function uploadDriverFile(driverId, fileObj) {
+async function uploadDriverFile(driverId, driverName, fileObj) {
   if (!fileObj.rawFile) {
     return sanitizeFileForDb(fileObj);
   }
@@ -149,6 +149,7 @@ async function uploadDriverFile(driverId, fileObj) {
   const formData = new FormData();
   formData.append("file", fileObj.rawFile, fileObj.name);
   formData.append("driverId", String(driverId));
+  formData.append("driverName", String(driverName || ""));
 
   const response = await fetch(driveUploadEndpoint, {
     method: "POST",
@@ -440,7 +441,7 @@ export const useDriversStore = create((set, get) => ({
           resolvedDocId = targetDocId;
         }
 
-        savedFile = await uploadDriverFile(resolvedDocId, fileObj);
+        savedFile = await uploadDriverFile(resolvedDocId, currentDriver.name, fileObj);
       }
     } catch (error) {
       set({

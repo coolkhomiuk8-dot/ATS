@@ -64,7 +64,8 @@ export const handler = async (event) => {
     await requireAdminOrRoot(event.headers.authorization || event.headers.Authorization);
 
     const { fields, file } = await parseMultipart(event);
-    const driverId = String(fields.driverId || "").trim();
+    const driverId   = String(fields.driverId   || "").trim();
+    const driverName = String(fields.driverName || "").trim();
 
     if (!driverId) {
       return json(400, { error: "driverId is required." });
@@ -75,7 +76,8 @@ export const handler = async (event) => {
     }
 
     const drive = await getDriveClient();
-    const { folderId, folderName } = await ensureDriverFolder(drive, driverId);
+    // Folder lives inside Drivers/ and is named by the driver's display name
+    const { folderId, folderName } = await ensureDriverFolder(drive, driverId, driverName);
 
     const created = await drive.files.create({
       requestBody: {

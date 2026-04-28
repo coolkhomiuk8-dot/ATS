@@ -139,26 +139,49 @@ export async function ensureRootFolder(drive) {
   }
 }
 
-export async function ensureDriverFolder(drive, driverKey) {
-  const safeKey = normalizeFolderPart(driverKey) || "driver_unknown_0000000000";
+// ── Shared intermediate-folder helpers ────────────────────────────────────
+
+async function ensureSubFolder(drive, name) {
   const rootId = await ensureRootFolder(drive);
+  const existing = await findChildFolder(drive, rootId, name);
+  if (existing?.id) return existing.id;
+  const created = await createFolder(drive, rootId, name);
+  return created.id;
+}
 
-  const existing = await findChildFolder(drive, rootId, safeKey);
-  if (existing?.id) return { folderId: existing.id, folderName: safeKey };
+// storage/
+// ├── Truck Units/   ← all truck sub-folders
+// └── Drivers/       ← all driver sub-folders
 
-  const created = await createFolder(drive, rootId, safeKey);
-  return { folderId: created.id, folderName: safeKey };
+// ── Public exports ─────────────────────────────────────────────────────────
+
+export async function ensureDriverFolder(drive, driverKey, driverName) {
+  const parentId = await ensureSubFolder(drive, "Drivers");
+
+  // Prefer the human-readable display name ("John Doe");
+  // fall back to the normalised key ("john_doe_5551234567")
+  const raw = driverName
+    ? String(driverName).trim().replace(/[<>:"/\\|?*\x00-\x1f]/g, "").trim()
+    : "";
+  const folderName = raw || normalizeFolderPart(driverKey) || "driver_unknown";
+
+  const existing = await findChildFolder(drive, parentId, folderName);
+  if (existing?.id) return { folderId: existing.id, folderName };
+
+  const created = await createFolder(drive, parentId, folderName);
+  return { folderId: created.id, folderName };
 }
 
 export async function ensureTruckFolder(drive, unitNumber) {
-  // Folder is named by unit number: truck_unit_101, truck_unit_202, etc.
-  const safeKey = normalizeFolderPart(`truck_unit_${unitNumber}`) || "truck_unit_unknown";
-  const rootId = await ensureRootFolder(drive);
+  const parentId = await ensureSubFolder(drive, "Truck Units");
 
-  const existing = await findChildFolder(drive, rootId, safeKey);
+  // Folder name: truck_unit_101, truck_unit_202, …
+  const safeKey = normalizeFolderPart(`truck_unit_${unitNumber}`) || "truck_unit_unknown";
+
+  const existing = await findChildFolder(drive, parentId, safeKey);
   if (existing?.id) return { folderId: existing.id, folderName: safeKey };
 
-  const created = await createFolder(drive, rootId, safeKey);
+  const created = await createFolder(drive, parentId, safeKey);
   return { folderId: created.id, folderName: safeKey };
 }
 
