@@ -134,9 +134,19 @@ function DocBadge({ docName, category, files, onUpload, onPreview }) {
 }
 
 function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc }) {
-  const vinShort = truck.vinNumber ? truck.vinNumber.slice(-6) : "—";
+  const vinShort = truck.vinNumber ? truck.vinNumber.slice(-4) : null;
   const oilLeft = OIL_CHANGE_INTERVAL - (Number(truck.currentOdometer) - Number(truck.lastOilChange));
   const files = truck.files || [];
+  const [vinCopied, setVinCopied] = useState(false);
+
+  function handleCopyVin(e) {
+    e.stopPropagation();
+    if (!truck.vinNumber) return;
+    navigator.clipboard.writeText(truck.vinNumber).then(() => {
+      setVinCopied(true);
+      setTimeout(() => setVinCopied(false), 1500);
+    });
+  }
 
   return (
     <div
@@ -164,7 +174,25 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc }) {
           <StatusBadge status={truck.status} />
         </div>
         {truck.year && <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 4 }}>{truck.year}</div>}
-        {vinShort !== "—" && <div style={{ fontSize: 10, color: "var(--text-faint)", fontFamily: "monospace", marginTop: 2 }}>...{vinShort}</div>}
+        {vinShort && (
+          <div
+            onClick={handleCopyVin}
+            title={vinCopied ? "Copied!" : `Copy VIN: ${truck.vinNumber}`}
+            style={{
+              marginTop: 4, display: "inline-flex", alignItems: "center", gap: 3,
+              fontSize: 13, fontWeight: 700, fontFamily: "monospace", letterSpacing: "0.08em",
+              color: vinCopied ? "#16a34a" : "var(--text-secondary)",
+              background: vinCopied ? "#f0fdf4" : "var(--bg-hover)",
+              border: `1px solid ${vinCopied ? "#86efac" : "var(--border)"}`,
+              borderRadius: 5, padding: "2px 7px", cursor: "pointer",
+              transition: "all .15s", userSelect: "none",
+            }}
+            onMouseEnter={(e) => { if (!vinCopied) { e.currentTarget.style.borderColor = "var(--color-primary)"; e.currentTarget.style.color = "var(--color-primary)"; } }}
+            onMouseLeave={(e) => { if (!vinCopied) { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-secondary)"; } }}
+          >
+            {vinCopied ? "✓" : "···"}{vinShort}
+          </div>
+        )}
         {/* Plates expiry badge */}
         {(() => {
           const exp = expiryStatus(truck.platesExpiry);
