@@ -73,6 +73,8 @@ function ensureDriverShape(driver) {
     emptyMilesRate: 0,
     loadedMilesRate: 0,
     enabled: true,
+    citizen: null,       // true | false | null
+    militaryLoads: null, // "yes" | "no" | "not_sure" | null
     ...driver,
   };
 }

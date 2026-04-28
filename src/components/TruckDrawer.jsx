@@ -36,6 +36,134 @@ function fmtSize(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+/* ── Assign Confirm Modal ── */
+function AssignConfirmModal({ driver, onClose, onConfirm }) {
+  const [form, setForm] = useState({
+    dlExpiry:        driver.dlExpiry        || "",
+    emptyMilesRate:  driver.emptyMilesRate  != null && driver.emptyMilesRate !== 0 ? String(driver.emptyMilesRate) : "",
+    loadedMilesRate: driver.loadedMilesRate != null && driver.loadedMilesRate !== 0 ? String(driver.loadedMilesRate) : "",
+    citizen:        driver.citizen        ?? null,  // true | false | null
+    militaryLoads:  driver.militaryLoads  ?? null,  // "yes" | "no" | "not_sure" | null
+  });
+  function setF(k, v) { setForm((p) => ({ ...p, [k]: v })); }
+
+  const inputStyle = {
+    width: "100%", padding: "8px 10px", fontSize: 13,
+    background: "var(--bg-raised)", border: "1px solid var(--border)",
+    borderRadius: 7, color: "var(--text-primary)", outline: "none", boxSizing: "border-box",
+  };
+  const labelStyle = { fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 };
+
+  function RadioGroup({ value, onChange, options }) {
+    return (
+      <div style={{ display: "flex", gap: 6 }}>
+        {options.map((opt) => {
+          const active = value === opt.val;
+          return (
+            <button
+              key={opt.val}
+              onClick={() => onChange(active ? null : opt.val)}
+              style={{
+                flex: 1, padding: "7px 0", border: `1.5px solid ${active ? opt.color : "var(--border)"}`,
+                borderRadius: 7, cursor: "pointer", fontSize: 12, fontWeight: active ? 700 : 500,
+                background: active ? opt.bg : "var(--bg-raised)", color: active ? opt.color : "var(--text-muted)",
+                transition: "all .12s",
+              }}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 5000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+    >
+      <div onClick={(e) => e.stopPropagation()} style={{
+        background: "var(--bg-surface)", borderRadius: 16, width: 420, padding: "24px 24px 20px",
+        boxShadow: "0 24px 60px rgba(0,0,0,.3)",
+      }}>
+        {/* Header */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>Assign Driver</div>
+          <div style={{ fontSize: 12, color: "var(--text-faint)", marginTop: 3 }}>
+            Confirm details for <strong>{driver.name}</strong> before assigning
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+          {/* DL Expiry */}
+          <div>
+            <div style={labelStyle}>Driver License Expiry</div>
+            <input type="date" value={form.dlExpiry} onChange={(e) => setF("dlExpiry", e.target.value)} style={inputStyle} />
+          </div>
+
+          {/* Rates */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div>
+              <div style={labelStyle}>Empty miles rate (¢)</div>
+              <input type="number" min="0" step="1" value={form.emptyMilesRate} onChange={(e) => setF("emptyMilesRate", e.target.value)} placeholder="e.g. 55" style={inputStyle} />
+            </div>
+            <div>
+              <div style={labelStyle}>Loaded miles rate (¢)</div>
+              <input type="number" min="0" step="1" value={form.loadedMilesRate} onChange={(e) => setF("loadedMilesRate", e.target.value)} placeholder="e.g. 75" style={inputStyle} />
+            </div>
+          </div>
+
+          {/* Citizen */}
+          <div>
+            <div style={labelStyle}>Citizen</div>
+            <RadioGroup
+              value={form.citizen === true ? "yes" : form.citizen === false ? "no" : null}
+              onChange={(v) => setF("citizen", v === "yes" ? true : v === "no" ? false : null)}
+              options={[
+                { val: "yes", label: "Yes", color: "#16a34a", bg: "#f0fdf4" },
+                { val: "no",  label: "No",  color: "#dc2626", bg: "#fef2f2" },
+              ]}
+            />
+          </div>
+
+          {/* Military loads */}
+          <div>
+            <div style={labelStyle}>OK to do military loads</div>
+            <RadioGroup
+              value={form.militaryLoads}
+              onChange={(v) => setF("militaryLoads", v)}
+              options={[
+                { val: "yes",      label: "Yes",      color: "#16a34a", bg: "#f0fdf4" },
+                { val: "no",       label: "No",       color: "#dc2626", bg: "#fef2f2" },
+                { val: "not_sure", label: "Not sure", color: "#f59e0b", bg: "#fffbeb" },
+              ]}
+            />
+          </div>
+
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
+          <button
+            onClick={() => onConfirm(form)}
+            style={{ flex: 1, padding: "11px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 9, fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+          >
+            Assign Driver
+          </button>
+          <button
+            onClick={onClose}
+            style={{ padding: "11px 16px", background: "var(--bg-raised)", color: "var(--text-muted)", border: "1px solid var(--border)", borderRadius: 9, fontSize: 13, cursor: "pointer" }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Upload Modal ── */
 function UploadModal({ category, docList, onClose, onSave }) {
   const fileRef = useRef(null);
@@ -308,6 +436,8 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
 
   // Upload modal state — null = closed, { category: "truck"|"driver" } = open
   const [uploadModal, setUploadModal] = useState(null);
+  // Assign confirm modal — null = closed, { driverId } = waiting for confirmation
+  const [assignConfirm, setAssignConfirm] = useState(null); // { driverId }
   // Set of globalIdx values currently being deleted (Drive in progress)
   const [deletingSet, setDeletingSet] = useState(new Set());
 
@@ -749,7 +879,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                       {filteredAssignDrivers.length === 0 ? (
                         <div style={{ padding: "14px", fontSize: 13, color: "var(--text-faint)", textAlign: "center" }}>No hired drivers found</div>
                       ) : filteredAssignDrivers.map((d) => (
-                        <button key={d.id} onClick={() => { onAssignDriver(truck.id, d.id); setShowAssignPicker(false); setAssignSearch(""); }}
+                        <button key={d.id} onClick={() => { setAssignConfirm({ driverId: d.id }); setShowAssignPicker(false); setAssignSearch(""); }}
                           style={{ width: "100%", padding: "10px 14px", border: "none", borderBottom: "1px solid var(--border)", background: "transparent", cursor: "pointer", textAlign: "left", display: "flex", flexDirection: "column", gap: 2 }}
                           onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-hover)"}
                           onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
@@ -824,6 +954,31 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
           onSave={handleSingleUpload}
         />
       )}
+
+      {/* Assign Confirm Modal */}
+      {assignConfirm && (() => {
+        const d = drivers.find((x) => x.id === assignConfirm.driverId);
+        if (!d) return null;
+        return (
+          <AssignConfirmModal
+            driver={d}
+            onClose={() => setAssignConfirm(null)}
+            onConfirm={(fields) => {
+              // Save updated driver fields
+              updateDriver(d.id, {
+                dlExpiry:        fields.dlExpiry || d.dlExpiry || "",
+                emptyMilesRate:  fields.emptyMilesRate  !== "" ? Number(fields.emptyMilesRate)  : d.emptyMilesRate,
+                loadedMilesRate: fields.loadedMilesRate !== "" ? Number(fields.loadedMilesRate) : d.loadedMilesRate,
+                citizen:        fields.citizen,
+                militaryLoads:  fields.militaryLoads,
+              });
+              // Complete the assignment
+              onAssignDriver(truck.id, d.id);
+              setAssignConfirm(null);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
