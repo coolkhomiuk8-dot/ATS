@@ -363,21 +363,27 @@ export default function TrucksView({ onAddDriver }) {
     autoLiabilityStatus: "none", autoLiabilityCompany: "",
     cargoInsuranceStatus: "none", cargoInsuranceCompany: "",
   });
+  const [addError, setAddError] = useState(null);
 
-  function setF(key, val) { setForm((p) => ({ ...p, [key]: val })); }
+  function setF(key, val) { setForm((p) => ({ ...p, [key]: val })); setAddError(null); }
 
   async function handleAdd() {
     if (!form.unitNumber.trim()) return;
-    await addTruck(form);
-    setForm({
-      unitNumber: "", year: "", vinNumber: "",
-      status: "available",
-      statusNote: "", homeLocation: "", fuelCard: "",
-      lastOilChange: "", currentOdometer: "", notes: "",
-      autoLiabilityStatus: "none", autoLiabilityCompany: "",
-      cargoInsuranceStatus: "none", cargoInsuranceCompany: "",
-    });
-    setShowAdd(false);
+    setAddError(null);
+    try {
+      await addTruck(form);
+      setForm({
+        unitNumber: "", year: "", vinNumber: "",
+        status: "available",
+        statusNote: "", homeLocation: "", fuelCard: "",
+        lastOilChange: "", currentOdometer: "", notes: "",
+        autoLiabilityStatus: "none", autoLiabilityCompany: "",
+        cargoInsuranceStatus: "none", cargoInsuranceCompany: "",
+      });
+      setShowAdd(false);
+    } catch (err) {
+      setAddError(String(err?.message || "Failed to add truck."));
+    }
   }
 
   const selectedTruck = trucks.find((t) => t.id === selectedId) || null;
@@ -504,7 +510,7 @@ export default function TrucksView({ onAddDriver }) {
         </div>
 
         <button
-          onClick={() => setShowAdd(true)}
+          onClick={() => { setAddError(null); setShowAdd(true); }}
           style={{
             background: "var(--color-primary)", border: "none", color: "#fff",
             padding: "9px 18px", borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: "pointer",
@@ -618,7 +624,13 @@ export default function TrucksView({ onAddDriver }) {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
                   <div style={labelStyle}>Unit # *</div>
-                  <input value={form.unitNumber} onChange={(e) => setF("unitNumber", e.target.value)} style={inputStyle} placeholder="101" />
+                  <input
+                    value={form.unitNumber}
+                    onChange={(e) => setF("unitNumber", e.target.value)}
+                    style={{ ...inputStyle, border: addError ? "1.5px solid #fca5a5" : "1px solid var(--border)" }}
+                    placeholder="101"
+                    autoFocus
+                  />
                 </div>
                 <div>
                   <div style={labelStyle}>Year</div>
@@ -670,6 +682,11 @@ export default function TrucksView({ onAddDriver }) {
                   </div>
                 </div>
               </div>
+              {addError && (
+                <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "#dc2626", fontWeight: 600 }}>
+                  ⚠ {addError}
+                </div>
+              )}
               <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
                 <button
                   onClick={handleAdd}

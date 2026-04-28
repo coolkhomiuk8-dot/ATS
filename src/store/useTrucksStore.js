@@ -25,7 +25,7 @@ function sanitizeFileForDb(file) {
   return clean;
 }
 
-async function uploadTruckFile(truckId, fileObj) {
+async function uploadTruckFile(truckId, unitNumber, fileObj) {
   if (!fileObj.rawFile) return sanitizeFileForDb(fileObj);
 
   if (!auth?.currentUser) throw new Error("Not authenticated. Sign in again.");
@@ -34,6 +34,7 @@ async function uploadTruckFile(truckId, fileObj) {
   const formData = new FormData();
   formData.append("file", fileObj.rawFile, fileObj.name);
   formData.append("truckId", String(truckId));
+  formData.append("unitNumber", String(unitNumber || truckId));
 
   const response = await fetch(driveUploadTruckEndpoint, {
     method: "POST",
@@ -149,6 +150,15 @@ export const useTrucksStore = create((set, get) => ({
   },
 
   addTruck: async (data) => {
+    // Prevent duplicate unit numbers
+    const unitNum = String(data.unitNumber || "").trim();
+    if (unitNum) {
+      const dup = get().trucks.find(
+        (t) => String(t.unitNumber || "").trim().toLowerCase() === unitNum.toLowerCase()
+      );
+      if (dup) throw new Error(`Unit ${unitNum} already exists.`);
+    }
+
     const id = `truck_${Date.now()}`;
     const today = todayStr();
     const initialStatus = data.status || "available";
@@ -172,6 +182,17 @@ export const useTrucksStore = create((set, get) => ({
 
   updateTruck: async (id, data) => {
     const patch = stripUndefined(data);
+
+    // Prevent duplicate unit numbers when unit number is being changed
+    if (patch.unitNumber !== undefined) {
+      const unitNum = String(patch.unitNumber || "").trim();
+      if (unitNum) {
+        const dup = get().trucks.find(
+          (t) => t.id !== id && String(t.unitNumber || "").trim().toLowerCase() === unitNum.toLowerCase()
+        );
+        if (dup) throw new Error(`Unit ${unitNum} already exists.`);
+      }
+    }
 
     // Track status changes automatically
     if (patch.status !== undefined) {
@@ -288,9 +309,10 @@ export const useTrucksStore = create((set, get) => ({
   },
 
   addTruckFile: async (truckId, fileObj) => {
-    const uploaded = await uploadTruckFile(truckId, fileObj);
     const truck = get().trucks.find((t) => t.id === truckId);
     if (!truck) return;
+    const unitNumber = String(truck.unitNumber || truckId);
+    const uploaded = await uploadTruckFile(truckId, unitNumber, fileObj);
     const files = [...(truck.files || []), uploaded];
     return get().updateTruck(truckId, { files });
   },
@@ -299,8 +321,10 @@ export const useTrucksStore = create((set, get) => ({
     let fileData = null;
 
     if (fileObj) {
+      const truck = get().trucks.find((t) => t.id === truckId);
+      const unitNumber = String(truck?.unitNumber || truckId);
       try {
-        fileData = await uploadTruckFile(truckId, fileObj);
+        fileData = await uploadTruckFile(truckId, unitNumber, fileObj);
       } catch (error) {
         set({ syncError: error.message || "Failed to upload oil change file." });
         throw error;

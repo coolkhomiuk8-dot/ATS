@@ -53,13 +53,15 @@ export const handler = async (event) => {
     await requireAdminOrRoot(event.headers.authorization || event.headers.Authorization);
 
     const { fields, file } = await parseMultipart(event);
-    const truckId = String(fields.truckId || "").trim();
+    const truckId    = String(fields.truckId    || "").trim();
+    const unitNumber = String(fields.unitNumber || "").trim() || truckId;
 
     if (!truckId) return json(400, { error: "truckId is required." });
     if (!file || !file.buffer || file.buffer.length === 0) return json(400, { error: "file is required." });
 
     const drive = await getDriveClient();
-    const { folderId, folderName } = await ensureTruckFolder(drive, truckId);
+    // Always use unitNumber for folder naming (truck_unit_101, etc.)
+    const { folderId, folderName } = await ensureTruckFolder(drive, unitNumber);
 
     const created = await drive.files.create({
       requestBody: { name: file.filename, parents: [folderId] },

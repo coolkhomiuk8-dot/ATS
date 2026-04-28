@@ -731,6 +731,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
 
   const [tab, setTab] = useState("info");
   const [editing, setEditing] = useState(false);
+  const [editError, setEditError] = useState(null);
   const [editData, setEditData] = useState({ ...truck });
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showAssignPicker, setShowAssignPicker] = useState(false);
@@ -760,11 +761,16 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
   const oilLeft = OIL_CHANGE_INTERVAL - (Number(truck.currentOdometer) - Number(truck.lastOilChange));
   const oilColor = oilLeft < 0 ? "#dc2626" : oilLeft < OIL_WARN_URGENT ? "#f97316" : oilLeft < OIL_WARN_SOON ? "#f59e0b" : "#16a34a";
 
-  function setED(key, val) { setEditData((p) => ({ ...p, [key]: val })); }
+  function setED(key, val) { setEditData((p) => ({ ...p, [key]: val })); setEditError(null); }
 
-  function saveEdit() {
-    onUpd(truck.id, editData);
-    setEditing(false);
+  async function saveEdit() {
+    setEditError(null);
+    try {
+      await onUpd(truck.id, editData);
+      setEditing(false);
+    } catch (err) {
+      setEditError(String(err?.message || "Failed to save."));
+    }
   }
 
   /* Upload a single file with a known document type */
@@ -956,9 +962,14 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
                         <input type="date" value={editData.platesExpiry || ""} onChange={(e) => setED("platesExpiry", e.target.value)} style={inputStyle} />
                       </div>
                     </div>
+                    {editError && (
+                      <div style={{ fontSize: 12, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", padding: "7px 10px", borderRadius: 7 }}>
+                        ⚠ {editError}
+                      </div>
+                    )}
                     <div style={{ display: "flex", gap: 8 }}>
                       <button onClick={saveEdit} style={{ flex: 1, padding: "9px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Save</button>
-                      <button onClick={() => setEditing(false)} style={{ padding: "9px 16px", background: "var(--bg-hover)", color: "var(--text-muted)", border: "none", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                      <button onClick={() => { setEditing(false); setEditError(null); }} style={{ padding: "9px 16px", background: "var(--bg-hover)", color: "var(--text-muted)", border: "none", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>Cancel</button>
                     </div>
                   </div>
                 ) : (

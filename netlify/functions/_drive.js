@@ -150,8 +150,9 @@ export async function ensureDriverFolder(drive, driverKey) {
   return { folderId: created.id, folderName: safeKey };
 }
 
-export async function ensureTruckFolder(drive, truckKey) {
-  const safeKey = normalizeFolderPart(`truck_unit_${truckKey}`) || "truck_unknown";
+export async function ensureTruckFolder(drive, unitNumber) {
+  // Folder is named by unit number: truck_unit_101, truck_unit_202, etc.
+  const safeKey = normalizeFolderPart(`truck_unit_${unitNumber}`) || "truck_unit_unknown";
   const rootId = await ensureRootFolder(drive);
 
   const existing = await findChildFolder(drive, rootId, safeKey);
