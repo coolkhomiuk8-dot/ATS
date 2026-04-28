@@ -30,20 +30,48 @@ function AddDriverModal({ onClose, onAdd, drivers }) {
     stage: "hired",
     hireDate: "", dlExpiry: "",
   });
+  const [emergencyContacts, setEmergencyContacts] = useState([{ name: "", phone: "" }]);
   const [dupDriver, setDupDriver] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  function setF(k, v) { setForm((p) => ({ ...p, [k]: v })); setDupDriver(null); }
+  function setF(k, v) { setForm((p) => ({ ...p, [k]: v })); setDupDriver(null); setErrors((p) => ({ ...p, [k]: false })); }
+
+  function setEC(idx, key, val) {
+    setEmergencyContacts((prev) => prev.map((c, i) => i === idx ? { ...c, [key]: val } : c));
+    setErrors((p) => ({ ...p, [`ec_${idx}_${key}`]: false }));
+  }
+  function addEC() { setEmergencyContacts((prev) => [...prev, { name: "", phone: "" }]); }
+  function removeEC(idx) { setEmergencyContacts((prev) => prev.filter((_, i) => i !== idx)); }
 
   const inputStyle = {
     width: "100%", padding: "9px 11px", fontSize: 13,
     background: "var(--bg-raised)", border: "1px solid var(--border)",
     borderRadius: 8, color: "var(--text-primary)", outline: "none", boxSizing: "border-box",
   };
+  const errStyle = { ...inputStyle, border: "1.5px solid #fca5a5" };
   const labelStyle = { fontSize: 11, color: "var(--text-faint)", marginBottom: 4, fontWeight: 600 };
 
+  function validate() {
+    const e = {};
+    if (!form.name.trim())           e.name = true;
+    if (!form.phone.trim())          e.phone = true;
+    if (!form.email.trim())          e.email = true;
+    if (!form.emptyMilesRate || parseFloat(form.emptyMilesRate) <= 0)  e.emptyMilesRate = true;
+    if (!form.loadedMilesRate || parseFloat(form.loadedMilesRate) <= 0) e.loadedMilesRate = true;
+    if (!form.hireDate)              e.hireDate = true;
+    if (!form.dlExpiry)              e.dlExpiry = true;
+    emergencyContacts.forEach((c, i) => {
+      if (!c.name.trim())  e[`ec_${i}_name`] = true;
+      if (!c.phone.trim()) e[`ec_${i}_phone`] = true;
+    });
+    return e;
+  }
+
   async function handleSave() {
-    if (!form.name.trim() || !form.phone.trim()) return;
+    const e = validate();
+    if (Object.keys(e).length > 0) { setErrors(e); return; }
+
     const normalized = form.phone.replace(/\D/g, "");
     const dup = normalized.length >= 7
       ? (drivers || []).find((d) => (d.phone || "").replace(/\D/g, "") === normalized)
@@ -62,6 +90,7 @@ function AddDriverModal({ onClose, onAdd, drivers }) {
         stage: form.stage,
         hireDate: form.hireDate,
         dlExpiry: form.dlExpiry,
+        emergencyContacts: emergencyContacts.map((c) => ({ name: c.name.trim(), phone: c.phone.trim() })),
         source: "Direct",
         createdAt: new Date().toISOString().split("T")[0],
       });
@@ -70,6 +99,8 @@ function AddDriverModal({ onClose, onAdd, drivers }) {
       setSaving(false);
     }
   }
+
+  const canSave = !saving;
 
   return (
     <div
@@ -93,35 +124,35 @@ function AddDriverModal({ onClose, onAdd, drivers }) {
           {/* Name */}
           <div>
             <div style={labelStyle}>Name *</div>
-            <input value={form.name} onChange={(e) => setF("name", e.target.value)} placeholder="James Miller" style={inputStyle} />
+            <input value={form.name} onChange={(e) => setF("name", e.target.value)} placeholder="James Miller" style={errors.name ? errStyle : inputStyle} />
           </div>
 
           {/* Phone + Email */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <div>
               <div style={labelStyle}>Phone *</div>
-              <input value={form.phone} onChange={(e) => setF("phone", e.target.value)} placeholder="+1 (999) 999-9999" style={inputStyle} />
+              <input value={form.phone} onChange={(e) => setF("phone", e.target.value)} placeholder="(999) 999-9999" style={errors.phone ? errStyle : inputStyle} />
             </div>
             <div>
-              <div style={labelStyle}>Email</div>
-              <input value={form.email} onChange={(e) => setF("email", e.target.value)} placeholder="driver@email.com" style={inputStyle} />
+              <div style={labelStyle}>Email *</div>
+              <input value={form.email} onChange={(e) => setF("email", e.target.value)} placeholder="driver@email.com" style={errors.email ? errStyle : inputStyle} />
             </div>
           </div>
 
           {/* Rates */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <div>
-              <div style={labelStyle}>Empty miles rate</div>
+              <div style={labelStyle}>Empty miles rate *</div>
               <div style={{ position: "relative" }}>
                 <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-faint)", fontSize: 13 }}>$</span>
-                <input type="number" step="0.01" min="0" value={form.emptyMilesRate} onChange={(e) => setF("emptyMilesRate", e.target.value)} placeholder="0" style={{ ...inputStyle, paddingLeft: 22 }} />
+                <input type="number" step="0.01" min="0" value={form.emptyMilesRate} onChange={(e) => setF("emptyMilesRate", e.target.value)} placeholder="0.55" style={{ ...(errors.emptyMilesRate ? errStyle : inputStyle), paddingLeft: 22 }} />
               </div>
             </div>
             <div>
-              <div style={labelStyle}>Loaded miles rate</div>
+              <div style={labelStyle}>Loaded miles rate *</div>
               <div style={{ position: "relative" }}>
                 <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-faint)", fontSize: 13 }}>$</span>
-                <input type="number" step="0.01" min="0" value={form.loadedMilesRate} onChange={(e) => setF("loadedMilesRate", e.target.value)} placeholder="0" style={{ ...inputStyle, paddingLeft: 22 }} />
+                <input type="number" step="0.01" min="0" value={form.loadedMilesRate} onChange={(e) => setF("loadedMilesRate", e.target.value)} placeholder="0.75" style={{ ...(errors.loadedMilesRate ? errStyle : inputStyle), paddingLeft: 22 }} />
               </div>
             </div>
           </div>
@@ -129,21 +160,13 @@ function AddDriverModal({ onClose, onAdd, drivers }) {
           {/* Hire Date + DL Expiry */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <div>
-              <div style={labelStyle}>Hire Date</div>
-              <input type="date" value={form.hireDate} onChange={(e) => setF("hireDate", e.target.value)} style={inputStyle} />
+              <div style={labelStyle}>Hire Date *</div>
+              <input type="date" value={form.hireDate} onChange={(e) => setF("hireDate", e.target.value)} style={errors.hireDate ? errStyle : inputStyle} />
             </div>
             <div>
-              <div style={labelStyle}>DL Expiry</div>
-              <input type="date" value={form.dlExpiry} onChange={(e) => setF("dlExpiry", e.target.value)} style={inputStyle} />
+              <div style={labelStyle}>DL Expiry *</div>
+              <input type="date" value={form.dlExpiry} onChange={(e) => setF("dlExpiry", e.target.value)} style={errors.dlExpiry ? errStyle : inputStyle} />
             </div>
-          </div>
-
-          {/* Stage */}
-          <div>
-            <div style={labelStyle}>Stage</div>
-            <select value={form.stage} onChange={(e) => setF("stage", e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-              {STAGES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-            </select>
           </div>
 
           {/* Enabled toggle */}
@@ -167,6 +190,60 @@ function AddDriverModal({ onClose, onAdd, drivers }) {
             </span>
           </div>
 
+          {/* Emergency Contacts */}
+          <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>Emergency Contacts *</div>
+                <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 2 }}>At least 1 required</div>
+              </div>
+              <button
+                onClick={addEC}
+                style={{ padding: "5px 12px", background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 7, fontSize: 12, fontWeight: 600, color: "var(--color-primary)", cursor: "pointer" }}
+              >
+                + Add
+              </button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {emergencyContacts.map((c, i) => (
+                <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                  <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <div>
+                      {i === 0 && <div style={{ ...labelStyle, marginBottom: 4 }}>Name *</div>}
+                      <input
+                        value={c.name}
+                        onChange={(e) => setEC(i, "name", e.target.value)}
+                        placeholder="John Miller"
+                        style={errors[`ec_${i}_name`] ? errStyle : inputStyle}
+                      />
+                    </div>
+                    <div>
+                      {i === 0 && <div style={{ ...labelStyle, marginBottom: 4 }}>Phone *</div>}
+                      <input
+                        value={c.phone}
+                        onChange={(e) => setEC(i, "phone", e.target.value)}
+                        placeholder="(999) 999-9999"
+                        style={errors[`ec_${i}_phone`] ? errStyle : inputStyle}
+                      />
+                    </div>
+                  </div>
+                  {emergencyContacts.length > 1 && (
+                    <button
+                      onClick={() => removeEC(i)}
+                      style={{
+                        marginTop: i === 0 ? 20 : 0,
+                        width: 32, height: 38, flexShrink: 0,
+                        background: "#fef2f2", border: "1px solid #fecaca",
+                        borderRadius: 7, cursor: "pointer", color: "#dc2626", fontSize: 15,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}
+                    >×</button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Duplicate warning */}
           {dupDriver && (
             <div style={{ background: "#fef2f2", border: "1.5px solid #fecaca", borderRadius: 9, padding: "10px 12px", fontSize: 13, color: "#dc2626" }}>
@@ -174,16 +251,23 @@ function AddDriverModal({ onClose, onAdd, drivers }) {
             </div>
           )}
 
+          {/* Validation error hint */}
+          {Object.keys(errors).length > 0 && (
+            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#dc2626" }}>
+              ⚠ Please fill in all required fields marked in red
+            </div>
+          )}
+
           {/* Actions */}
           <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
             <button
               onClick={handleSave}
-              disabled={!form.name.trim() || !form.phone.trim() || saving}
+              disabled={!canSave}
               style={{
                 flex: 1, padding: "11px",
-                background: (!form.name.trim() || !form.phone.trim() || saving) ? "var(--text-disabled)" : "var(--color-primary)",
+                background: canSave ? "var(--color-primary)" : "var(--text-disabled)",
                 color: "#fff", border: "none", borderRadius: 9, fontSize: 14, fontWeight: 700,
-                cursor: (!form.name.trim() || !form.phone.trim() || saving) ? "default" : "pointer",
+                cursor: canSave ? "pointer" : "default",
               }}
             >
               {saving ? "Saving…" : "Save"}

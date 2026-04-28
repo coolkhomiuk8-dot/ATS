@@ -75,6 +75,7 @@ function ensureDriverShape(driver) {
     enabled: true,
     citizen: null,       // true | false | null
     militaryLoads: null, // "yes" | "no" | "not_sure" | null
+    emergencyContacts: [], // [{ name, phone }]
     ...driver,
   };
 }
