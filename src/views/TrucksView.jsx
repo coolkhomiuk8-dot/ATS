@@ -191,7 +191,7 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc }) {
             onMouseEnter={(e) => { if (!vinCopied) { e.currentTarget.style.borderColor = "var(--color-primary)"; e.currentTarget.style.color = "var(--color-primary)"; } }}
             onMouseLeave={(e) => { if (!vinCopied) { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-secondary)"; } }}
           >
-            {vinCopied ? "✓" : "···"}{vinShort}
+            {vinCopied ? "✓ " : "VIN "}{vinShort}
           </div>
         )}
         {/* Plates expiry badge */}
