@@ -49,7 +49,7 @@ function OilBar({ last, current }) {
   );
 }
 
-function DocBadge({ docName, category, files, onUpload, onPreview }) {
+function DocBadge({ docName, category, files, docs, onUpload, onPreview }) {
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
@@ -59,7 +59,8 @@ function DocBadge({ docName, category, files, onUpload, onPreview }) {
   const thumbUrl = linked?.driveFileId
     ? `https://drive.google.com/thumbnail?id=${linked.driveFileId}&sz=w80`
     : (linked?.url || linked?.data || null);
-  const hasFile = !!linked;
+  // Green only when BOTH a file exists AND docs confirms it — prevents stale green after delete
+  const hasFile = !!linked && !!(docs?.[docName]);
 
   function handleClick(e) {
     e.stopPropagation();
@@ -254,7 +255,7 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc }) {
           <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Truck Docs</div>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
             {TRUCK_DOC_LIST.map((doc) => (
-              <DocBadge key={doc} docName={doc} category="truck" files={files} onUpload={onUploadDoc} onPreview={onPreviewDoc} />
+              <DocBadge key={doc} docName={doc} category="truck" files={files} docs={truck.docs} onUpload={onUploadDoc} onPreview={onPreviewDoc} />
             ))}
           </div>
         </div>
@@ -262,7 +263,7 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc }) {
           <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Driver Docs</div>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
             {DRIVER_DOC_LIST.map((doc) => (
-              <DocBadge key={doc} docName={doc} category="driver" files={files} onUpload={onUploadDoc} onPreview={onPreviewDoc} />
+              <DocBadge key={doc} docName={doc} category="driver" files={files} docs={truck.docs} onUpload={onUploadDoc} onPreview={onPreviewDoc} />
             ))}
           </div>
         </div>

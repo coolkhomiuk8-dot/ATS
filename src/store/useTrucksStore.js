@@ -203,7 +203,12 @@ export const useTrucksStore = create((set, get) => ({
     if (!truck) return;
     const file = (truck.files || [])[fileIdx];
 
-    // Try to delete from Drive
+    // Optimistic update FIRST — remove from local state & Firestore immediately
+    // so the UI (DocBadge, checklist) reflects the change without waiting for Drive.
+    const files = (truck.files || []).filter((_, i) => i !== fileIdx);
+    get().updateTruck(truckId, { files }); // intentionally not awaited
+
+    // Delete from Drive in background (non-blocking to the UI)
     if (file?.driveFileId && auth?.currentUser) {
       try {
         const idToken = await auth.currentUser.getIdToken();
@@ -214,8 +219,5 @@ export const useTrucksStore = create((set, get) => ({
         });
       } catch (_) { /* non-critical */ }
     }
-
-    const files = (truck.files || []).filter((_, i) => i !== fileIdx);
-    return get().updateTruck(truckId, { files });
   },
 }));
