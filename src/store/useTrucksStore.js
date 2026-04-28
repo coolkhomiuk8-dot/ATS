@@ -12,6 +12,10 @@ import {
 const driveUploadTruckEndpoint = import.meta.env.VITE_DRIVE_UPLOAD_TRUCK_ENDPOINT || "/.netlify/functions/driveUploadTruck";
 const driveDeleteEndpoint = import.meta.env.VITE_DRIVE_DELETE_ENDPOINT || "/.netlify/functions/driveDelete";
 
+function todayStr() {
+  return new Date().toISOString().split("T")[0];
+}
+
 function sanitizeFileForDb(file) {
   const clean = {};
   const allowed = ["name", "type", "mime", "size", "date", "url", "data", "viewUrl", "contentUrl", "driveFileId", "folderId", "folderName", "linkedDoc", "category"];
@@ -82,6 +86,8 @@ function ensureTruckShape(truck) {
     docs: {},
     files: [],
     createdAt: null,
+    driverHistory: [],  // [{ driverId, driverName, from, to }]
+    statusHistory: [],  // [{ status, from, to }]
     ...truck,
   };
 }
@@ -97,6 +103,11 @@ function stripUndefined(value) {
     return next;
   }
   return value;
+}
+
+// Lazy getter to avoid circular dep at module load time
+function getDriverStore() {
+  return require("./useDriversStore").useDriversStore.getState();
 }
 
 export const useTrucksStore = create((set, get) => ({
@@ -138,10 +149,13 @@ export const useTrucksStore = create((set, get) => ({
 
   addTruck: async (data) => {
     const id = `truck_${Date.now()}`;
+    const today = todayStr();
+    const initialStatus = data.status || "available";
     const truck = ensureTruckShape({
       ...data,
       id,
-      createdAt: new Date().toISOString().split("T")[0],
+      createdAt: today,
+      statusHistory: [{ status: initialStatus, from: today, to: null }],
     });
 
     set((state) => ({ trucks: [...state.trucks, truck] }));
@@ -157,6 +171,20 @@ export const useTrucksStore = create((set, get) => ({
 
   updateTruck: async (id, data) => {
     const patch = stripUndefined(data);
+
+    // Track status changes automatically
+    if (patch.status !== undefined) {
+      const truck = get().trucks.find((t) => t.id === id);
+      if (truck && truck.status !== patch.status) {
+        const today = todayStr();
+        const statusHistory = (truck.statusHistory || []).map((entry) =>
+          !entry.to ? { ...entry, to: today } : entry,
+        );
+        statusHistory.push({ status: patch.status, from: today, to: null });
+        patch.statusHistory = statusHistory;
+      }
+    }
+
     set((state) => ({
       trucks: state.trucks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
     }));
@@ -183,11 +211,79 @@ export const useTrucksStore = create((set, get) => ({
   },
 
   assignDriver: async (truckId, driverId) => {
-    return get().updateTruck(truckId, { assignedDriverId: driverId });
+    const today = todayStr();
+    const truck = get().trucks.find((t) => t.id === truckId);
+    if (!truck) return;
+
+    let driverHistory = [...(truck.driverHistory || [])];
+
+    // Resolve driver info
+    let driverStore;
+    try { driverStore = getDriverStore(); } catch (_) { driverStore = null; }
+
+    const drivers = driverStore?.drivers || [];
+    const upd = driverStore?.upd;
+    const newDriver = drivers.find((d) => d.id === driverId);
+    const driverName = newDriver?.name || "";
+    const unitNumber = String(truck.unitNumber || "");
+
+    // Close previous driver's open entry in truck.driverHistory
+    if (truck.assignedDriverId && truck.assignedDriverId !== driverId) {
+      driverHistory = driverHistory.map((entry) =>
+        !entry.to ? { ...entry, to: today } : entry,
+      );
+
+      // Close in previous driver's truckHistory
+      if (upd) {
+        const prevDriver = drivers.find((d) => d.id === truck.assignedDriverId);
+        if (prevDriver) {
+          const prevTruckHistory = (prevDriver.truckHistory || []).map((entry) =>
+            entry.truckId === truckId && !entry.to ? { ...entry, to: today } : entry,
+          );
+          upd(truck.assignedDriverId, { truckHistory: prevTruckHistory });
+        }
+      }
+    }
+
+    // Add new driver entry to truck history
+    driverHistory.push({ driverId, driverName, from: today, to: null });
+
+    // Add truck entry to new driver's truckHistory
+    if (newDriver && upd) {
+      const truckHistory = (newDriver.truckHistory || []).map((entry) =>
+        entry.truckId === truckId && !entry.to ? { ...entry, to: today } : entry,
+      );
+      truckHistory.push({ truckId, unitNumber, from: today, to: null });
+      upd(driverId, { truckHistory });
+    }
+
+    return get().updateTruck(truckId, { assignedDriverId: driverId, driverHistory });
   },
 
   unassignDriver: async (truckId) => {
-    return get().updateTruck(truckId, { assignedDriverId: null });
+    const today = todayStr();
+    const truck = get().trucks.find((t) => t.id === truckId);
+    if (!truck) return;
+
+    const driverHistory = (truck.driverHistory || []).map((entry) =>
+      !entry.to ? { ...entry, to: today } : entry,
+    );
+
+    // Close in driver's truckHistory
+    if (truck.assignedDriverId) {
+      try {
+        const { drivers, upd } = getDriverStore();
+        const driver = drivers.find((d) => d.id === truck.assignedDriverId);
+        if (driver && upd) {
+          const truckHistory = (driver.truckHistory || []).map((entry) =>
+            entry.truckId === truckId && !entry.to ? { ...entry, to: today } : entry,
+          );
+          upd(truck.assignedDriverId, { truckHistory });
+        }
+      } catch (_) { /* non-critical */ }
+    }
+
+    return get().updateTruck(truckId, { assignedDriverId: null, driverHistory });
   },
 
   addTruckFile: async (truckId, fileObj) => {

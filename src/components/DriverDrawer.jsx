@@ -353,6 +353,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
           {[
             ["info", "Info"],
             ["documents", "Documents"],
+            ["history", "History"],
           ].map(([id, label]) => (
             <button
               key={id}
@@ -999,6 +1000,59 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
               </div>
             </div>
           )}
+
+          {/* ── HISTORY TAB ── */}
+          {tab === "history" && (() => {
+            const truckHistory = [...(driver.truckHistory || [])].reverse();
+            function fmtH(d) {
+              if (!d) return "Now";
+              const dt = new Date(d + "T00:00:00");
+              return isNaN(dt) ? d : dt.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+            }
+            function daysDiff(from, to) {
+              const f = new Date((from || "") + "T00:00:00");
+              const t = to ? new Date(to + "T00:00:00") : new Date();
+              return Math.max(0, Math.round((t - f) / 86400000));
+            }
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase" }}>
+                  Truck History
+                </div>
+                {truckHistory.length === 0 ? (
+                  <div style={{ fontSize: 13, color: "var(--text-disabled)", padding: "20px 0", textAlign: "center" }}>
+                    No truck assignments recorded yet.
+                  </div>
+                ) : truckHistory.map((entry, i) => {
+                  const isCurrent = !entry.to;
+                  const days = daysDiff(entry.from, entry.to);
+                  return (
+                    <div key={i} style={{
+                      display: "flex", alignItems: "center", gap: 12,
+                      padding: "10px 14px", borderRadius: 10,
+                      background: isCurrent ? "#eff6ff" : "var(--bg-raised)",
+                      border: `1px solid ${isCurrent ? "#bfdbfe" : "var(--border)"}`,
+                    }}>
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: isCurrent ? "#2563eb" : "var(--text-disabled)" }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: isCurrent ? "#1d4ed8" : "var(--text-primary)" }}>
+                          Unit {entry.unitNumber || entry.truckId}
+                          {isCurrent && (
+                            <span style={{ marginLeft: 7, fontSize: 10, fontWeight: 700, color: "#2563eb", background: "#dbeafe", padding: "1px 6px", borderRadius: 10 }}>
+                              Current
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 2 }}>
+                          {fmtH(entry.from)} — {fmtH(entry.to)} · <strong>{days}d</strong>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
         </div>
       </div>

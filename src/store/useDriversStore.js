@@ -76,6 +76,7 @@ function ensureDriverShape(driver) {
     citizen: null,       // true | false | null
     militaryLoads: null, // "yes" | "no" | "not_sure" | null
     emergencyContacts: [], // [{ name, phone }]
+    truckHistory: [],      // [{ truckId, unitNumber, from, to }]
     ...driver,
   };
 }

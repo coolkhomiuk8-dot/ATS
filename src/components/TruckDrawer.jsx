@@ -745,7 +745,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
 
           {/* Tabs */}
           <div style={{ display: "flex", gap: 0, marginTop: 8 }}>
-            {[["info", "Info"], ["documents", `Docs (${docsCount}/${totalDocList})`]].map(([id, label]) => (
+            {[["info", "Info"], ["documents", `Docs (${docsCount}/${totalDocList})`], ["history", "History"]].map(([id, label]) => (
               <button
                 key={id}
                 onClick={() => setTab(id)}
@@ -1129,6 +1129,115 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
               />
             </div>
           )}
+
+          {/* ── HISTORY TAB ── */}
+          {tab === "history" && (() => {
+            const driverHistory = [...(truck.driverHistory || [])].reverse();
+            const statusHistory = [...(truck.statusHistory || [])].reverse();
+
+            function fmtH(d) {
+              if (!d) return "Now";
+              const dt = new Date(d + "T00:00:00");
+              return isNaN(dt) ? d : dt.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+            }
+            function daysDiff(from, to) {
+              const f = new Date((from || "") + "T00:00:00");
+              const t = to ? new Date(to + "T00:00:00") : new Date();
+              const d = Math.round((t - f) / 86400000);
+              return d < 0 ? 0 : d;
+            }
+
+            const STATUS_COLORS = {
+              active:      { color: "#16a34a", bg: "#f0fdf4", label: "Active" },
+              maintenance: { color: "#dc2626", bg: "#fef2f2", label: "Maintenance" },
+              available:   { color: "#2563eb", bg: "#eff6ff", label: "Available" },
+              inactive:    { color: "#64748b", bg: "#f8fafc", label: "Inactive" },
+            };
+
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+
+                {/* Driver History */}
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 12 }}>
+                    Driver History
+                  </div>
+                  {driverHistory.length === 0 ? (
+                    <div style={{ fontSize: 13, color: "var(--text-disabled)" }}>No driver assignments recorded yet.</div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {driverHistory.map((entry, i) => {
+                        const days = daysDiff(entry.from, entry.to);
+                        const isCurrent = !entry.to;
+                        return (
+                          <div key={i} style={{
+                            display: "flex", alignItems: "center", gap: 12,
+                            padding: "10px 14px", borderRadius: 10,
+                            background: isCurrent ? "#f0fdf4" : "var(--bg-raised)",
+                            border: `1px solid ${isCurrent ? "#86efac" : "var(--border)"}`,
+                          }}>
+                            <div style={{
+                              width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+                              background: isCurrent ? "#16a34a" : "var(--text-disabled)",
+                            }} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: isCurrent ? "#15803d" : "var(--text-primary)" }}>
+                                {entry.driverName || entry.driverId}
+                                {isCurrent && <span style={{ marginLeft: 7, fontSize: 10, fontWeight: 700, color: "#16a34a", background: "#dcfce7", padding: "1px 6px", borderRadius: 10 }}>Current</span>}
+                              </div>
+                              <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 2 }}>
+                                {fmtH(entry.from)} — {fmtH(entry.to)} · <strong>{days}d</strong>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Status History */}
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 12 }}>
+                    Status History
+                  </div>
+                  {statusHistory.length === 0 ? (
+                    <div style={{ fontSize: 13, color: "var(--text-disabled)" }}>No status changes recorded yet.</div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {statusHistory.map((entry, i) => {
+                        const days = daysDiff(entry.from, entry.to);
+                        const isCurrent = !entry.to;
+                        const s = STATUS_COLORS[entry.status] || { color: "#64748b", bg: "#f8fafc", label: entry.status };
+                        return (
+                          <div key={i} style={{
+                            display: "flex", alignItems: "center", gap: 12,
+                            padding: "10px 14px", borderRadius: 10,
+                            background: isCurrent ? s.bg : "var(--bg-raised)",
+                            border: `1px solid ${isCurrent ? s.color + "55" : "var(--border)"}`,
+                          }}>
+                            <div style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: s.color }} />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: s.bg, color: s.color, border: `1px solid ${s.color}44` }}>
+                                  {s.label}
+                                </span>
+                                {isCurrent && <span style={{ fontSize: 10, fontWeight: 700, color: s.color }}>● Now</span>}
+                              </div>
+                              <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 3 }}>
+                                {fmtH(entry.from)} — {fmtH(entry.to)} · <strong>{days}d</strong>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            );
+          })()}
 
           {/* Lightbox */}
           {lightbox && (
