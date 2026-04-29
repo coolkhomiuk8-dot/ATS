@@ -1054,9 +1054,17 @@ export default function TrucksView({ onAddDriver }) {
                           <div style={{ fontWeight: 700, marginBottom: 4, fontFamily: "sans-serif" }}>API rows returned:</div>
                           <div>odometer: {d.odomRows} &nbsp; faults: {d.faultRows}</div>
                           <div>fuel: {d.fuelRows} &nbsp; gps: {d.gpsRows} &nbsp; engine: {d.engineRows}</div>
-                          <div>vehicles: {d.vehicleRows}</div>
                         </div>
                       )}
+                      {(r.matched || []).map((m) => (
+                        <div key={m.unit} style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #86efac", fontFamily: "monospace", fontSize: 11 }}>
+                          <div style={{ fontWeight: 700, fontFamily: "sans-serif", marginBottom: 3 }}>Unit {m.unit} raw values:</div>
+                          <div>odom: {m.odom ?? "null"}</div>
+                          <div>fuel: {JSON.stringify(m.fuel)}</div>
+                          <div>engine: {JSON.stringify(m.engine)}</div>
+                          <div>gps: {JSON.stringify(m.gps)}</div>
+                        </div>
+                      ))}
                     </>;
                   })()}
                 </div>

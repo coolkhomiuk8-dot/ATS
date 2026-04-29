@@ -107,19 +107,34 @@ export const handler = async (event) => {
 
     if (!samsaraId) { report.noMatch++; continue; }
 
+    const rawFuel   = fuelById[samsaraId];
+    const rawEngine = engineById[samsaraId];
+    const rawGps    = gpsById[samsaraId];
+    const rawOdom   = odomById[samsaraId];
+
     const patch = {
       samsaraId,
       lastSamsaraSync: now,
       faultCodes:  faultById[samsaraId]  || [],
-      fuelPercent: fuelById[samsaraId]   ?? null,
-      engineState: engineById[samsaraId] ?? null,
-      gpsData:     gpsById[samsaraId]    ?? null,
+      fuelPercent: rawFuel   ?? null,
+      engineState: rawEngine ?? null,
+      gpsData:     rawGps    ?? null,
     };
 
-    const odomMeters = odomById[samsaraId];
-    if (odomMeters != null) {
-      patch.currentOdometer = Math.round(odomMeters * METERS_TO_MILES);
+    if (rawOdom != null) {
+      patch.currentOdometer = Math.round(rawOdom * METERS_TO_MILES);
     }
+
+    // Debug: capture raw values for matched trucks
+    report.matched = report.matched || [];
+    report.matched.push({
+      unit: truck.unitNumber,
+      samsaraId,
+      odom:   rawOdom,
+      fuel:   rawFuel,
+      engine: rawEngine,
+      gps:    rawGps,
+    });
 
     try {
       await db.collection("trucks").doc(docSnap.id).update(patch);
