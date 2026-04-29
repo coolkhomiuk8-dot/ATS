@@ -60,8 +60,9 @@ export const handler = async () => {
     // ── Fetch all stats from Samsara in parallel ────────────────────────────
     const w = (label, p) => p.catch((e) => { console.warn(`[samsaraCron] ${label}:`, e.message); return []; });
 
-    const [odomRows, faultRows, fuelRows, gpsRows, engineRows, vehicleRows, locationRows] = await Promise.all([
+    const [odomRows, gpsOdomRows, faultRows, fuelRows, gpsRows, engineRows, vehicleRows, locationRows] = await Promise.all([
       w("obdOdometerMeters", fetchAllStats("obdOdometerMeters", apiKey)),
+      w("gpsOdometerMeters", fetchAllStats("gpsOdometerMeters", apiKey)),
       w("faultCodes",        fetchAllStats("faultCodes",        apiKey)),
       w("fuelPercents",      fetchAllStats("fuelPercents",      apiKey)),
       w("gps",               fetchAllStats("gps",               apiKey)),
@@ -71,7 +72,12 @@ export const handler = async () => {
     ]);
 
     // Build lookup maps by samsaraId
-    const odomById   = Object.fromEntries(odomRows.map((v) => [v.id, v.obdOdometerMeters?.value ?? null]));
+    // Odometer: prefer OBD, fall back to GPS-based
+    const obdOdomById = Object.fromEntries(odomRows.map((v) => [v.id, v.obdOdometerMeters?.value ?? null]));
+    const gpsOdomById = Object.fromEntries(gpsOdomRows.map((v) => [v.id, v.gpsOdometerMeters?.value ?? null]));
+    const odomById = new Proxy({}, {
+      get: (_, id) => obdOdomById[id] ?? gpsOdomById[id] ?? undefined,
+    });
     const faultById  = Object.fromEntries(faultRows.map((v) => [v.id, v.faultCodes?.value || []]));
     const fuelById   = Object.fromEntries(fuelRows.map((v) => [v.id, v.fuelPercents?.value ?? null]));
     const engineById = Object.fromEntries(engineRows.map((v) => [v.id, v.engineStates?.value ?? null]));

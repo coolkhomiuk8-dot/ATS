@@ -1058,7 +1058,7 @@ export default function TrucksView({ onAddDriver }) {
                       {Object.keys(d).length > 0 && (
                         <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #86efac", color: "#166534", fontFamily: "monospace" }}>
                           <div style={{ fontWeight: 700, marginBottom: 4, fontFamily: "sans-serif" }}>API rows returned:</div>
-                          <div>odometer: {d.odomRows} &nbsp; faults: {d.faultRows}</div>
+                          <div>obdOdom: {d.odomRows} &nbsp; gpsOdom: {d.gpsOdomRows} &nbsp; faults: {d.faultRows}</div>
                           <div>fuel: {d.fuelRows} &nbsp; gps: {d.gpsRows} &nbsp; engine: {d.engineRows}</div>
                           <div>locations: {d.locationRows}</div>
                         </div>

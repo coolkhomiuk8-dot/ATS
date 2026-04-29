@@ -72,8 +72,9 @@ export const handler = async (event) => {
     return r.data || [];
   }
 
-  const [odomRows, faultRows, fuelRows, gpsRows, engineRows, vehicleRows, locationRows] = await Promise.all([
+  const [odomRows, gpsOdomRows, faultRows, fuelRows, gpsRows, engineRows, vehicleRows, locationRows] = await Promise.all([
     safe(fetchAllStats("obdOdometerMeters", apiKey)),
+    safe(fetchAllStats("gpsOdometerMeters", apiKey)),
     safe(fetchAllStats("faultCodes",        apiKey)),
     safe(fetchAllStats("fuelPercents",      apiKey)),
     safe(fetchAllStats("gps",               apiKey)),
@@ -83,7 +84,12 @@ export const handler = async (event) => {
   ]);
 
   // Build lookup maps keyed by samsaraId
-  const odomById   = Object.fromEntries(odomRows.map((v) => [v.id, v.obdOdometerMeters?.value ?? null]));
+  // Odometer: prefer OBD, fall back to GPS-based
+  const obdOdomById = Object.fromEntries(odomRows.map((v) => [v.id, v.obdOdometerMeters?.value ?? null]));
+  const gpsOdomById = Object.fromEntries(gpsOdomRows.map((v) => [v.id, v.gpsOdometerMeters?.value ?? null]));
+  const odomById = new Proxy({}, {
+    get: (_, id) => obdOdomById[id] ?? gpsOdomById[id] ?? undefined,
+  });
   const faultById  = Object.fromEntries(faultRows.map((v) => [v.id, v.faultCodes?.value || []]));
   const fuelById   = Object.fromEntries(fuelRows.map((v) => [v.id, v.fuelPercents?.value ?? null]));
   const engineById = Object.fromEntries(engineRows.map((v) => [v.id, v.engineStates?.value ?? null]));
@@ -186,6 +192,7 @@ export const handler = async (event) => {
     report,
     debug: {
       odomRows:     odomRows.length,
+      gpsOdomRows:  gpsOdomRows.length,
       faultRows:    faultRows.length,
       fuelRows:     fuelRows.length,
       gpsRows:      gpsRows.length,
