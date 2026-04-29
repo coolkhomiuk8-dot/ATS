@@ -54,23 +54,36 @@ export const handler = async (event) => {
 
   const db = getDb();
 
-  // ── Fetch odometer + fault codes from Samsara in parallel ────────────────
-  const [odomRows, faultRows, vehicleRows] = await Promise.all([
+  function parseCityState(formatted) {
+    if (!formatted) return null;
+    const parts = formatted.split(", ").filter((p) => p !== "US" && p !== "USA");
+    if (parts.length < 2) return formatted;
+    const city = parts[1] || "";
+    const stateCode = (parts[2] || "").split(" ")[0];
+    return stateCode ? `${city}, ${stateCode}` : city;
+  }
+
+  // ── Fetch all stats from Samsara in parallel ──────────────────────────────
+  const [odomRows, faultRows, fuelRows, gpsRows, engineRows, vehicleRows] = await Promise.all([
     fetchAllStats("obdOdometerMeters", apiKey),
     fetchAllStats("faultCodes",        apiKey),
-    // Also fetch vehicle list for VIN-based auto-matching
+    fetchAllStats("fuelPercents",      apiKey),
+    fetchAllStats("gps",               apiKey),
+    fetchAllStats("engineStates",      apiKey),
     samsaraGet("/fleet/vehicles?limit=512", apiKey).then((r) => r.data || []),
   ]);
 
   // Build lookup maps keyed by samsaraId
-  const odomById  = Object.fromEntries(
-    odomRows.map((v) => [v.id, v.obdOdometerMeters?.value ?? null])
-  );
-  const faultById = Object.fromEntries(
-    faultRows.map((v) => [v.id, v.faultCodes?.value || []])
-  );
+  const odomById   = Object.fromEntries(odomRows.map((v) => [v.id, v.obdOdometerMeters?.value ?? null]));
+  const faultById  = Object.fromEntries(faultRows.map((v) => [v.id, v.faultCodes?.value || []]));
+  const fuelById   = Object.fromEntries(fuelRows.map((v) => [v.id, v.fuelPercents?.value ?? null]));
+  const engineById = Object.fromEntries(engineRows.map((v) => [v.id, v.engineStates?.value ?? null]));
+  const gpsById    = Object.fromEntries(gpsRows.map((v) => {
+    const g = v.gps?.value;
+    return [v.id, g ? { speed: Math.round(g.speedMilesPerHour ?? 0), location: parseCityState(g.reverseGeo?.formattedLocation) } : null];
+  }));
   // VIN → samsaraId (for auto-linking)
-  const idByVin   = Object.fromEntries(
+  const idByVin = Object.fromEntries(
     vehicleRows
       .filter((v) => v.externalIds?.["samsara.vin"] || v.vin)
       .map((v) => [(v.externalIds?.["samsara.vin"] || v.vin || "").toUpperCase(), v.id])
@@ -93,16 +106,16 @@ export const handler = async (event) => {
 
     if (!samsaraId) { report.noMatch++; continue; }
 
-    const odomMeters = odomById[samsaraId];
-    const faultCodes = faultById[samsaraId] || [];
-
     const patch = {
       samsaraId,
       lastSamsaraSync: now,
-      faultCodes,
+      faultCodes:  faultById[samsaraId]  || [],
+      fuelPercent: fuelById[samsaraId]   ?? null,
+      engineState: engineById[samsaraId] ?? null,
+      gpsData:     gpsById[samsaraId]    ?? null,
     };
 
-    // Only update odometer if Samsara has a value
+    const odomMeters = odomById[samsaraId];
     if (odomMeters != null) {
       patch.currentOdometer = Math.round(odomMeters * METERS_TO_MILES);
     }

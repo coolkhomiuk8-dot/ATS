@@ -1,12 +1,12 @@
-// Scheduled every 10 minutes.
-// Pulls odometer + fault codes from Samsara and updates Firestore trucks.
+// Scheduled every 2 minutes.
+// Pulls odometer, fault codes, fuel level, GPS and engine state from Samsara.
 //
 // Required env vars:
 //   SAMSARA_API_KEY — Samsara API token (Settings → Developer → API Tokens)
 
 import { getDb } from "./_auth.js";
 
-const SAMSARA_BASE   = "https://api.samsara.com";
+const SAMSARA_BASE    = "https://api.samsara.com";
 const METERS_TO_MILES = 0.000621371;
 
 async function samsaraGet(path, apiKey) {
@@ -32,6 +32,21 @@ async function fetchAllStats(type, apiKey) {
   return results;
 }
 
+/**
+ * Parse Samsara reverseGeo address → city, state only.
+ * "123 Main St, Nashville, TN 37201, US" → "Nashville, TN"
+ */
+function parseCityState(formatted) {
+  if (!formatted) return null;
+  const parts = formatted.split(", ").filter((p) => p !== "US" && p !== "USA");
+  if (parts.length < 2) return formatted;
+  // parts[0] = street, parts[1] = city, parts[2] = "TN 37201" or "TN"
+  const city  = parts[1] || "";
+  const stateZip = parts[2] || "";
+  const stateCode = stateZip.split(" ")[0]; // "TN" from "TN 37201"
+  return stateCode ? `${city}, ${stateCode}` : city;
+}
+
 export const handler = async () => {
   const apiKey = process.env.SAMSARA_API_KEY;
   if (!apiKey) {
@@ -42,19 +57,30 @@ export const handler = async () => {
   const db = getDb();
 
   try {
-    // ── Fetch from Samsara ──────────────────────────────────────────────────
-    const [odomRows, faultRows, vehicleRows] = await Promise.all([
+    // ── Fetch all stats from Samsara in parallel ────────────────────────────
+    const [odomRows, faultRows, fuelRows, gpsRows, engineRows, vehicleRows] = await Promise.all([
       fetchAllStats("obdOdometerMeters", apiKey),
       fetchAllStats("faultCodes",        apiKey),
+      fetchAllStats("fuelPercents",      apiKey),
+      fetchAllStats("gps",               apiKey),
+      fetchAllStats("engineStates",      apiKey),
       samsaraGet("/fleet/vehicles?limit=512", apiKey).then((r) => r.data || []),
     ]);
 
-    const odomById  = Object.fromEntries(
-      odomRows.map((v) => [v.id, v.obdOdometerMeters?.value ?? null])
-    );
-    const faultById = Object.fromEntries(
-      faultRows.map((v) => [v.id, v.faultCodes?.value || []])
-    );
+    // Build lookup maps by samsaraId
+    const odomById   = Object.fromEntries(odomRows.map((v) => [v.id, v.obdOdometerMeters?.value ?? null]));
+    const faultById  = Object.fromEntries(faultRows.map((v) => [v.id, v.faultCodes?.value || []]));
+    const fuelById   = Object.fromEntries(fuelRows.map((v) => [v.id, v.fuelPercents?.value ?? null]));
+    const engineById = Object.fromEntries(engineRows.map((v) => [v.id, v.engineStates?.value ?? null]));
+
+    const gpsById = Object.fromEntries(gpsRows.map((v) => {
+      const g = v.gps?.value;
+      return [v.id, g ? {
+        speed:    Math.round(g.speedMilesPerHour ?? 0),
+        location: parseCityState(g.reverseGeo?.formattedLocation),
+      } : null];
+    }));
+
     // VIN → samsaraId for auto-linking
     const idByVin = Object.fromEntries(
       vehicleRows
@@ -68,8 +94,8 @@ export const handler = async () => {
     let synced = 0, autoLinked = 0, noMatch = 0;
 
     for (const docSnap of trucksSnap.docs) {
-      const truck     = docSnap.data();
-      let samsaraId   = truck.samsaraId || null;
+      const truck   = docSnap.data();
+      let samsaraId = truck.samsaraId || null;
 
       if (!samsaraId && truck.vinNumber) {
         samsaraId = idByVin[String(truck.vinNumber).toUpperCase()] || null;
@@ -78,10 +104,16 @@ export const handler = async () => {
 
       if (!samsaraId) { noMatch++; continue; }
 
-      const odomMeters = odomById[samsaraId];
-      const faultCodes = faultById[samsaraId] || [];
+      const patch = {
+        samsaraId,
+        lastSamsaraSync: now,
+        faultCodes:  faultById[samsaraId]  || [],
+        fuelPercent: fuelById[samsaraId]   ?? null,
+        engineState: engineById[samsaraId] ?? null,
+        gpsData:     gpsById[samsaraId]    ?? null,
+      };
 
-      const patch = { samsaraId, lastSamsaraSync: now, faultCodes };
+      const odomMeters = odomById[samsaraId];
       if (odomMeters != null) {
         patch.currentOdometer = Math.round(odomMeters * METERS_TO_MILES);
       }

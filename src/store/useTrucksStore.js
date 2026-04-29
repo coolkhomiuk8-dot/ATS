@@ -93,6 +93,9 @@ function ensureTruckShape(truck) {
     oilChangeLog: [],    // [{ date, odometer, fileName?, fileUrl?, viewUrl?, driveFileId?, fileType? }]
     samsaraId: null,     // Samsara vehicle ID (linked manually or auto-matched by VIN)
     faultCodes: [],      // [{ j1939Spn, j1939Fmi, lamp, txId, updatedAtTime }]
+    fuelPercent: null,   // 0–100 from Samsara fuelPercents
+    gpsData: null,       // { speed: mph, location: "City, ST" } from Samsara GPS
+    engineState: null,   // "On" | "Idle" | "Off" from Samsara engineStates
     lastSamsaraSync: null,
     ...truck,
   };

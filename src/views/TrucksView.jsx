@@ -365,16 +365,62 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
         )}
       </div>
 
-      {/* Col 4 — Oil + Faults */}
+      {/* Col 4 — Oil */}
       <div style={{ minWidth: 180, flexShrink: 0, padding: "0 16px", borderRight: "1px solid var(--border)" }}>
         <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>Oil Change</div>
         {(truck.lastOilChange || truck.currentOdometer)
           ? <OilBar last={truck.lastOilChange} current={truck.currentOdometer} />
           : <span style={{ fontSize: 11, color: "var(--text-disabled)" }}>No data</span>
         }
-        {truck.fuelCard && <div style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "monospace", marginTop: 5 }}>⛽ {truck.fuelCard}</div>}
+        {truck.fuelCard && <div style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "monospace", marginTop: 5 }}>💳 {truck.fuelCard}</div>}
+      </div>
 
-        {/* Fault codes from Samsara */}
+      {/* Col 5 — Live (Samsara) */}
+      <div style={{ minWidth: 155, flexShrink: 0, padding: "0 16px", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 5 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 2 }}>Live</div>
+
+        {/* Engine state + speed */}
+        {(() => {
+          const state = truck.engineState;
+          const speed = truck.gpsData?.speed ?? 0;
+          if (!state) return <span style={{ fontSize: 10, color: "var(--text-disabled)" }}>No sync yet</span>;
+          const isOff  = state === "Off";
+          const isIdle = state === "Idle";
+          const icon   = isOff ? "⭕" : isIdle ? "🟡" : "🟢";
+          const label  = isOff ? "Off" : isIdle ? "Idle" : speed > 0 ? `${speed} mph` : "On";
+          const color  = isOff ? "var(--text-disabled)" : isIdle ? "#d97706" : "#16a34a";
+          return (
+            <div style={{ fontSize: 11, fontWeight: 700, color }}>
+              {icon} {label}
+            </div>
+          );
+        })()}
+
+        {/* Fuel bar */}
+        {truck.fuelPercent != null && (() => {
+          const pct   = Math.round(truck.fuelPercent);
+          const color = pct < 20 ? "#dc2626" : pct < 50 ? "#f59e0b" : "#16a34a";
+          return (
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text-faint)", marginBottom: 2 }}>
+                <span>⛽ Fuel</span>
+                <span style={{ color, fontWeight: 700 }}>{pct}%</span>
+              </div>
+              <div style={{ height: 4, borderRadius: 99, background: "var(--bg-hover)", overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 99, transition: "width .3s" }} />
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* GPS location */}
+        {truck.gpsData?.location && (
+          <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600 }}>
+            📍 {truck.gpsData.location}
+          </div>
+        )}
+
+        {/* Fault codes */}
         {(() => {
           const faults = Array.isArray(truck.faultCodes) ? truck.faultCodes : [];
           if (faults.length === 0) return null;
@@ -385,7 +431,7 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
           return (
             <div
               title={faults.map((f) => `SPN ${f.j1939Spn} FMI ${f.j1939Fmi}${f.lamp ? ` (${f.lamp})` : ""}`).join("\n")}
-              style={{ marginTop: 6, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5, background: bg, color, border: `1px solid ${border}`, cursor: "default" }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5, background: bg, color, border: `1px solid ${border}`, cursor: "default" }}
             >
               ⚠ {faults.length} fault{faults.length !== 1 ? "s" : ""}
             </div>
