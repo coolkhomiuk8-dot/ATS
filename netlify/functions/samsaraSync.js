@@ -145,15 +145,19 @@ export const handler = async (event) => {
       patch.currentOdometer = Math.round(rawOdom * METERS_TO_MILES);
     }
 
-    // Debug: capture raw values for matched trucks
+    // Debug: capture raw values + raw API objects for matched trucks
+    const rawFuelRow   = fuelRows.find((v) => String(v.id) === String(samsaraId));
+    const rawEngineRow = engineRows.find((v) => String(v.id) === String(samsaraId));
     report.matched = report.matched || [];
     report.matched.push({
-      unit: truck.unitNumber,
+      unit:      truck.unitNumber,
       samsaraId,
-      odom:   rawOdom,
-      fuel:   rawFuel,
-      engine: rawEngine,
-      gps:    rawGps,
+      odom:      rawOdom,
+      fuel:      rawFuel,
+      engine:    rawEngine,
+      gps:       rawGps,
+      _fuelRaw:  rawFuelRow   ? rawFuelRow.fuelPercents   : "NOT IN ROWS",
+      _engRaw:   rawEngineRow ? rawEngineRow.engineStates : "NOT IN ROWS",
     });
 
     try {
