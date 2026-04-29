@@ -365,7 +365,7 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
         )}
       </div>
 
-      {/* Col 4 — Oil */}
+      {/* Col 4 — Oil + MPG */}
       <div style={{ minWidth: 180, flexShrink: 0, padding: "0 16px", borderRight: "1px solid var(--border)" }}>
         <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>Oil Change</div>
         {(truck.lastOilChange || truck.currentOdometer)
@@ -373,6 +373,23 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
           : <span style={{ fontSize: 11, color: "var(--text-disabled)" }}>No data</span>
         }
         {truck.fuelCard && <div style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "monospace", marginTop: 5 }}>💳 {truck.fuelCard}</div>}
+
+        {/* MPG indicator: green ≥12, amber 10-12, red <10 (per fleet spec) */}
+        {(() => {
+          const c = truck.consumption;
+          if (!c?.mpg7d && !c?.mpg30d) return null;
+          const mpg = c.mpg7d ?? c.mpg30d;
+          const color = mpg >= 12 ? "#16a34a" : mpg >= 10 ? "#f59e0b" : "#dc2626";
+          const bg    = mpg >= 12 ? "#f0fdf4" : mpg >= 10 ? "#fffbeb" : "#fef2f2";
+          const border= mpg >= 12 ? "#86efac" : mpg >= 10 ? "#fcd34d" : "#fecaca";
+          return (
+            <div title={`7d: ${c.mpg7d ?? "—"} mpg · ${c.gallons7d || 0} gal\n30d: ${c.mpg30d ?? "—"} mpg · ${c.gallons30d || 0} gal`}
+              style={{ marginTop: 6, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5, background: bg, color, border: `1px solid ${border}`, cursor: "default" }}
+            >
+              ⛽ {mpg} mpg{c.mpg7d == null ? " (30d)" : ""}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Col 5 — Live (Samsara) */}

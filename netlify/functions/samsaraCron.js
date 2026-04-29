@@ -5,6 +5,7 @@
 //   SAMSARA_API_KEY — Samsara API token (Settings → Developer → API Tokens)
 
 import { getDb } from "./_auth.js";
+import { appendSnapshot, buildConsumption } from "./_fuelTracking.js";
 
 const SAMSARA_BASE    = "https://api.samsara.com";
 const METERS_TO_MILES = 0.000621371;
@@ -136,13 +137,26 @@ export const handler = async () => {
 
       const rawGpsCron = gpsById[samsaraId] ?? null;
 
+      const odomMeters = odomById[samsaraId];
+      const odomMiles  = odomMeters != null ? Math.round(odomMeters * METERS_TO_MILES) : null;
+
       const patch = { samsaraId, lastSamsaraSync: now };
       if (faultRows.length > 0)   patch.faultCodes     = faultById[samsaraId] || [];
       if (fuel       != null)   { patch.fuelPercent    = fuel;   patch.fuelPercentTime = fuelTime; }
       if (engine     != null)   { patch.engineState    = engine; patch.engineStateTime = engineTime; }
       if (rawGpsCron != null)    patch.gpsData         = rawGpsCron;
-      const odomMeters = odomById[samsaraId];
-      if (odomMeters != null)    patch.currentOdometer = Math.round(odomMeters * METERS_TO_MILES);
+      if (odomMiles  != null)    patch.currentOdometer = odomMiles;
+
+      // ── Fuel consumption tracking — only append if fuel% or odom moved ──
+      if (fuel != null && odomMiles != null) {
+        const truckData = docSnap.data();
+        const snapshot = { fuel: Math.round(fuel * 10) / 10, odom: odomMiles, time: fuelTime || now };
+        const newHistory = appendSnapshot(truckData.fuelHistory, snapshot);
+        if (newHistory) {
+          patch.fuelHistory = newHistory;
+          patch.consumption = buildConsumption(newHistory, truckData.tankCapacityGallons || 25);
+        }
+      }
 
       await docSnap.ref.update(patch);
       synced++;

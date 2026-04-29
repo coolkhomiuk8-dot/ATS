@@ -1,0 +1,114 @@
+
+## АНАЛІЗ РЕАЛЬНИХ 2254 ВАНТАЖІВ З TMS
+
+### Топ штати призначення (по медіанному RPM):
+✅ **WY**: $2.03/mi median ($0.99–$4.50, 4 вантажів)
+⚠️ **VT**: $1.82/mi median ($1.49–$2.46, 6 вантажів)
+⚠️ **NM**: $1.67/mi median ($0.97–$2.76, 14 вантажів)
+⚠️ **CT**: $1.67/mi median ($1.15–$3.94, 29 вантажів)
+⚠️ **ND**: $1.67/mi median ($0.88–$2.99, 14 вантажів)
+⚠️ **ME**: $1.64/mi median ($1.23–$2.60, 10 вантажів)
+⚠️ **OR**: $1.61/mi median ($1.28–$2.48, 6 вантажів)
+⚠️ **WA**: $1.60/mi median ($1.21–$1.94, 14 вантажів)
+⚠️ **VA**: $1.59/mi median ($0.91–$3.03, 67 вантажів)
+⚠️ **NH**: $1.56/mi median ($1.15–$3.73, 22 вантажів)
+⚠️ **IA**: $1.55/mi median ($0.27–$3.16, 41 вантажів)
+⚠️ **MA**: $1.54/mi median ($0.97–$5.00, 44 вантажів)
+⚠️ **UT**: $1.53/mi median ($0.38–$2.14, 14 вантажів)
+⚠️ **NE**: $1.52/mi median ($1.00–$2.41, 18 вантажів)
+⚠️ **FL**: $1.52/mi median ($0.14–$2.72, 78 вантажів)
+
+### Слабкі штати призначення (низький RPM):
+❌ **IL**: $1.27/mi median (134 вантажів)
+❌ **AZ**: $1.29/mi median (17 вантажів)
+❌ **TX**: $1.29/mi median (152 вантажів)
+❌ **WI**: $1.33/mi median (61 вантажів)
+❌ **MO**: $1.33/mi median (70 вантажів)
+❌ **MI**: $1.33/mi median (132 вантажів)
+❌ **KS**: $1.34/mi median (35 вантажів)
+❌ **IN**: $1.35/mi median (77 вантажів)
+
+### Штати де важко знайти зворотній вантаж (stuck risk):
+⚠️ **DE**: 14 deliveries, лише 4 pickups — ratio 0.29
+⚠️ **ND**: 14 deliveries, лише 5 pickups — ratio 0.36
+⚠️ **NH**: 22 deliveries, лише 8 pickups — ratio 0.36
+
+### Найкращі штати відправки (high RPM outbound):
+✅ **OH**: $1.65/mi median outbound (248 вантажів)
+✅ **IN**: $1.64/mi median outbound (70 вантажів)
+✅ **IL**: $1.57/mi median outbound (155 вантажів)
+✅ **WI**: $1.52/mi median outbound (54 вантажів)
+✅ **MI**: $1.52/mi median outbound (110 вантажів)
+✅ **DE**: $1.51/mi median outbound (4 вантажів)
+✅ **VA**: $1.50/mi median outbound (44 вантажів)
+✅ **PA**: $1.44/mi median outbound (171 вантажів)
+
+### Брокери з хорошим RPM (наш реальний досвід):
+✅ CH ROBINSON/CHICAGO: $1.54/mi median (85 вантажів, avg $1245)
+✅ Landstar: $1.44/mi median (79 вантажів, avg $1129)
+✅ Wingstar: $1.43/mi median (30 вантажів, avg $1360)
+✅ Ryan Transportation: $1.48/mi median (26 вантажів, avg $1010)
+✅ Logistic Dynamics LLC: $1.58/mi median (22 вантажів, avg $1445)
+✅ C H Robinson: $1.49/mi median (21 вантажів, avg $1248)
+✅ Axle: $1.51/mi median (20 вантажів, avg $885)
+✅ PLS: $1.44/mi median (18 вантажів, avg $1105)
+✅ NTG: $1.42/mi median (17 вантажів, avg $1369)
+✅ Armstrong: $1.61/mi median (14 вантажів, avg $1109)
+✅ RYAN TRANSPORTATION SERVICE, INC: $1.46/mi median (14 вантажів, avg $1676)
+✅ GLOBALTRANZ: $1.66/mi median (13 вантажів, avg $1090)
+✅ McCabe Trucking Logistics: $1.53/mi median (13 вантажів, avg $1008)
+✅ SPI Logistics: $1.54/mi median (12 вантажів, avg $829)
+✅ Priority 1 Inc.: $1.50/mi median (12 вантажів, avg $969)
+
+### Брокери з низьким RPM:
+❌ HD SHIPPING SOLUTIONS LLC: $1.11/mi median (8 вантажів)
+❌ DESTINATION TRANSPORT: $1.06/mi median (5 вантажів)
+❌ SOMERSET LOGISTICS, LLC: $1.02/mi median (5 вантажів)
+❌ ST FREIGHT LLC: $1.12/mi median (5 вантажів)
+❌ RPM Freight Systems, LLC: $0.57/mi median (5 вантажів)
+❌ Becker Logistics: $1.10/mi median (4 вантажів)
+❌ UNIVERSAL FREIGHT SYSTEMS: $1.18/mi median (3 вантажів)
+❌ OPENROAD TRANSPORTATION: $1.18/mi median (3 вантажів)
+
+### Найкращі лейни (state → state, медіанний RPM):
+✅ IL → OH: $1.56/mi (22 вантажів)
+✅ OH → NC: $1.59/mi (21 вантажів)
+✅ OH → NY: $1.96/mi (18 вантажів)
+✅ OH → MI: $1.74/mi (17 вантажів)
+✅ OH → PA: $1.60/mi (15 вантажів)
+✅ CA → CA: $1.85/mi (14 вантажів)
+✅ MI → OH: $1.51/mi (13 вантажів)
+✅ OH → VA: $1.80/mi (12 вантажів)
+✅ OH → SC: $1.62/mi (12 вантажів)
+✅ IL → PA: $1.69/mi (11 вантажів)
+✅ IL → TN: $1.73/mi (10 вантажів)
+✅ OH → MO: $1.50/mi (10 вантажів)
+✅ NY → NY: $1.77/mi (10 вантажів)
+✅ NY → PA: $1.92/mi (10 вантажів)
+✅ PA → NY: $2.06/mi (10 вантажів)
+✅ IL → MI: $1.97/mi (10 вантажів)
+✅ OH → NJ: $1.87/mi (9 вантажів)
+✅ OH → FL: $1.56/mi (9 вантажів)
+✅ PA → VA: $1.93/mi (9 вантажів)
+✅ OH → KY: $1.92/mi (9 вантажів)
+
+### RPM по днях тижня (реальні дані):
+⚠️ Нд: $1.42/mi (432 вантажів)
+⚠️ Пн: $1.41/mi (489 вантажів)
+⚠️ Вт: $1.43/mi (514 вантажів)
+⚠️ Ср: $1.41/mi (369 вантажів)
+⚠️ Чт: $1.37/mi (390 вантажів)
+⚠️ Пт: $1.40/mi (49 вантажів)
+✅ Сб: $1.89/mi (11 вантажів)
+
+### Юніти по валовому доходу:
+🚛 113 Olexii Sokolov: $211,428 gross, $1.36/mi median (185 вантажів)
+🚛 140  Valerii Ovcharenko: $157,073 gross, $1.36/mi median (147 вантажів)
+🚛 130  Petro Mazepa: $148,192 gross, $1.32/mi median (122 вантажів)
+🚛 132 Harvey Short: $138,516 gross, $1.50/mi median (122 вантажів)
+🚛 112 Dmytro Honcharuk: $122,661 gross, $1.42/mi median (111 вантажів)
+🚛 114 Branden Omar: $106,495 gross, $1.47/mi median (79 вантажів)
+🚛 101 Richard Ross: $104,786 gross, $1.50/mi median (80 вантажів)
+🚛 116 Orey Richards: $83,252 gross, $1.39/mi median (70 вантажів)
+🚛 110 Chad A Wickert: $61,541 gross, $1.57/mi median (53 вантажів)
+🚛 109 Gleb Sharbovich: $59,168 gross, $1.25/mi median (57 вантажів)

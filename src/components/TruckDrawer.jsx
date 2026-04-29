@@ -1112,6 +1112,102 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
               </div>
 
               {/* Samsara — Fault Codes */}
+              {/* Fuel Consumption */}
+              {truck.samsaraId && (
+                <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase" }}>
+                      ⛽ Fuel Consumption
+                    </div>
+                  </div>
+
+                  {/* Tank capacity input */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                    <div>
+                      <FL t="Tank Capacity (gal)" />
+                      <input
+                        type="number"
+                        value={editData.tankCapacityGallons ?? truck.tankCapacityGallons ?? 25}
+                        onChange={(e) => setED("tankCapacityGallons", Number(e.target.value) || 25)}
+                        onBlur={(e) => {
+                          const val = Number(e.target.value) || 25;
+                          if (val !== truck.tankCapacityGallons) onUpd(truck.id, { tankCapacityGallons: val });
+                        }}
+                        style={inputStyle}
+                        min="1"
+                        placeholder="25"
+                      />
+                    </div>
+                    {truck.fuelPercent != null && (
+                      <div>
+                        <FL t="Current Fuel" />
+                        <div style={{ padding: "8px 10px", fontSize: 13, fontWeight: 700, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8 }}>
+                          {Math.round(truck.fuelPercent)}% &nbsp;·&nbsp; <span style={{ color: "var(--text-muted)", fontWeight: 500 }}>{Math.round((truck.fuelPercent / 100) * (truck.tankCapacityGallons || 25) * 10) / 10} gal</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Stats grid */}
+                  {truck.consumption && (truck.consumption.mpg7d != null || truck.consumption.mpg30d != null) ? (
+                    <>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 8 }}>
+                        {[
+                          { label: "Last 7 days",  mpg: truck.consumption.mpg7d,  miles: truck.consumption.miles7d,  gal: truck.consumption.gallons7d,  added: truck.consumption.added7d,  refuels: truck.consumption.refuels7d },
+                          { label: "Last 30 days", mpg: truck.consumption.mpg30d, miles: truck.consumption.miles30d, gal: truck.consumption.gallons30d, added: truck.consumption.added30d, refuels: truck.consumption.refuels30d },
+                        ].map((p) => {
+                          const color = p.mpg == null ? "var(--text-disabled)" : p.mpg >= 12 ? "#16a34a" : p.mpg >= 10 ? "#f59e0b" : "#dc2626";
+                          return (
+                            <div key={p.label} style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px" }}>
+                              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase" }}>{p.label}</div>
+                              <div style={{ fontSize: 22, fontWeight: 800, color, marginTop: 4 }}>
+                                {p.mpg != null ? `${p.mpg} mpg` : "—"}
+                              </div>
+                              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.5 }}>
+                                {p.miles?.toLocaleString() || 0} mi &nbsp;·&nbsp; {p.gal || 0} gal used
+                                <br />
+                                {p.refuels} refuel{p.refuels !== 1 ? "s" : ""} &nbsp;·&nbsp; {p.added} gal added
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Anomaly hint */}
+                      {(() => {
+                        const c = truck.consumption;
+                        const mpg = c.mpg7d ?? c.mpg30d;
+                        if (mpg != null && mpg < 10) {
+                          return (
+                            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#b91c1c", marginTop: 4 }}>
+                              ⚠ MPG below 10 — possible engine, brake, or driving-style issue. Investigate.
+                            </div>
+                          );
+                        }
+                        if (c.added7d > c.gallons7d * 1.3 && c.gallons7d > 5) {
+                          return (
+                            <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#92400e", marginTop: 4 }}>
+                              ⚠ Added much more fuel than consumed ({c.added7d} gal in / {c.gallons7d} gal out) — possible leak or theft.
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </>
+                  ) : (
+                    <div style={{ fontSize: 12, color: "var(--text-faint)", fontStyle: "italic", padding: "8px 0" }}>
+                      Collecting data… MPG will appear once enough fuel/odometer changes are recorded (typically within a day of driving).
+                    </div>
+                  )}
+
+                  {(truck.fuelHistory || []).length > 0 && (
+                    <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 8 }}>
+                      {truck.fuelHistory.length} snapshot{truck.fuelHistory.length !== 1 ? "s" : ""} tracked
+                    </div>
+                  )}
+                </div>
+              )}
+
               {(() => {
                 const faults = Array.isArray(truck.faultCodes) ? truck.faultCodes : [];
                 const syncedAt = truck.lastSamsaraSync;
