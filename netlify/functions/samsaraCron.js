@@ -58,13 +58,14 @@ export const handler = async () => {
 
   try {
     // ── Fetch all stats from Samsara in parallel ────────────────────────────
+    // Each fetch is independent — a failure in one won't break the others.
     const [odomRows, faultRows, fuelRows, gpsRows, engineRows, vehicleRows] = await Promise.all([
-      fetchAllStats("obdOdometerMeters", apiKey),
-      fetchAllStats("faultCodes",        apiKey),
-      fetchAllStats("fuelPercents",      apiKey),
-      fetchAllStats("gps",               apiKey),
-      fetchAllStats("engineStates",      apiKey),
-      samsaraGet("/fleet/vehicles?limit=512", apiKey).then((r) => r.data || []),
+      fetchAllStats("obdOdometerMeters", apiKey).catch((e) => { console.warn("[samsaraCron] obdOdometerMeters:", e.message); return []; }),
+      fetchAllStats("faultCodes",        apiKey).catch((e) => { console.warn("[samsaraCron] faultCodes:",        e.message); return []; }),
+      fetchAllStats("fuelPercents",      apiKey).catch((e) => { console.warn("[samsaraCron] fuelPercents:",      e.message); return []; }),
+      fetchAllStats("gps",               apiKey).catch((e) => { console.warn("[samsaraCron] gps:",               e.message); return []; }),
+      fetchAllStats("engineStates",      apiKey).catch((e) => { console.warn("[samsaraCron] engineStates:",      e.message); return []; }),
+      samsaraGet("/fleet/vehicles?limit=512", apiKey).then((r) => r.data || []).catch((e) => { console.warn("[samsaraCron] vehicles:", e.message); return []; }),
     ]);
 
     // Build lookup maps by samsaraId

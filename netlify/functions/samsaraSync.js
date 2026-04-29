@@ -64,13 +64,14 @@ export const handler = async (event) => {
   }
 
   // ── Fetch all stats from Samsara in parallel ──────────────────────────────
+  const safe = (p) => p.catch(() => []);
   const [odomRows, faultRows, fuelRows, gpsRows, engineRows, vehicleRows] = await Promise.all([
-    fetchAllStats("obdOdometerMeters", apiKey),
-    fetchAllStats("faultCodes",        apiKey),
-    fetchAllStats("fuelPercents",      apiKey),
-    fetchAllStats("gps",               apiKey),
-    fetchAllStats("engineStates",      apiKey),
-    samsaraGet("/fleet/vehicles?limit=512", apiKey).then((r) => r.data || []),
+    safe(fetchAllStats("obdOdometerMeters", apiKey)),
+    safe(fetchAllStats("faultCodes",        apiKey)),
+    safe(fetchAllStats("fuelPercents",      apiKey)),
+    safe(fetchAllStats("gps",               apiKey)),
+    safe(fetchAllStats("engineStates",      apiKey)),
+    safe(samsaraGet("/fleet/vehicles?limit=512", apiKey).then((r) => r.data || [])),
   ]);
 
   // Build lookup maps keyed by samsaraId
