@@ -1072,8 +1072,8 @@ export default function TrucksView({ onAddDriver }) {
                           <div>gps: {JSON.stringify(m.gps)}</div>
                           <div style={{ marginTop: 4, color: "#92400e" }}>_fuelRaw: {JSON.stringify(m._fuelRaw)}</div>
                           <div style={{ color: "#92400e" }}>_engRaw: {JSON.stringify(m._engRaw)}</div>
-                          <div style={{ color: "#1d4ed8" }}>fuelKeys: {JSON.stringify(m._fuelKeys)}</div>
-                          <div style={{ color: "#1d4ed8" }}>engKeys: {JSON.stringify(m._engKeys)}</div>
+                          <div style={{ color: "#1d4ed8", wordBreak: "break-all" }}>fuelRow: {m._fuelRowFull}</div>
+                          <div style={{ color: "#1d4ed8", wordBreak: "break-all" }}>engRow: {m._engRowFull}</div>
                         </div>
                       ))}
                     </>;

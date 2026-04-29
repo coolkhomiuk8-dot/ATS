@@ -156,10 +156,10 @@ export const handler = async (event) => {
       fuel:      rawFuel,
       engine:    rawEngine,
       gps:       rawGps,
-      _fuelRaw:  rawFuelRow   ? rawFuelRow.fuelPercents   : "NOT IN ROWS",
-      _engRaw:   rawEngineRow ? rawEngineRow.engineStates : "NOT IN ROWS",
-      _fuelKeys: rawFuelRow   ? Object.keys(rawFuelRow)   : [],
-      _engKeys:  rawEngineRow ? Object.keys(rawEngineRow) : [],
+      _fuelRaw:     rawFuelRow   ? rawFuelRow.fuelPercents   : "NOT IN ROWS",
+      _engRaw:      rawEngineRow ? rawEngineRow.engineStates : "NOT IN ROWS",
+      _fuelRowFull: JSON.stringify(rawFuelRow  || {}).slice(0, 300),
+      _engRowFull:  JSON.stringify(rawEngineRow|| {}).slice(0, 300),
     });
 
     try {
