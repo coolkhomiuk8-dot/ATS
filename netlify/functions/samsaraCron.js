@@ -124,20 +124,25 @@ export const handler = async () => {
 
       if (!samsaraId) { noMatch++; continue; }
 
-      // Cron only uses live stats — history fallback stays in manual sync
-      // to keep cron rate low (avoids tripping Samsara's security throttling).
+      // Cron uses live stats only (no history fallback to keep API rate low)
       const fuel   = fuelById[samsaraId]   ?? null;
       const engine = engineById[samsaraId] ?? null;
+
+      // Capture timestamps so UI can show how fresh each value is
+      const fuelRow = fuelRows.find((v) => String(v.id) === String(samsaraId));
+      const engRow  = engineRows.find((v) => String(v.id) === String(samsaraId));
+      const fuelTime   = fuelRow?.fuelPercents?.time   || null;
+      const engineTime = engRow?.engineStates?.time    || null;
 
       const rawGpsCron = gpsById[samsaraId] ?? null;
 
       const patch = { samsaraId, lastSamsaraSync: now };
       if (faultRows.length > 0)   patch.faultCodes     = faultById[samsaraId] || [];
-      if (fuel        != null)    patch.fuelPercent     = fuel;
-      if (engine      != null)    patch.engineState     = engine;
-      if (rawGpsCron  != null)    patch.gpsData         = rawGpsCron;
+      if (fuel       != null)   { patch.fuelPercent    = fuel;   patch.fuelPercentTime = fuelTime; }
+      if (engine     != null)   { patch.engineState    = engine; patch.engineStateTime = engineTime; }
+      if (rawGpsCron != null)    patch.gpsData         = rawGpsCron;
       const odomMeters = odomById[samsaraId];
-      if (odomMeters  != null)    patch.currentOdometer = Math.round(odomMeters * METERS_TO_MILES);
+      if (odomMeters != null)    patch.currentOdometer = Math.round(odomMeters * METERS_TO_MILES);
 
       await docSnap.ref.update(patch);
       synced++;

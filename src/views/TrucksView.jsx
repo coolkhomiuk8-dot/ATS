@@ -408,14 +408,20 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
         {truck.fuelPercent != null && (() => {
           const pct   = Math.round(truck.fuelPercent);
           const color = pct < 20 ? "#dc2626" : pct < 50 ? "#f59e0b" : "#16a34a";
+          // Age of the actual fuel reading (not sync time)
+          const ageMin = truck.fuelPercentTime
+            ? Math.round((Date.now() - new Date(truck.fuelPercentTime).getTime()) / 60000)
+            : null;
+          const ageLabel = ageMin == null ? "" : ageMin < 1 ? " · live" : ageMin < 60 ? ` · ${ageMin}m` : ` · ${Math.round(ageMin/60)}h`;
+          const isStale = ageMin != null && ageMin > 15;
           return (
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text-faint)", marginBottom: 2 }}>
-                <span>⛽ Fuel</span>
-                <span style={{ color, fontWeight: 700 }}>{pct}%</span>
+                <span>⛽ Fuel{ageLabel}</span>
+                <span style={{ color: isStale ? "var(--text-faint)" : color, fontWeight: 700, opacity: isStale ? 0.6 : 1 }}>{pct}%</span>
               </div>
               <div style={{ height: 4, borderRadius: 99, background: "var(--bg-hover)", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 99, transition: "width .3s" }} />
+                <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 99, transition: "width .3s", opacity: isStale ? 0.5 : 1 }} />
               </div>
             </div>
           );

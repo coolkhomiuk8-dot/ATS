@@ -136,15 +136,23 @@ export const handler = async (event) => {
 
     if (!samsaraId) { report.noMatch++; continue; }
 
-    let rawFuel   = fuelById[samsaraId]   ?? null;
-    let rawEngine = engineById[samsaraId] ?? null;
-    const rawGps  = gpsById[samsaraId]   ?? null;
-    const rawOdom = odomById[samsaraId];
+    let rawFuel       = fuelById[samsaraId]   ?? null;
+    let rawEngine     = engineById[samsaraId] ?? null;
+    const rawGps      = gpsById[samsaraId]    ?? null;
+    const rawOdom     = odomById[samsaraId];
+    let rawFuelTime   = null;
+    let rawEngineTime = null;
 
-    // ── History fallback: if live stats missing, use last known value (24 h) ─
+    // Capture timestamps for live values (so we know how fresh they are)
+    const liveFuelRow   = fuelRows.find((v) => String(v.id) === String(samsaraId));
+    const liveEngineRow = engineRows.find((v) => String(v.id) === String(samsaraId));
+    if (liveFuelRow?.fuelPercents?.time)     rawFuelTime   = liveFuelRow.fuelPercents.time;
+    if (liveEngineRow?.engineStates?.time)   rawEngineTime = liveEngineRow.engineStates.time;
+
+    // ── History fallback: only look back 1 hour to avoid stale data ─────────
     if (rawFuel == null || rawEngine == null) {
       const endTime   = new Date().toISOString();
-      const startTime = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+      const startTime = new Date(Date.now() - 1 * 3600 * 1000).toISOString();
       const hist = await samsaraGet(
         `/fleet/vehicles/stats/history?types=fuelPercents,engineStates&vehicleIds=${samsaraId}&startTime=${startTime}&endTime=${endTime}`,
         apiKey
@@ -155,22 +163,28 @@ export const handler = async (event) => {
       if (rawFuel == null) {
         const pts = hv.fuelPercents || [];
         const last = pts[pts.length - 1];
-        rawFuel = last?.value ?? null;
+        if (last?.value != null) {
+          rawFuel     = last.value;
+          rawFuelTime = last.time;
+        }
       }
       if (rawEngine == null) {
         const pts = hv.engineStates || [];
         const last = pts[pts.length - 1];
-        rawEngine = last?.value ?? null;
+        if (last?.value != null) {
+          rawEngine     = last.value;
+          rawEngineTime = last.time;
+        }
       }
     }
 
     const patch = { samsaraId, lastSamsaraSync: now };
     // Only overwrite fields when we actually have fresh data
-    if (faultRows.length > 0)        patch.faultCodes        = faultById[samsaraId] || [];
-    if (rawFuel   != null)           patch.fuelPercent        = rawFuel;
-    if (rawEngine != null)           patch.engineState        = rawEngine;
-    if (rawGps    != null)           patch.gpsData            = rawGps;
-    if (rawOdom   != null)           patch.currentOdometer    = Math.round(rawOdom * METERS_TO_MILES);
+    if (faultRows.length > 0)  patch.faultCodes      = faultById[samsaraId] || [];
+    if (rawFuel   != null)    { patch.fuelPercent    = rawFuel;   patch.fuelPercentTime = rawFuelTime; }
+    if (rawEngine != null)    { patch.engineState    = rawEngine; patch.engineStateTime = rawEngineTime; }
+    if (rawGps    != null)     patch.gpsData         = rawGps;
+    if (rawOdom   != null)     patch.currentOdometer = Math.round(rawOdom * METERS_TO_MILES);
 
     report.matched = report.matched || [];
     report.matched.push({
