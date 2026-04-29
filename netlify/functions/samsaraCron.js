@@ -140,19 +140,15 @@ export const handler = async () => {
         }
       }
 
-      const patch = {
-        samsaraId,
-        lastSamsaraSync: now,
-        faultCodes:  faultById[samsaraId] || [],
-        fuelPercent: fuel,
-        engineState: engine,
-        gpsData:     gpsById[samsaraId]   ?? null,
-      };
+      const rawGpsCron = gpsById[samsaraId] ?? null;
 
+      const patch = { samsaraId, lastSamsaraSync: now };
+      if (faultRows.length > 0)   patch.faultCodes     = faultById[samsaraId] || [];
+      if (fuel        != null)    patch.fuelPercent     = fuel;
+      if (engine      != null)    patch.engineState     = engine;
+      if (rawGpsCron  != null)    patch.gpsData         = rawGpsCron;
       const odomMeters = odomById[samsaraId];
-      if (odomMeters != null) {
-        patch.currentOdometer = Math.round(odomMeters * METERS_TO_MILES);
-      }
+      if (odomMeters  != null)    patch.currentOdometer = Math.round(odomMeters * METERS_TO_MILES);
 
       await docSnap.ref.update(patch);
       synced++;

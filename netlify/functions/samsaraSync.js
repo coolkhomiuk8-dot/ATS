@@ -155,18 +155,13 @@ export const handler = async (event) => {
       }
     }
 
-    const patch = {
-      samsaraId,
-      lastSamsaraSync: now,
-      faultCodes:  faultById[samsaraId]  || [],
-      fuelPercent: rawFuel,
-      engineState: rawEngine,
-      gpsData:     rawGps,
-    };
-
-    if (rawOdom != null) {
-      patch.currentOdometer = Math.round(rawOdom * METERS_TO_MILES);
-    }
+    const patch = { samsaraId, lastSamsaraSync: now };
+    // Only overwrite fields when we actually have fresh data
+    if (faultRows.length > 0)        patch.faultCodes        = faultById[samsaraId] || [];
+    if (rawFuel   != null)           patch.fuelPercent        = rawFuel;
+    if (rawEngine != null)           patch.engineState        = rawEngine;
+    if (rawGps    != null)           patch.gpsData            = rawGps;
+    if (rawOdom   != null)           patch.currentOdometer    = Math.round(rawOdom * METERS_TO_MILES);
 
     report.matched = report.matched || [];
     report.matched.push({
