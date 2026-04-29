@@ -385,17 +385,23 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
           const state = truck.engineState;
           const speed = truck.gpsData?.speed ?? 0;
           if (!hasSynced) return <span style={{ fontSize: 10, color: "var(--text-disabled)" }}>No sync yet</span>;
-          if (!state) return <span style={{ fontSize: 10, color: "var(--text-disabled)" }}>⭕ Off / no data</span>;
-          const isOff  = state === "Off";
-          const isIdle = state === "Idle";
-          const icon   = isOff ? "⭕" : isIdle ? "🟡" : "🟢";
-          const label  = isOff ? "Off" : isIdle ? "Idle" : speed > 0 ? `${speed} mph` : "On";
-          const color  = isOff ? "var(--text-disabled)" : isIdle ? "#d97706" : "#16a34a";
-          return (
-            <div style={{ fontSize: 11, fontWeight: 700, color }}>
-              {icon} {label}
-            </div>
-          );
+
+          // If we have explicit engine state — use it
+          if (state) {
+            const isOff  = state === "Off";
+            const isIdle = state === "Idle";
+            const icon   = isOff ? "⭕" : isIdle ? "🟡" : "🟢";
+            const label  = isOff ? "Off" : isIdle ? "Idle" : speed > 0 ? `${speed} mph` : "On";
+            const color  = isOff ? "var(--text-disabled)" : isIdle ? "#d97706" : "#16a34a";
+            return <div style={{ fontSize: 11, fontWeight: 700, color }}>{icon} {label}</div>;
+          }
+
+          // Fallback: infer from GPS speed
+          if (speed > 0) {
+            return <div style={{ fontSize: 11, fontWeight: 700, color: "#16a34a" }}>🟢 {speed} mph</div>;
+          }
+
+          return <span style={{ fontSize: 10, color: "var(--text-disabled)" }}>⭕ Stopped</span>;
         })()}
 
         {/* Fuel bar */}
