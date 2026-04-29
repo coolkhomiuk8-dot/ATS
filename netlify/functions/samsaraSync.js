@@ -64,23 +64,26 @@ export const handler = async (event) => {
   }
 
   // ── Fetch all stats from Samsara in parallel ──────────────────────────────
-  const safe = (p) => p.catch(() => []);
+  const apiErrors = [];
+  const safe = (label, p) => p.catch((e) => {
+    apiErrors.push(`${label}: ${e.message || e}`);
+    return [];
+  });
 
   async function fetchLocations() {
-    // Dedicated locations endpoint — more reliable than gps stat type
     const r = await samsaraGet("/fleet/vehicles/locations?limit=512", apiKey);
     return r.data || [];
   }
 
   const [odomRows, gpsOdomRows, faultRows, fuelRows, gpsRows, engineRows, vehicleRows, locationRows] = await Promise.all([
-    safe(fetchAllStats("obdOdometerMeters", apiKey)),
-    safe(fetchAllStats("gpsOdometerMeters", apiKey)),
-    safe(fetchAllStats("faultCodes",        apiKey)),
-    safe(fetchAllStats("fuelPercents",      apiKey)),
-    safe(fetchAllStats("gps",               apiKey)),
-    safe(fetchAllStats("engineStates",      apiKey)),
-    safe(samsaraGet("/fleet/vehicles?limit=512", apiKey).then((r) => r.data || [])),
-    safe(fetchLocations()),
+    safe("obdOdometerMeters", fetchAllStats("obdOdometerMeters", apiKey)),
+    safe("gpsOdometerMeters", fetchAllStats("gpsOdometerMeters", apiKey)),
+    safe("faultCodes",        fetchAllStats("faultCodes",        apiKey)),
+    safe("fuelPercents",      fetchAllStats("fuelPercents",      apiKey)),
+    safe("gps",               fetchAllStats("gps",               apiKey)),
+    safe("engineStates",      fetchAllStats("engineStates",      apiKey)),
+    safe("vehicles",          samsaraGet("/fleet/vehicles?limit=512", apiKey).then((r) => r.data || [])),
+    safe("locations",         fetchLocations()),
   ]);
 
   // Build lookup maps keyed by samsaraId
@@ -199,6 +202,7 @@ export const handler = async (event) => {
       engineRows:   engineRows.length,
       vehicleRows:  vehicleRows.length,
       locationRows: locationRows.length,
+      apiErrors,
     },
   });
 };

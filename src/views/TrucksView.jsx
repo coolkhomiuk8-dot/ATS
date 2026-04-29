@@ -1061,6 +1061,14 @@ export default function TrucksView({ onAddDriver }) {
                           <div>obdOdom: {d.odomRows} &nbsp; gpsOdom: {d.gpsOdomRows} &nbsp; faults: {d.faultRows}</div>
                           <div>fuel: {d.fuelRows} &nbsp; gps: {d.gpsRows} &nbsp; engine: {d.engineRows}</div>
                           <div>locations: {d.locationRows}</div>
+                          {(d.apiErrors || []).length > 0 && (
+                            <div style={{ marginTop: 6, color: "#dc2626" }}>
+                              <div style={{ fontWeight: 700, fontFamily: "sans-serif" }}>API errors:</div>
+                              {(d.apiErrors || []).map((err, i) => (
+                                <div key={i} style={{ wordBreak: "break-all" }}>• {err}</div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                       {(r.matched || []).map((m) => (
