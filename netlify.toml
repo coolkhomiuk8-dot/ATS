@@ -6,7 +6,7 @@
   directory = "netlify/functions"
 
 [functions."samsaraCron"]
-  schedule = "*/2 * * * *"
+  schedule = "*/5 * * * *"
 
 [functions."dispatcher-reminders"]
   schedule = "*/30 * * * *"
