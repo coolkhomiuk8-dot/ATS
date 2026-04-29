@@ -381,9 +381,11 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
 
         {/* Engine state + speed */}
         {(() => {
+          const hasSynced = !!truck.lastSamsaraSync;
           const state = truck.engineState;
           const speed = truck.gpsData?.speed ?? 0;
-          if (!state) return <span style={{ fontSize: 10, color: "var(--text-disabled)" }}>No sync yet</span>;
+          if (!hasSynced) return <span style={{ fontSize: 10, color: "var(--text-disabled)" }}>No sync yet</span>;
+          if (!state) return <span style={{ fontSize: 10, color: "var(--text-disabled)" }}>⭕ Off / no data</span>;
           const isOff  = state === "Off";
           const isIdle = state === "Idle";
           const icon   = isOff ? "⭕" : isIdle ? "🟡" : "🟢";
@@ -437,6 +439,16 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
             </div>
           );
         })()}
+
+        {/* Last sync time */}
+        {truck.lastSamsaraSync && (
+          <div style={{ fontSize: 9, color: "var(--text-disabled)", marginTop: "auto" }}>
+            {(() => {
+              const diff = Math.round((Date.now() - new Date(truck.lastSamsaraSync).getTime()) / 60000);
+              return diff < 1 ? "synced just now" : diff < 60 ? `synced ${diff}m ago` : `synced ${Math.round(diff/60)}h ago`;
+            })()}
+          </div>
+        )}
       </div>
 
       {/* Col 5 — Docs */}
