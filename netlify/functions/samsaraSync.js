@@ -67,7 +67,7 @@ export const handler = async (event) => {
     odomRows.map((v) => [v.id, v.obdOdometerMeters?.value ?? null])
   );
   const faultById = Object.fromEntries(
-    faultRows.map((v) => [v.id, v.faultCodes || []])
+    faultRows.map((v) => [v.id, v.faultCodes?.value || []])
   );
   // VIN → samsaraId (for auto-linking)
   const idByVin   = Object.fromEntries(

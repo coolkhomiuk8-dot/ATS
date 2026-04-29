@@ -376,7 +376,7 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
 
         {/* Fault codes from Samsara */}
         {(() => {
-          const faults = truck.faultCodes || [];
+          const faults = Array.isArray(truck.faultCodes) ? truck.faultCodes : [];
           if (faults.length === 0) return null;
           const hasRed = faults.some((f) => f.lamp === "red");
           const color  = hasRed ? "#dc2626" : "#f97316";

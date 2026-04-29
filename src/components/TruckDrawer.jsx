@@ -1113,7 +1113,7 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
 
               {/* Samsara — Fault Codes */}
               {(() => {
-                const faults = truck.faultCodes || [];
+                const faults = Array.isArray(truck.faultCodes) ? truck.faultCodes : [];
                 const syncedAt = truck.lastSamsaraSync;
                 if (!truck.samsaraId && faults.length === 0) return null;
                 function fmtSync(iso) {
