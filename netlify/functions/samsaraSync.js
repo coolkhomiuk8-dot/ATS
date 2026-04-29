@@ -184,8 +184,17 @@ export const handler = async (event) => {
     const patch = { samsaraId, lastSamsaraSync: now };
     // Only overwrite fields when we actually have fresh data
     if (faultRows.length > 0)  patch.faultCodes      = faultById[samsaraId] || [];
-    if (rawFuel   != null)    { patch.fuelPercent    = rawFuel;   patch.fuelPercentTime = rawFuelTime; }
-    if (rawEngine != null)    { patch.engineState    = rawEngine; patch.engineStateTime = rawEngineTime; }
+    if (rawFuel != null) {
+      patch.fuelPercent = rawFuel;
+      // Prefer Samsara's timestamp; if missing, only stamp when value actually changed
+      if (rawFuelTime) patch.fuelPercentTime = rawFuelTime;
+      else if (truck.fuelPercent !== rawFuel) patch.fuelPercentTime = now;
+    }
+    if (rawEngine != null) {
+      patch.engineState = rawEngine;
+      if (rawEngineTime) patch.engineStateTime = rawEngineTime;
+      else if (truck.engineState !== rawEngine) patch.engineStateTime = now;
+    }
     if (rawGps    != null)     patch.gpsData         = rawGps;
     if (odomMiles != null)     patch.currentOdometer = odomMiles;
 

@@ -441,8 +441,13 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
           const ageMin = truck.fuelPercentTime
             ? Math.round((Date.now() - new Date(truck.fuelPercentTime).getTime()) / 60000)
             : null;
-          const ageLabel = ageMin == null ? "" : ageMin < 1 ? " · live" : ageMin < 60 ? ` · ${ageMin}m` : ` · ${Math.round(ageMin/60)}h`;
-          const isStale = ageMin != null && ageMin > 15;
+          const ageLabel =
+            ageMin == null    ? " · ?" :
+            ageMin < 1        ? " · live" :
+            ageMin < 60       ? ` · ${ageMin}m` :
+            ageMin < 1440     ? ` · ${Math.round(ageMin/60)}h` :
+            ` · ${Math.round(ageMin/1440)}d`;
+          const isStale = ageMin == null || ageMin > 15;
           return (
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text-faint)", marginBottom: 2 }}>
