@@ -1043,11 +1043,20 @@ export default function TrucksView({ onAddDriver }) {
                 <div style={{ fontSize: 12, color: "#166534", lineHeight: 1.8 }}>
                   {(() => {
                     const r = samsaraResult.report || {};
+                    const d = samsaraResult.debug || {};
                     return <>
                       <div>✓ {r.synced} truck{r.synced !== 1 ? "s" : ""} updated</div>
                       {r.autoLinked > 0 && <div>🔗 {r.autoLinked} auto-linked by VIN</div>}
-                      {r.noMatch > 0  && <div style={{ color: "#92400e" }}>⚠ {r.noMatch} truck{r.noMatch !== 1 ? "s" : ""} not matched (no Samsara ID or VIN)</div>}
+                      {r.noMatch > 0  && <div style={{ color: "#92400e" }}>⚠ {r.noMatch} not matched</div>}
                       {(r.errors || []).map((e, i) => <div key={i} style={{ color: "#dc2626" }}>✗ {e}</div>)}
+                      {Object.keys(d).length > 0 && (
+                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #86efac", color: "#166534", fontFamily: "monospace" }}>
+                          <div style={{ fontWeight: 700, marginBottom: 4, fontFamily: "sans-serif" }}>API rows returned:</div>
+                          <div>odometer: {d.odomRows} &nbsp; faults: {d.faultRows}</div>
+                          <div>fuel: {d.fuelRows} &nbsp; gps: {d.gpsRows} &nbsp; engine: {d.engineRows}</div>
+                          <div>vehicles: {d.vehicleRows}</div>
+                        </div>
+                      )}
                     </>;
                   })()}
                 </div>

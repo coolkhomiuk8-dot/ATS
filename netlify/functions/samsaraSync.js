@@ -129,5 +129,16 @@ export const handler = async (event) => {
     }
   }
 
-  return json(200, { success: true, report });
+  return json(200, {
+    success: true,
+    report,
+    debug: {
+      odomRows:   odomRows.length,
+      faultRows:  faultRows.length,
+      fuelRows:   fuelRows.length,
+      gpsRows:    gpsRows.length,
+      engineRows: engineRows.length,
+      vehicleRows: vehicleRows.length,
+    },
+  });
 };
