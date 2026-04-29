@@ -127,39 +127,55 @@ export const handler = async (event) => {
 
     if (!samsaraId) { report.noMatch++; continue; }
 
-    const rawFuel   = fuelById[samsaraId];
-    const rawEngine = engineById[samsaraId];
-    const rawGps    = gpsById[samsaraId];
-    const rawOdom   = odomById[samsaraId];
+    let rawFuel   = fuelById[samsaraId]   ?? null;
+    let rawEngine = engineById[samsaraId] ?? null;
+    const rawGps  = gpsById[samsaraId]   ?? null;
+    const rawOdom = odomById[samsaraId];
+
+    // ── History fallback: if live stats missing, use last known value (24 h) ─
+    if (rawFuel == null || rawEngine == null) {
+      const endTime   = new Date().toISOString();
+      const startTime = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+      const hist = await samsaraGet(
+        `/fleet/vehicles/stats/history?types=fuelPercents,engineStates&vehicleIds=${samsaraId}&startTime=${startTime}&endTime=${endTime}`,
+        apiKey
+      ).catch(() => ({ data: [] }));
+
+      const hv = (hist.data || [])[0] || {};
+
+      if (rawFuel == null) {
+        const pts = hv.fuelPercents || [];
+        const last = pts[pts.length - 1];
+        rawFuel = last?.value ?? null;
+      }
+      if (rawEngine == null) {
+        const pts = hv.engineStates || [];
+        const last = pts[pts.length - 1];
+        rawEngine = last?.value ?? null;
+      }
+    }
 
     const patch = {
       samsaraId,
       lastSamsaraSync: now,
       faultCodes:  faultById[samsaraId]  || [],
-      fuelPercent: rawFuel   ?? null,
-      engineState: rawEngine ?? null,
-      gpsData:     rawGps    ?? null,
+      fuelPercent: rawFuel,
+      engineState: rawEngine,
+      gpsData:     rawGps,
     };
 
     if (rawOdom != null) {
       patch.currentOdometer = Math.round(rawOdom * METERS_TO_MILES);
     }
 
-    // Debug: capture raw values + raw API objects for matched trucks
-    const rawFuelRow   = fuelRows.find((v) => String(v.id) === String(samsaraId));
-    const rawEngineRow = engineRows.find((v) => String(v.id) === String(samsaraId));
     report.matched = report.matched || [];
     report.matched.push({
-      unit:      truck.unitNumber,
+      unit:   truck.unitNumber,
       samsaraId,
-      odom:      rawOdom,
-      fuel:      rawFuel,
-      engine:    rawEngine,
-      gps:       rawGps,
-      _fuelRaw:     rawFuelRow   ? rawFuelRow.fuelPercents   : "NOT IN ROWS",
-      _engRaw:      rawEngineRow ? rawEngineRow.engineStates : "NOT IN ROWS",
-      _fuelRowFull: JSON.stringify(rawFuelRow  || {}).slice(0, 300),
-      _engRowFull:  JSON.stringify(rawEngineRow|| {}).slice(0, 300),
+      odom:   rawOdom,
+      fuel:   rawFuel,
+      engine: rawEngine,
+      gps:    rawGps,
     });
 
     try {

@@ -1065,15 +1065,11 @@ export default function TrucksView({ onAddDriver }) {
                       )}
                       {(r.matched || []).map((m) => (
                         <div key={m.unit} style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #86efac", fontFamily: "monospace", fontSize: 11 }}>
-                          <div style={{ fontWeight: 700, fontFamily: "sans-serif", marginBottom: 3 }}>Unit {m.unit} raw values:</div>
-                          <div>odom: {m.odom ?? "null"}</div>
-                          <div>fuel: {JSON.stringify(m.fuel)}</div>
-                          <div>engine: {JSON.stringify(m.engine)}</div>
-                          <div>gps: {JSON.stringify(m.gps)}</div>
-                          <div style={{ marginTop: 4, color: "#92400e" }}>_fuelRaw: {JSON.stringify(m._fuelRaw)}</div>
-                          <div style={{ color: "#92400e" }}>_engRaw: {JSON.stringify(m._engRaw)}</div>
-                          <div style={{ color: "#1d4ed8", wordBreak: "break-all" }}>fuelRow: {m._fuelRowFull}</div>
-                          <div style={{ color: "#1d4ed8", wordBreak: "break-all" }}>engRow: {m._engRowFull}</div>
+                          <div style={{ fontWeight: 700, fontFamily: "sans-serif", marginBottom: 3 }}>Unit {m.unit}:</div>
+                          <div>odom: {m.odom != null ? Math.round(m.odom * 0.000621371).toLocaleString() + " mi" : "—"}</div>
+                          <div>fuel: {m.fuel != null ? `${Math.round(m.fuel)}%` : "—"}</div>
+                          <div>engine: {m.engine ?? "—"}</div>
+                          <div>gps: {m.gps ? `${m.gps.speed} mph · ${m.gps.location}` : "—"}</div>
                         </div>
                       ))}
                     </>;

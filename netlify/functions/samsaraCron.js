@@ -118,13 +118,35 @@ export const handler = async () => {
 
       if (!samsaraId) { noMatch++; continue; }
 
+      let fuel   = fuelById[samsaraId]   ?? null;
+      let engine = engineById[samsaraId] ?? null;
+
+      // History fallback: if live stats missing, use last known value (24 h)
+      if (fuel == null || engine == null) {
+        const endTime   = new Date().toISOString();
+        const startTime = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+        const hist = await samsaraGet(
+          `/fleet/vehicles/stats/history?types=fuelPercents,engineStates&vehicleIds=${samsaraId}&startTime=${startTime}&endTime=${endTime}`,
+          apiKey
+        ).catch(() => ({ data: [] }));
+        const hv = (hist.data || [])[0] || {};
+        if (fuel == null) {
+          const pts = hv.fuelPercents || [];
+          fuel = pts[pts.length - 1]?.value ?? null;
+        }
+        if (engine == null) {
+          const pts = hv.engineStates || [];
+          engine = pts[pts.length - 1]?.value ?? null;
+        }
+      }
+
       const patch = {
         samsaraId,
         lastSamsaraSync: now,
-        faultCodes:  faultById[samsaraId]  || [],
-        fuelPercent: fuelById[samsaraId]   ?? null,
-        engineState: engineById[samsaraId] ?? null,
-        gpsData:     gpsById[samsaraId]    ?? null,
+        faultCodes:  faultById[samsaraId] || [],
+        fuelPercent: fuel,
+        engineState: engine,
+        gpsData:     gpsById[samsaraId]   ?? null,
       };
 
       const odomMeters = odomById[samsaraId];
