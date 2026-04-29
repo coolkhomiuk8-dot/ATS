@@ -65,13 +65,21 @@ export const handler = async (event) => {
 
   // ── Fetch all stats from Samsara in parallel ──────────────────────────────
   const safe = (p) => p.catch(() => []);
-  const [odomRows, faultRows, fuelRows, gpsRows, engineRows, vehicleRows] = await Promise.all([
+
+  async function fetchLocations() {
+    // Dedicated locations endpoint — more reliable than gps stat type
+    const r = await samsaraGet("/fleet/vehicles/locations?limit=512", apiKey);
+    return r.data || [];
+  }
+
+  const [odomRows, faultRows, fuelRows, gpsRows, engineRows, vehicleRows, locationRows] = await Promise.all([
     safe(fetchAllStats("obdOdometerMeters", apiKey)),
     safe(fetchAllStats("faultCodes",        apiKey)),
     safe(fetchAllStats("fuelPercents",      apiKey)),
     safe(fetchAllStats("gps",               apiKey)),
     safe(fetchAllStats("engineStates",      apiKey)),
     safe(samsaraGet("/fleet/vehicles?limit=512", apiKey).then((r) => r.data || [])),
+    safe(fetchLocations()),
   ]);
 
   // Build lookup maps keyed by samsaraId
@@ -79,10 +87,22 @@ export const handler = async (event) => {
   const faultById  = Object.fromEntries(faultRows.map((v) => [v.id, v.faultCodes?.value || []]));
   const fuelById   = Object.fromEntries(fuelRows.map((v) => [v.id, v.fuelPercents?.value ?? null]));
   const engineById = Object.fromEntries(engineRows.map((v) => [v.id, v.engineStates?.value ?? null]));
-  const gpsById    = Object.fromEntries(gpsRows.map((v) => {
+
+  // GPS: prefer dedicated locations endpoint, fall back to gps stat
+  const locById = Object.fromEntries(locationRows.map((v) => {
+    const loc = v.location;
+    return [v.id, loc ? {
+      speed:    Math.round(loc.speed ?? loc.speedMilesPerHour ?? 0),
+      location: parseCityState(loc.reverseGeo?.formattedLocation),
+    } : null];
+  }));
+  const gpsStatById = Object.fromEntries(gpsRows.map((v) => {
     const g = v.gps?.value;
     return [v.id, g ? { speed: Math.round(g.speedMilesPerHour ?? 0), location: parseCityState(g.reverseGeo?.formattedLocation) } : null];
   }));
+  const gpsById = new Proxy({}, {
+    get: (_, id) => locById[id] ?? gpsStatById[id] ?? undefined,
+  });
   // VIN → samsaraId (for auto-linking)
   const idByVin = Object.fromEntries(
     vehicleRows
@@ -148,12 +168,13 @@ export const handler = async (event) => {
     success: true,
     report,
     debug: {
-      odomRows:   odomRows.length,
-      faultRows:  faultRows.length,
-      fuelRows:   fuelRows.length,
-      gpsRows:    gpsRows.length,
-      engineRows: engineRows.length,
-      vehicleRows: vehicleRows.length,
+      odomRows:     odomRows.length,
+      faultRows:    faultRows.length,
+      fuelRows:     fuelRows.length,
+      gpsRows:      gpsRows.length,
+      engineRows:   engineRows.length,
+      vehicleRows:  vehicleRows.length,
+      locationRows: locationRows.length,
     },
   });
 };

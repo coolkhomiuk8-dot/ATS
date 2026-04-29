@@ -58,14 +58,16 @@ export const handler = async () => {
 
   try {
     // ── Fetch all stats from Samsara in parallel ────────────────────────────
-    // Each fetch is independent — a failure in one won't break the others.
-    const [odomRows, faultRows, fuelRows, gpsRows, engineRows, vehicleRows] = await Promise.all([
-      fetchAllStats("obdOdometerMeters", apiKey).catch((e) => { console.warn("[samsaraCron] obdOdometerMeters:", e.message); return []; }),
-      fetchAllStats("faultCodes",        apiKey).catch((e) => { console.warn("[samsaraCron] faultCodes:",        e.message); return []; }),
-      fetchAllStats("fuelPercents",      apiKey).catch((e) => { console.warn("[samsaraCron] fuelPercents:",      e.message); return []; }),
-      fetchAllStats("gps",               apiKey).catch((e) => { console.warn("[samsaraCron] gps:",               e.message); return []; }),
-      fetchAllStats("engineStates",      apiKey).catch((e) => { console.warn("[samsaraCron] engineStates:",      e.message); return []; }),
-      samsaraGet("/fleet/vehicles?limit=512", apiKey).then((r) => r.data || []).catch((e) => { console.warn("[samsaraCron] vehicles:", e.message); return []; }),
+    const w = (label, p) => p.catch((e) => { console.warn(`[samsaraCron] ${label}:`, e.message); return []; });
+
+    const [odomRows, faultRows, fuelRows, gpsRows, engineRows, vehicleRows, locationRows] = await Promise.all([
+      w("obdOdometerMeters", fetchAllStats("obdOdometerMeters", apiKey)),
+      w("faultCodes",        fetchAllStats("faultCodes",        apiKey)),
+      w("fuelPercents",      fetchAllStats("fuelPercents",      apiKey)),
+      w("gps",               fetchAllStats("gps",               apiKey)),
+      w("engineStates",      fetchAllStats("engineStates",      apiKey)),
+      w("vehicles",          samsaraGet("/fleet/vehicles?limit=512", apiKey).then((r) => r.data || [])),
+      w("locations",         samsaraGet("/fleet/vehicles/locations?limit=512", apiKey).then((r) => r.data || [])),
     ]);
 
     // Build lookup maps by samsaraId
@@ -74,13 +76,24 @@ export const handler = async () => {
     const fuelById   = Object.fromEntries(fuelRows.map((v) => [v.id, v.fuelPercents?.value ?? null]));
     const engineById = Object.fromEntries(engineRows.map((v) => [v.id, v.engineStates?.value ?? null]));
 
-    const gpsById = Object.fromEntries(gpsRows.map((v) => {
+    // GPS: prefer dedicated locations endpoint, fall back to gps stat
+    const locById = Object.fromEntries(locationRows.map((v) => {
+      const loc = v.location;
+      return [v.id, loc ? {
+        speed:    Math.round(loc.speed ?? loc.speedMilesPerHour ?? 0),
+        location: parseCityState(loc.reverseGeo?.formattedLocation),
+      } : null];
+    }));
+    const gpsStatById = Object.fromEntries(gpsRows.map((v) => {
       const g = v.gps?.value;
       return [v.id, g ? {
         speed:    Math.round(g.speedMilesPerHour ?? 0),
         location: parseCityState(g.reverseGeo?.formattedLocation),
       } : null];
     }));
+    const gpsById = new Proxy({}, {
+      get: (_, id) => locById[id] ?? gpsStatById[id] ?? undefined,
+    });
 
     // VIN → samsaraId for auto-linking
     const idByVin = Object.fromEntries(
