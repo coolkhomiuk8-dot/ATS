@@ -5,7 +5,7 @@
 //   SAMSARA_API_KEY — Samsara API token (Settings → Developer → API Tokens)
 
 import { getDb } from "./_auth.js";
-import { appendSnapshot, buildConsumption } from "./_fuelTracking.js";
+import { appendSnapshot, buildConsumption, buildMileage } from "./_fuelTracking.js";
 
 const SAMSARA_BASE    = "https://api.samsara.com";
 const METERS_TO_MILES = 0.000621371;
@@ -155,13 +155,18 @@ export const handler = async () => {
       if (rawGpsCron != null)    patch.gpsData         = rawGpsCron;
       if (odomMiles  != null)    patch.currentOdometer = odomMiles;
 
-      // ── Fuel consumption tracking — only append if fuel% or odom moved ──
-      if (fuel != null && odomMiles != null) {
-        const snapshot = { fuel: Math.round(fuel * 10) / 10, odom: odomMiles, time: fuelTime || now };
+      // ── Snapshot tracking (fuel + odom). Allow odom-only ──
+      if (odomMiles != null) {
+        const snapshot = {
+          fuel: fuel != null ? Math.round(fuel * 10) / 10 : null,
+          odom: odomMiles,
+          time: fuelTime || now,
+        };
         const newHistory = appendSnapshot(truck.fuelHistory, snapshot);
         if (newHistory) {
           patch.fuelHistory = newHistory;
           patch.consumption = buildConsumption(newHistory, truck.tankCapacityGallons || 25);
+          patch.mileage     = buildMileage(newHistory);
         }
       }
 

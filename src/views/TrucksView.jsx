@@ -374,6 +374,25 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
         }
         {truck.fuelCard && <div style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "monospace", marginTop: 5 }}>💳 {truck.fuelCard}</div>}
 
+        {/* Mileage stats — today / this week / this month (EST) */}
+        {truck.mileage && (truck.mileage.today > 0 || truck.mileage.thisMonth > 0) && (
+          <div title={`Day: midnight EST today\nWeek: since Monday\nMonth: since 1st`}
+            style={{ marginTop: 6, fontSize: 10, color: "var(--text-muted)", lineHeight: 1.5, fontFamily: "monospace" }}
+          >
+            <span style={{ color: "var(--text-secondary)", fontWeight: 700 }}>
+              {(truck.mileage.today || 0).toLocaleString()}
+            </span> mi today
+            <span style={{ marginLeft: 8 }}>·</span>
+            <span style={{ marginLeft: 8, fontWeight: 600 }}>
+              {(truck.mileage.thisWeek || 0).toLocaleString()}
+            </span> wk
+            <span style={{ marginLeft: 8 }}>·</span>
+            <span style={{ marginLeft: 8, fontWeight: 600 }}>
+              {(truck.mileage.thisMonth || 0).toLocaleString()}
+            </span> mo
+          </div>
+        )}
+
         {/* MPG indicator — only shows for Samsara-linked trucks */}
         {truck.samsaraId && (() => {
           const c = truck.consumption;

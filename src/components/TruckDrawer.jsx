@@ -1112,6 +1112,30 @@ export default function TruckDrawer({ truck, onClose, onUpd, onDelete, onAssignD
               </div>
 
               {/* Samsara — Fault Codes */}
+              {/* Mileage by period (EST) */}
+              {truck.samsaraId && truck.mileage && (
+                <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 10 }}>
+                    📅 Mileage <span style={{ fontSize: 10, fontWeight: 500, color: "var(--text-faint)", textTransform: "none", letterSpacing: 0 }}>· EST</span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+                    {[
+                      { label: "Today",      value: truck.mileage.today,     hint: "since 00:00 EST" },
+                      { label: "This week",  value: truck.mileage.thisWeek,  hint: "since Monday 00:00 EST" },
+                      { label: "This month", value: truck.mileage.thisMonth, hint: "since 1st 00:00 EST" },
+                    ].map((p) => (
+                      <div key={p.label} title={p.hint} style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px" }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase" }}>{p.label}</div>
+                        <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", marginTop: 4 }}>
+                          {(p.value || 0).toLocaleString()}
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", marginLeft: 4 }}>mi</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Fuel Consumption */}
               {truck.samsaraId && (
                 <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>

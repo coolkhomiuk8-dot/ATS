@@ -1,5 +1,5 @@
 import { requireAdminOrRoot, getDb } from "./_auth.js";
-import { appendSnapshot, buildConsumption } from "./_fuelTracking.js";
+import { appendSnapshot, buildConsumption, buildMileage } from "./_fuelTracking.js";
 
 const SAMSARA_BASE = "https://api.samsara.com";
 const METERS_TO_MILES = 0.000621371;
@@ -198,13 +198,18 @@ export const handler = async (event) => {
     if (rawGps    != null)     patch.gpsData         = rawGps;
     if (odomMiles != null)     patch.currentOdometer = odomMiles;
 
-    // ── Fuel consumption tracking — append snapshot if fuel% or odom moved ──
-    if (rawFuel != null && odomMiles != null) {
-      const snapshot = { fuel: Math.round(rawFuel * 10) / 10, odom: odomMiles, time: rawFuelTime || now };
+    // ── Snapshot tracking (fuel + odom). Allow odom-only when fuel sensor is absent ──
+    if (odomMiles != null) {
+      const snapshot = {
+        fuel: rawFuel != null ? Math.round(rawFuel * 10) / 10 : null,
+        odom: odomMiles,
+        time: rawFuelTime || now,
+      };
       const newHistory = appendSnapshot(truck.fuelHistory, snapshot);
       if (newHistory) {
         patch.fuelHistory = newHistory;
         patch.consumption = buildConsumption(newHistory, truck.tankCapacityGallons || 25);
+        patch.mileage     = buildMileage(newHistory);
       }
     }
 

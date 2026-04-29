@@ -102,6 +102,7 @@ function ensureTruckShape(truck) {
     tankCapacityGallons: 25, // default per user spec (most hotshot trucks)
     fuelHistory: [],         // [{ fuel%, odom mi, time ISO }] — capped at 2000 entries
     consumption: null,       // { mpg7d, mpg30d, gallons7d, gallons30d, refuels7d, refuels30d, lastUpdated }
+    mileage: null,           // { today, thisWeek, thisMonth, dayStart, weekStart, monthStart, updated } EST boundaries
     ...truck,
   };
 }
