@@ -456,25 +456,36 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
         {truck.fuelPercent != null && (() => {
           const pct   = Math.round(truck.fuelPercent);
           const color = pct < 20 ? "#dc2626" : pct < 50 ? "#f59e0b" : "#16a34a";
-          // Age of the actual fuel reading (not sync time)
           const ageMin = truck.fuelPercentTime
             ? Math.round((Date.now() - new Date(truck.fuelPercentTime).getTime()) / 60000)
             : null;
+          // Three freshness levels:
+          //  fresh   < 30 min → normal colours
+          //  stale   30 min – 4 h → dimmed
+          //  veryOld > 4 h or unknown → grey + warning icon
+          const fresh   = ageMin != null && ageMin < 30;
+          const veryOld = ageMin == null || ageMin > 240;
           const ageLabel =
-            ageMin == null    ? " · ?" :
-            ageMin < 1        ? " · live" :
-            ageMin < 60       ? ` · ${ageMin}m` :
-            ageMin < 1440     ? ` · ${Math.round(ageMin/60)}h` :
+            ageMin == null  ? " · ?" :
+            ageMin < 1      ? " · live" :
+            ageMin < 60     ? ` · ${ageMin}m` :
+            ageMin < 1440   ? ` · ${Math.round(ageMin/60)}h` :
             ` · ${Math.round(ageMin/1440)}d`;
-          const isStale = ageMin == null || ageMin > 15;
+          const tooltip = veryOld
+            ? `Last fuel reading is old (${ageLabel.replace(' · ', '')}). The truck has been off / idle — fuel updates resume once it starts driving.`
+            : `Reading age: ${ageLabel.replace(' · ', '')}`;
+          const labelColor = veryOld ? "var(--text-disabled)" : "var(--text-faint)";
+          const valColor   = fresh ? color : "var(--text-faint)";
+          const barColor   = fresh ? color : "#9ca3af"; // grey when not fresh
+          const opacity    = fresh ? 1 : veryOld ? 0.4 : 0.6;
           return (
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text-faint)", marginBottom: 2 }}>
-                <span>⛽ Fuel{ageLabel}</span>
-                <span style={{ color: isStale ? "var(--text-faint)" : color, fontWeight: 700, opacity: isStale ? 0.6 : 1 }}>{pct}%</span>
+            <div title={tooltip}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: labelColor, marginBottom: 2 }}>
+                <span>⛽ Fuel{ageLabel}{veryOld ? " ⚠" : ""}</span>
+                <span style={{ color: valColor, fontWeight: 700, opacity, textDecoration: veryOld ? "line-through" : "none" }}>{pct}%</span>
               </div>
               <div style={{ height: 4, borderRadius: 99, background: "var(--bg-hover)", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 99, transition: "width .3s", opacity: isStale ? 0.5 : 1 }} />
+                <div style={{ height: "100%", width: `${pct}%`, background: barColor, borderRadius: 99, transition: "width .3s", opacity }} />
               </div>
             </div>
           );
