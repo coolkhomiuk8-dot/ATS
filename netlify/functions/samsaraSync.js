@@ -109,13 +109,22 @@ export const handler = async (event) => {
   const odomById = new Proxy({}, {
     get: (_, id) => obdOdomById[id] ?? gpsOdomById[id] ?? undefined,
   });
-  // Fault history: pick the most-recent snapshot per vehicle.
-  // v.faultCodes in history is an array of {time, value[]} objects.
+  // Fault history: pick the most-recent NON-EMPTY snapshot within last 3 days.
+  // ECU sometimes broadcasts empty arrays between actual fault events, so
+  // we skip empty snapshots to match what the Samsara dashboard shows.
+  const faultCutoff = Date.now() - 3 * 24 * 3600 * 1000;
   const faultById = Object.fromEntries(faultHistRows.map((v) => {
     const snaps = Array.isArray(v.faultCodes) ? v.faultCodes : [];
     const sorted = snaps.slice().sort((a, b) => new Date(b.time) - new Date(a.time));
-    return [v.id, sorted[0]?.value || []];
+    const latestWithFaults = sorted.find(
+      (s) => Array.isArray(s.value) && s.value.length > 0 && new Date(s.time).getTime() >= faultCutoff
+    );
+    return [v.id, latestWithFaults?.value || []];
   }));
+  // Debug: raw structure of first fault history item (to verify API response shape)
+  const faultRawSample = faultHistRows[0]
+    ? { id: faultHistRows[0].id, faultCodesType: typeof faultHistRows[0].faultCodes, snapshotCount: (faultHistRows[0].faultCodes || []).length, firstSnap: (faultHistRows[0].faultCodes || [])[0] }
+    : null;
   const fuelById   = Object.fromEntries(fuelRows.map((v) => [v.id, v.fuelPercents?.value ?? null]));
   const engineById = Object.fromEntries(engineRows.map((v) => [v.id, v.engineStates?.value ?? null]));
 
@@ -260,13 +269,14 @@ export const handler = async (event) => {
     success: true,
     report,
     debug: {
-      odomRows:      odomRows.length,
-      gpsOdomRows:   gpsOdomRows.length,
-      faultHistRows: faultHistRows.length,
-      fuelRows:      fuelRows.length,
-      gpsRows:       gpsRows.length,
-      engineRows:    engineRows.length,
-      vehicleRows:   vehicleRows.length,
+      odomRows:       odomRows.length,
+      gpsOdomRows:    gpsOdomRows.length,
+      faultHistRows:  faultHistRows.length,
+      faultRawSample,
+      fuelRows:       fuelRows.length,
+      gpsRows:        gpsRows.length,
+      engineRows:     engineRows.length,
+      vehicleRows:    vehicleRows.length,
       locationRows: locationRows.length,
       apiErrors,
     },

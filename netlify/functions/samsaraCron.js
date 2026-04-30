@@ -93,11 +93,15 @@ export const handler = async () => {
     const odomById = new Proxy({}, {
       get: (_, id) => obdOdomById[id] ?? gpsOdomById[id] ?? undefined,
     });
-    // Fault history: pick the most-recent snapshot per vehicle
+    // Fault history: pick the most-recent NON-EMPTY snapshot within last 3 days
+    const faultCutoff = Date.now() - 3 * 24 * 3600 * 1000;
     const faultById = Object.fromEntries(faultHistRows.map((v) => {
       const snaps = Array.isArray(v.faultCodes) ? v.faultCodes : [];
       const sorted = snaps.slice().sort((a, b) => new Date(b.time) - new Date(a.time));
-      return [v.id, sorted[0]?.value || []];
+      const latestWithFaults = sorted.find(
+        (s) => Array.isArray(s.value) && s.value.length > 0 && new Date(s.time).getTime() >= faultCutoff
+      );
+      return [v.id, latestWithFaults?.value || []];
     }));
     const fuelById   = Object.fromEntries(fuelRows.map((v) => [v.id, v.fuelPercents?.value ?? null]));
     const engineById = Object.fromEntries(engineRows.map((v) => [v.id, v.engineStates?.value ?? null]));
