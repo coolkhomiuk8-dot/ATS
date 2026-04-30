@@ -76,10 +76,25 @@ export const handler = async (event) => {
     return r.data || [];
   }
 
-  const [odomRows, gpsOdomRows, faultRows, fuelRows, gpsRows, engineRows, vehicleRows, locationRows] = await Promise.all([
+  // Fault codes via history (last 7 days) — more reliable than live snapshot
+  // which only captures what the ECU is broadcasting at that exact instant.
+  async function fetchFaultHistory() {
+    const endTime   = new Date().toISOString();
+    const startTime = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+    let results = [], cursor = null;
+    do {
+      const qs = `types=faultCodes&startTime=${startTime}&endTime=${endTime}&limit=512${cursor ? `&after=${cursor}` : ""}`;
+      const page = await samsaraGet(`/fleet/vehicles/stats/history?${qs}`, apiKey);
+      results = results.concat(page.data || []);
+      cursor = page.pagination?.hasNextPage ? page.pagination.endCursor : null;
+    } while (cursor);
+    return results;
+  }
+
+  const [odomRows, gpsOdomRows, faultHistRows, fuelRows, gpsRows, engineRows, vehicleRows, locationRows] = await Promise.all([
     safe("obdOdometerMeters", fetchAllStats("obdOdometerMeters", apiKey)),
     safe("gpsOdometerMeters", fetchAllStats("gpsOdometerMeters", apiKey)),
-    safe("faultCodes",        fetchAllStats("faultCodes",        apiKey)),
+    safe("faultHistory",      fetchFaultHistory()),
     safe("fuelPercents",      fetchAllStats("fuelPercents",      apiKey)),
     safe("gps",               fetchAllStats("gps",               apiKey)),
     safe("engineStates",      fetchAllStats("engineStates",      apiKey)),
@@ -94,7 +109,13 @@ export const handler = async (event) => {
   const odomById = new Proxy({}, {
     get: (_, id) => obdOdomById[id] ?? gpsOdomById[id] ?? undefined,
   });
-  const faultById  = Object.fromEntries(faultRows.map((v) => [v.id, v.faultCodes?.value || []]));
+  // Fault history: pick the most-recent snapshot per vehicle.
+  // v.faultCodes in history is an array of {time, value[]} objects.
+  const faultById = Object.fromEntries(faultHistRows.map((v) => {
+    const snaps = Array.isArray(v.faultCodes) ? v.faultCodes : [];
+    const sorted = snaps.slice().sort((a, b) => new Date(b.time) - new Date(a.time));
+    return [v.id, sorted[0]?.value || []];
+  }));
   const fuelById   = Object.fromEntries(fuelRows.map((v) => [v.id, v.fuelPercents?.value ?? null]));
   const engineById = Object.fromEntries(engineRows.map((v) => [v.id, v.engineStates?.value ?? null]));
 
@@ -183,7 +204,7 @@ export const handler = async (event) => {
 
     const patch = { samsaraId, lastSamsaraSync: now };
     // Only overwrite fields when we actually have fresh data
-    if (faultRows.length > 0)  patch.faultCodes      = faultById[samsaraId] || [];
+    if (faultHistRows.length > 0) patch.faultCodes    = faultById[samsaraId] || [];
     if (rawFuel != null) {
       patch.fuelPercent = rawFuel;
       // Prefer Samsara's timestamp; if missing, only stamp when value actually changed
@@ -239,13 +260,13 @@ export const handler = async (event) => {
     success: true,
     report,
     debug: {
-      odomRows:     odomRows.length,
-      gpsOdomRows:  gpsOdomRows.length,
-      faultRows:    faultRows.length,
-      fuelRows:     fuelRows.length,
-      gpsRows:      gpsRows.length,
-      engineRows:   engineRows.length,
-      vehicleRows:  vehicleRows.length,
+      odomRows:      odomRows.length,
+      gpsOdomRows:   gpsOdomRows.length,
+      faultHistRows: faultHistRows.length,
+      fuelRows:      fuelRows.length,
+      gpsRows:       gpsRows.length,
+      engineRows:    engineRows.length,
+      vehicleRows:   vehicleRows.length,
       locationRows: locationRows.length,
       apiErrors,
     },

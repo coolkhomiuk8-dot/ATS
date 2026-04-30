@@ -61,10 +61,24 @@ export const handler = async () => {
     // ── Fetch all stats from Samsara in parallel ────────────────────────────
     const w = (label, p) => p.catch((e) => { console.warn(`[samsaraCron] ${label}:`, e.message); return []; });
 
-    const [odomRows, gpsOdomRows, faultRows, fuelRows, gpsRows, engineRows, vehicleRows, locationRows] = await Promise.all([
+    // Fault codes via history (last 7 days) — more reliable than live snapshot
+    async function fetchFaultHistory() {
+      const endTime   = new Date().toISOString();
+      const startTime = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+      let results = [], cursor = null;
+      do {
+        const qs = `types=faultCodes&startTime=${startTime}&endTime=${endTime}&limit=512${cursor ? `&after=${cursor}` : ""}`;
+        const page = await samsaraGet(`/fleet/vehicles/stats/history?${qs}`, apiKey);
+        results = results.concat(page.data || []);
+        cursor = page.pagination?.hasNextPage ? page.pagination.endCursor : null;
+      } while (cursor);
+      return results;
+    }
+
+    const [odomRows, gpsOdomRows, faultHistRows, fuelRows, gpsRows, engineRows, vehicleRows, locationRows] = await Promise.all([
       w("obdOdometerMeters", fetchAllStats("obdOdometerMeters", apiKey)),
       w("gpsOdometerMeters", fetchAllStats("gpsOdometerMeters", apiKey)),
-      w("faultCodes",        fetchAllStats("faultCodes",        apiKey)),
+      w("faultHistory",      fetchFaultHistory()),
       w("fuelPercents",      fetchAllStats("fuelPercents",      apiKey)),
       w("gps",               fetchAllStats("gps",               apiKey)),
       w("engineStates",      fetchAllStats("engineStates",      apiKey)),
@@ -79,7 +93,12 @@ export const handler = async () => {
     const odomById = new Proxy({}, {
       get: (_, id) => obdOdomById[id] ?? gpsOdomById[id] ?? undefined,
     });
-    const faultById  = Object.fromEntries(faultRows.map((v) => [v.id, v.faultCodes?.value || []]));
+    // Fault history: pick the most-recent snapshot per vehicle
+    const faultById = Object.fromEntries(faultHistRows.map((v) => {
+      const snaps = Array.isArray(v.faultCodes) ? v.faultCodes : [];
+      const sorted = snaps.slice().sort((a, b) => new Date(b.time) - new Date(a.time));
+      return [v.id, sorted[0]?.value || []];
+    }));
     const fuelById   = Object.fromEntries(fuelRows.map((v) => [v.id, v.fuelPercents?.value ?? null]));
     const engineById = Object.fromEntries(engineRows.map((v) => [v.id, v.engineStates?.value ?? null]));
 
@@ -169,7 +188,7 @@ export const handler = async () => {
       const odomMiles  = odomMeters != null ? Math.round(odomMeters * METERS_TO_MILES) : null;
 
       const patch = { samsaraId, lastSamsaraSync: now };
-      if (faultRows.length > 0)   patch.faultCodes     = faultById[samsaraId] || [];
+      if (faultHistRows.length > 0) patch.faultCodes    = faultById[samsaraId] || [];
       if (fuel != null) {
         patch.fuelPercent = fuel;
         if (fuelTime) patch.fuelPercentTime = fuelTime;
