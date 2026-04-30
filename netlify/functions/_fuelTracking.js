@@ -132,9 +132,14 @@ function computeStats(history, tankCapacity, daysBack) {
     const dOdom = (b.odom ?? 0) - (a.odom ?? 0);
 
     // Fuel went down + truck moved → consumption
+    // Plausibility check: skip segments with implied MPG < 2 or > 60 (sensor noise)
     if (dFuel < 0 && dOdom > 0) {
-      consumedPct += -dFuel;
-      miles       += dOdom;
+      const segGal = (-dFuel / 100) * cap;
+      const segMpg = dOdom / segGal;
+      if (segMpg >= 2 && segMpg <= 60) {
+        consumedPct += -dFuel;
+        miles       += dOdom;
+      }
     }
     // Fuel went up + truck mostly stationary → refuel
     else if (dFuel >= 5 && dOdom <= 1) {

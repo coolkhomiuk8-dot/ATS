@@ -154,6 +154,7 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
   const vinShort = truck.vinNumber ? truck.vinNumber.slice(-4) : null;
   const oilLeft = OIL_CHANGE_INTERVAL - (Number(truck.currentOdometer) - Number(truck.lastOilChange));
   const files = truck.files || [];
+  const faults = Array.isArray(truck.faultCodes) ? truck.faultCodes : [];
   const [vinCopied, setVinCopied] = useState(false);
   const [phoneCopied, setPhoneCopied] = useState(false);
   const [platesEdit, setPlatesEdit] = useState(false);
@@ -498,24 +499,6 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
           </div>
         )}
 
-        {/* Fault codes */}
-        {(() => {
-          const faults = Array.isArray(truck.faultCodes) ? truck.faultCodes : [];
-          if (faults.length === 0) return null;
-          const hasRed = faults.some((f) => f.lamp === "red");
-          const color  = hasRed ? "#dc2626" : "#f97316";
-          const bg     = hasRed ? "#fef2f2" : "#fff7ed";
-          const border = hasRed ? "#fecaca" : "#fed7aa";
-          return (
-            <div
-              title={faults.map((f) => `SPN ${f.j1939Spn} FMI ${f.j1939Fmi}${f.lamp ? ` (${f.lamp})` : ""}`).join("\n")}
-              style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5, background: bg, color, border: `1px solid ${border}`, cursor: "default" }}
-            >
-              ⚠ {faults.length} fault{faults.length !== 1 ? "s" : ""}
-            </div>
-          );
-        })()}
-
         {/* Last sync time */}
         {truck.lastSamsaraSync && (
           <div style={{ fontSize: 9, color: "var(--text-disabled)", marginTop: "auto" }}>
@@ -527,8 +510,11 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
         )}
       </div>
 
-      {/* Col 5 — Docs */}
-      <div style={{ flex: 1, padding: "0 0 0 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+      {/* Col 6 — Docs */}
+      <div style={{
+        flex: 1, padding: "0 0 0 16px", display: "flex", flexDirection: "column", gap: 6,
+        ...(faults.length > 0 ? { borderRight: "1px solid var(--border)", paddingRight: 16 } : {}),
+      }}>
         <div>
           <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Truck Docs</div>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
@@ -562,6 +548,56 @@ function TruckCard({ truck, driver, onClick, onUploadDoc, onPreviewDoc, onSetPla
         {truck.eldId && <div style={{ fontSize: 10, color: "var(--text-muted)" }}>ELD: {truck.eldId}</div>}
         {truck.statusNote && <div style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic" }}>{truck.statusNote}</div>}
       </div>
+
+      {/* Col 7 — Active Faults (only when present) */}
+      {faults.length > 0 && (() => {
+        const hasRed = faults.some((f) => f.lamp === "red");
+        const headerColor = hasRed ? "#dc2626" : "#d97706";
+        return (
+          <div style={{ minWidth: 210, flexShrink: 0, padding: "0 0 0 16px", display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: headerColor, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 2 }}>
+              ⚠ Active Faults ({faults.length})
+            </div>
+            {faults.slice(0, 6).map((f, i) => {
+              const lamp = (f.lamp || "").toLowerCase();
+              const isRed    = lamp === "red";
+              const isAmber  = lamp === "amber";
+              const isProtect = lamp === "protect";
+              const dotColor = isRed ? "#dc2626" : isAmber ? "#d97706" : isProtect ? "#f59e0b" : "#6b7280";
+              const bg     = isRed ? "#fef2f2" : isAmber ? "#fffbeb" : isProtect ? "#fffbeb" : "var(--bg-hover)";
+              const border = isRed ? "#fecaca" : isAmber ? "#fcd34d" : isProtect ? "#fcd34d" : "var(--border)";
+              const textColor = isRed ? "#991b1b" : isAmber ? "#92400e" : isProtect ? "#92400e" : "var(--text-secondary)";
+              return (
+                <div
+                  key={i}
+                  title={`SPN ${f.j1939Spn} / FMI ${f.j1939Fmi}${f.lamp ? ` · lamp: ${f.lamp}` : ""}${f.txId ? ` · tx: ${f.txId}` : ""}`}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 5,
+                    fontSize: 10, padding: "3px 7px", borderRadius: 5,
+                    background: bg, border: `1px solid ${border}`, color: textColor, fontWeight: 600,
+                  }}
+                >
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
+                  <span style={{ fontFamily: "monospace", letterSpacing: "0.03em" }}>SPN {f.j1939Spn ?? "—"}</span>
+                  {f.j1939Fmi != null && (
+                    <span style={{ opacity: 0.65 }}>/FMI {f.j1939Fmi}</span>
+                  )}
+                  {lamp && (
+                    <span style={{ marginLeft: "auto", fontSize: 8, opacity: 0.6, textTransform: "uppercase", letterSpacing: ".04em" }}>
+                      {lamp}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+            {faults.length > 6 && (
+              <div style={{ fontSize: 9, color: "var(--text-faint)", fontStyle: "italic", marginTop: 1 }}>
+                +{faults.length - 6} more — open truck for details
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -1148,6 +1184,14 @@ export default function TrucksView({ onAddDriver }) {
                           <div>fuel: {m.fuel != null ? `${Math.round(m.fuel)}%` : "—"}</div>
                           <div>engine: {m.engine ?? "—"}</div>
                           <div>gps: {m.gps ? `${m.gps.speed} mph · ${m.gps.location}` : "—"}</div>
+                          <div style={{ color: m.faultCount > 0 ? "#dc2626" : "#166534" }}>
+                            faults: {m.faultCount ?? "—"}
+                            {m.faultSample && (
+                              <span style={{ marginLeft: 4, color: "#92400e" }}>
+                                · sample: {JSON.stringify(m.faultSample)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </>;

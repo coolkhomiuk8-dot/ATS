@@ -213,14 +213,18 @@ export const handler = async (event) => {
       }
     }
 
+    const rawFaults = faultById[samsaraId] ?? null;
+
     report.matched = report.matched || [];
     report.matched.push({
-      unit:   truck.unitNumber,
+      unit:      truck.unitNumber,
       samsaraId,
-      odom:   rawOdom,
-      fuel:   rawFuel,
-      engine: rawEngine,
-      gps:    rawGps,
+      odom:      rawOdom,
+      fuel:      rawFuel,
+      engine:    rawEngine,
+      gps:       rawGps,
+      faultCount: Array.isArray(rawFaults) ? rawFaults.length : (rawFaults === null ? "no data" : "non-array"),
+      faultSample: Array.isArray(rawFaults) && rawFaults.length > 0 ? rawFaults[0] : null,
     });
 
     try {
