@@ -160,21 +160,21 @@ export const handler = async (event) => {
       ).catch(() => ({ data: [] }));
 
       const hv = (hist.data || [])[0] || {};
+      // Sort descending so [0] is the newest reading regardless of API order
+      const sortDesc = (a, b) => new Date(b.time) - new Date(a.time);
 
       if (rawFuel == null) {
-        const pts = hv.fuelPercents || [];
-        const last = pts[pts.length - 1];
-        if (last?.value != null) {
-          rawFuel     = last.value;
-          rawFuelTime = last.time;
+        const pts = (hv.fuelPercents || []).slice().sort(sortDesc);
+        if (pts[0]?.value != null) {
+          rawFuel     = pts[0].value;
+          rawFuelTime = pts[0].time;
         }
       }
       if (rawEngine == null) {
-        const pts = hv.engineStates || [];
-        const last = pts[pts.length - 1];
-        if (last?.value != null) {
-          rawEngine     = last.value;
-          rawEngineTime = last.time;
+        const pts = (hv.engineStates || []).slice().sort(sortDesc);
+        if (pts[0]?.value != null) {
+          rawEngine     = pts[0].value;
+          rawEngineTime = pts[0].time;
         }
       }
     }

@@ -125,15 +125,43 @@ export const handler = async () => {
 
       if (!samsaraId) { noMatch++; continue; }
 
-      // Cron uses live stats only (no history fallback to keep API rate low)
-      const fuel   = fuelById[samsaraId]   ?? null;
-      const engine = engineById[samsaraId] ?? null;
+      let fuel   = fuelById[samsaraId]   ?? null;
+      let engine = engineById[samsaraId] ?? null;
 
       // Capture timestamps so UI can show how fresh each value is
       const fuelRow = fuelRows.find((v) => String(v.id) === String(samsaraId));
       const engRow  = engineRows.find((v) => String(v.id) === String(samsaraId));
-      const fuelTime   = fuelRow?.fuelPercents?.time   || null;
-      const engineTime = engRow?.engineStates?.time    || null;
+      let fuelTime   = fuelRow?.fuelPercents?.time   || null;
+      let engineTime = engRow?.engineStates?.time    || null;
+
+      // ── Smart history retry: only for actively-running trucks with stale fuel ──
+      // Avoids API spam — runs only when truck is operating (engine On / GPS moving)
+      // AND the fuel reading is older than 30 minutes.
+      const fuelAgeMin = fuelTime
+        ? (Date.now() - new Date(fuelTime).getTime()) / 60000
+        : (truck.fuelPercentTime ? (Date.now() - new Date(truck.fuelPercentTime).getTime()) / 60000 : Infinity);
+      const isActive = engine === "On" || (gpsById[samsaraId]?.speed ?? 0) > 0;
+      if (isActive && fuelAgeMin > 30) {
+        const endT   = new Date().toISOString();
+        const startT = new Date(Date.now() - 6 * 3600 * 1000).toISOString();
+        const hist = await samsaraGet(
+          `/fleet/vehicles/stats/history?types=fuelPercents,engineStates&vehicleIds=${samsaraId}&startTime=${startT}&endTime=${endT}`,
+          apiKey
+        ).catch(() => ({ data: [] }));
+        const hv = (hist.data || [])[0] || {};
+        // Sort descending so [0] is newest, regardless of API ordering
+        const sortDesc = (a, b) => new Date(b.time) - new Date(a.time);
+        const fPts = (hv.fuelPercents   || []).slice().sort(sortDesc);
+        const ePts = (hv.engineStates   || []).slice().sort(sortDesc);
+        if (fPts[0]?.value != null && (!fuelTime || fPts[0].time > fuelTime)) {
+          fuel     = fPts[0].value;
+          fuelTime = fPts[0].time;
+        }
+        if (ePts[0]?.value != null && (!engineTime || ePts[0].time > engineTime)) {
+          engine     = ePts[0].value;
+          engineTime = ePts[0].time;
+        }
+      }
 
       const rawGpsCron = gpsById[samsaraId] ?? null;
 
