@@ -49,6 +49,12 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    match /loads/{loadId} {
+      allow read: if isUser();
+      // writes come from Netlify backend via Admin SDK (bypasses rules)
+      allow create, update, delete: if isAdmin();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
