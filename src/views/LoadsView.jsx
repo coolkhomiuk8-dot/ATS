@@ -434,7 +434,7 @@ export default function LoadsView() {
           <span>
             {syncResult.error
               ? <>⚠ {syncResult.error}</>
-              : <>✅ Fetched {syncResult.fetched} loads · written {syncResult.report?.written} · skipped {syncResult.report?.skipped} · {syncResult.elapsedMs}ms</>}
+              : <>✅ Fetched {syncResult.fetched}{syncResult.apiTotal != null ? `/${syncResult.apiTotal}` : ""} loads · written {syncResult.report?.written} · skipped {syncResult.report?.skipped} · {syncResult.elapsedMs}ms</>}
           </span>
           <button onClick={() => setSyncResult(null)} style={{ background: "none", border: "none", color: "inherit", fontSize: 16, cursor: "pointer" }}>✕</button>
         </div>
