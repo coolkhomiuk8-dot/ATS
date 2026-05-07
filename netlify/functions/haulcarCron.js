@@ -17,8 +17,8 @@ export const handler = async () => {
   const t0 = Date.now();
 
   try {
-    // 200 per page · cap 5000 — covers ~30 weeks at 150 loads/wk
-    const { items, total } = await fetchAllLoads(apiKey, { pageSize: 200, maxItems: 5000 });
+    // 100 per page (API hard cap) · max 10000 — covers ~65 weeks at 150 loads/wk
+    const { items, total } = await fetchAllLoads(apiKey, { pageSize: 100, maxItems: 10000 });
     const result = await syncLoadsToFirestore(db, items);
     console.log(
       `[haulcarCron] fetched=${items.length}/${total ?? "?"} written=${result.written} skipped=${result.skipped} errors=${result.errors.length} (${Date.now() - t0}ms)`

@@ -34,17 +34,21 @@ async function haulcarGet(apiKey, { limit = 200, offset = 0 } = {}) {
  * Fetch every load from Haulcar by following pagination until exhausted.
  * Caps at `maxItems` to prevent runaway pagination.
  */
-async function fetchAllLoads(apiKey, { pageSize = 200, maxItems = 5000 } = {}) {
+async function fetchAllLoads(apiKey, { pageSize = 100, maxItems = 10000 } = {}) {
   let all = [];
   let offset = 0;
   let total = null;
   while (all.length < maxItems) {
     const page = await haulcarGet(apiKey, { limit: pageSize, offset });
     const items = Array.isArray(page?.items) ? page.items : [];
-    all = all.concat(items);
     if (typeof page?.total === "number") total = page.total;
-    if (items.length < pageSize) break;
+    all = all.concat(items);
+    // Stop if no items returned (end of data)
+    if (items.length === 0) break;
+    // Stop if we've fetched everything according to total
     if (total != null && all.length >= total) break;
+    // Only stop on short page when total is unknown (avoids stopping at API's hard page cap)
+    if (total == null && items.length < pageSize) break;
     offset += pageSize;
   }
   return { items: all.slice(0, maxItems), total };
