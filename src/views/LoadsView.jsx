@@ -249,6 +249,7 @@ export default function LoadsView() {
 
   const [tab, setTab] = useState("week");      // "week" | "drivers" | "trucks"
   const [weekKey, setWeekKey] = useState(() => currentWeekKey());
+  const [weekAutoDetected, setWeekAutoDetected] = useState(false);
   const [dispatcherFilter, setDispatcherFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [unitFilter, setUnitFilter] = useState("");
@@ -256,6 +257,18 @@ export default function LoadsView() {
 
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState(null);
+
+  // Auto-navigate to the most recent week that has loads if current week is empty
+  useEffect(() => {
+    if (weekAutoDetected || loads.length === 0) return;
+    const hasLoadsThisWeek = loads.some((l) => l.weekKey === weekKey);
+    if (!hasLoadsThisWeek) {
+      const weeks = [...new Set(loads.map((l) => l.weekKey).filter(Boolean))].sort();
+      const latest = weeks[weeks.length - 1];
+      if (latest) setWeekKey(latest);
+    }
+    setWeekAutoDetected(true);
+  }, [loads]);
 
   async function handleSync() {
     if (syncing) return;
