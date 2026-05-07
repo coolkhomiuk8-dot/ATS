@@ -125,7 +125,9 @@ function normalizeLoad(raw) {
     loadedMiles: num(raw.loadedMiles),
     emptyMiles:  num(raw.emptyMiles),
     rpm:         num(raw.rpm),
-    unit:        raw.unit ? String(raw.unit) : null,
+    // Haulcar returns unit as "103 Joseph Okoro" — extract leading digits as unit number
+    unit:        raw.unit ? (String(raw.unit).match(/^(\d+)/)?.[1] || String(raw.unit).trim()) : null,
+    unitFull:    raw.unit ? String(raw.unit).trim() : null,
     dispatcher:  raw.dispatcher || null,
     weekKey:     weekKeyEst(raw.puDate || raw.date),
   };
