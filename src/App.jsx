@@ -14,6 +14,7 @@ import TemplatesView from "./views/TemplatesView";
 import DispatchersView from "./views/DispatchersView";
 import TrucksView from "./views/TrucksView";
 import DriversView from "./views/DriversView";
+import LoadsView from "./views/LoadsView";
 import DriverDrawer from "./components/DriverDrawer";
 import AddModal from "./components/AddModal";
 import ImportIndeedModal from "./components/ImportIndeedModal";
@@ -33,7 +34,7 @@ export default function App() {
   const [firebaseUser, setFirebaseUser] = useState(() => auth?.currentUser || null);
   const [authLoading, setAuthLoading] = useState(isFirebaseConfigured);
 
-  const VALID_VIEWS = ["pipeline", "dispatchers", "fleet", "drivers", "dashboard", "templates"];
+  const VALID_VIEWS = ["pipeline", "dispatchers", "fleet", "drivers", "loads", "dashboard", "templates"];
   function getInitialView() {
     const hash = window.location.hash.replace("#", "");
     return VALID_VIEWS.includes(hash) ? hash : "pipeline";
@@ -325,6 +326,13 @@ export default function App() {
         <line x1="7" y1="13" x2="11" y2="13"/>
       </svg>
     ),
+    loads: (
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 7l7-4 7 4v6l-7 4-7-4V7z"/>
+        <path d="M3 7l7 4 7-4" strokeOpacity=".5"/>
+        <line x1="10" y1="11" x2="10" y2="18" strokeOpacity=".5"/>
+      </svg>
+    ),
   };
 
   const LINK_ICONS = {
@@ -452,6 +460,7 @@ export default function App() {
         {[
           { id: "fleet",      title: "Fleet" },
           { id: "drivers",    title: "Drivers" },
+          { id: "loads",      title: "Loads" },
           { id: "dashboard",  title: "Dashboard" },
           { id: "templates",  title: "Templates" },
         ].map((item) => (
@@ -931,6 +940,8 @@ export default function App() {
           {view === "fleet" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}><TrucksView onAddDriver={() => setShowAdd(true)} /></div>}
 
           {view === "drivers" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}><DriversView onSelectDriver={setSelectedId} /></div>}
+
+          {view === "loads" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}><LoadsView /></div>}
 
           {view === "dashboard" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}><DashboardView drivers={drivers} /></div>}
 

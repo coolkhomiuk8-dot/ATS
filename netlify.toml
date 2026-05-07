@@ -8,6 +8,9 @@
 [functions."samsaraCron"]
   schedule = "*/5 * * * *"
 
+[functions."haulcarCron"]
+  schedule = "*/10 * * * *"
+
 [functions."dispatcher-reminders"]
   schedule = "*/30 * * * *"
 
