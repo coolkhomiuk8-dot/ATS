@@ -43,12 +43,10 @@ async function fetchAllLoads(apiKey, { pageSize = 100, maxItems = 10000 } = {}) 
     const items = Array.isArray(page?.items) ? page.items : [];
     if (typeof page?.total === "number") total = page.total;
     all = all.concat(items);
-    // Stop if no items returned (end of data)
+    // Stop only on a completely empty page (end of data)
     if (items.length === 0) break;
     // Stop if we've fetched everything according to total
     if (total != null && all.length >= total) break;
-    // Only stop on short page when total is unknown (avoids stopping at API's hard page cap)
-    if (total == null && items.length < pageSize) break;
     offset += pageSize;
   }
   return { items: all.slice(0, maxItems), total };
