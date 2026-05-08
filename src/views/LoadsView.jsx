@@ -115,7 +115,8 @@ function LoadsTable({ loads, onLoadClick }) {
             <th style={headStyle}>From</th>
             <th style={headStyle}>To</th>
             <th style={headStyle}>Delivery</th>
-            <th style={headStyle}>Unit</th>
+            <th style={headStyle}>Truck</th>
+            <th style={headStyle}>Driver</th>
             <th style={headStyle}>Dispatcher</th>
             <th style={headStyle}>Broker</th>
             <th style={{ ...headStyle, textAlign: "right" }}>Loaded</th>
@@ -133,6 +134,7 @@ function LoadsTable({ loads, onLoadClick }) {
               <td style={cellStyle}>{l.delCity ? `${l.delCity}, ${l.delState || ""}` : "—"}</td>
               <td style={{ ...cellStyle, color: "var(--text-muted)", whiteSpace: "nowrap" }}>{fmtDate(l.delDate)}</td>
               <td style={{ ...cellStyle, fontWeight: 700, fontFamily: "monospace" }}>{l.unit || "—"}</td>
+              <td style={{ ...cellStyle }}>{l.driverName || "—"}</td>
               <td style={{ ...cellStyle, color: "var(--text-muted)" }}>{l.dispatcher || "—"}</td>
               <td style={{ ...cellStyle, color: "var(--text-muted)" }}>{l.broker || "—"}</td>
               <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace" }}>{fmtNum(l.loadedMiles)}</td>
@@ -161,12 +163,10 @@ function GroupTable({ loads, groupBy /* "unit" | "driver" */, trucks, drivers })
         key = l.unit || "(no unit)";
         label = key;
       } else {
-        // by driver — find driver from truck's assignment
-        const truck = trucks.find((t) => String(t.unitNumber) === String(l.unit));
-        const driverId = truck?.assignedDriverId;
-        const driver = drivers.find((d) => d.id === driverId);
-        key = driverId || `(${l.unit || "no unit"})`;
-        label = driver?.name || (l.unit ? `Unit ${l.unit} (no driver)` : "(no driver)");
+        // by driver — use driverName from TMS directly
+        const name = l.driverName || null;
+        key = name || `unit-${l.unit || "unknown"}`;
+        label = name || (l.unit ? `Unit ${l.unit} (no driver)` : "(no driver)");
       }
       if (!map.has(key)) map.set(key, { label, loads: [], gross: 0, loadedMi: 0, emptyMi: 0 });
       const g = map.get(key);

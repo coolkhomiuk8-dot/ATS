@@ -129,9 +129,19 @@ function normalizeLoad(raw) {
     loadedMiles: num(raw.loadedMiles),
     emptyMiles:  num(raw.emptyMiles),
     rpm:         num(raw.rpm),
-    // Haulcar returns unit as "103 Joseph Okoro" — extract leading digits as unit number
-    unit:        raw.unit ? (String(raw.unit).match(/^(\d+)/)?.[1] || String(raw.unit).trim()) : null,
-    unitFull:    raw.unit ? String(raw.unit).trim() : null,
+    // Haulcar returns unit as "103 Joseph Okoro" — split into truck number + driver name
+    unit:        (() => {
+      const u = raw.unit ? String(raw.unit).trim() : "";
+      return u.match(/^(\d+)/)?.[1] || u || null;
+    })(),
+    driverName:  (() => {
+      // Prefer explicit API fields if present, else parse from unit string
+      if (raw.driverName) return String(raw.driverName).trim();
+      if (raw.driver)     return String(raw.driver).trim();
+      const u = raw.unit ? String(raw.unit).trim() : "";
+      const rest = u.replace(/^\d+\s*/, "").trim();
+      return rest || null;
+    })(),
     dispatcher:  raw.dispatcher || null,
     weekKey:     weekKeyEst(raw.puDate || raw.date),
   };
