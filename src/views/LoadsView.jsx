@@ -438,27 +438,28 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
           {days.map((d) => {
-            const hasActive = d.loadInfo.length > 0;
             const pickupsToday = d.loadInfo.filter((li) => li.phase === "pickup" || li.phase === "sameday");
             const transitToday = d.loadInfo.filter((li) => li.phase === "transit");
             const deliveriesToday = d.loadInfo.filter((li) => li.phase === "delivery");
             const dayGross = pickupsToday.reduce((s, li) => s + (Number(li.load.rate) || 0), 0);
             const offDay = timeOffByDay[d.isoDay];
 
-            // Pick visual style based on state (priority: time off > active > no-load)
+            // Pick visual style based on state (priority: time off > pickup > transit > gap)
+            // Delivery-only day (no new pickup) is treated as a gap — driver was idle
+            // because they should have picked up a new load on the same day.
             let bg, border, label, labelColor;
             if (offDay) {
               bg = "#dbeafe"; border = "#93c5fd";
               label = "🏠 Home"; labelColor = "#1d4ed8";
-            } else if (!hasActive) {
-              bg = "#fef9f3"; border = "#fde7c2";
-              label = "⚠ No load"; labelColor = "#92400e";
             } else if (pickupsToday.length > 0) {
               bg = "var(--bg-surface)"; border = "var(--border)";
-            } else {
+            } else if (transitToday.length > 0) {
               bg = "#fef3c7"; border = "#fde68a";
-              label = transitToday.length > 0 ? "🚛 In transit" : "📦 Delivery";
-              labelColor = "#92400e";
+              label = "🚛 In transit"; labelColor = "#92400e";
+            } else {
+              // Either delivery-only or completely empty — both count as "no load"
+              bg = "#fef9f3"; border = "#fde7c2";
+              label = "⚠ No load"; labelColor = "#92400e";
             }
 
             const clickable = kind === "driver";
