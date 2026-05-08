@@ -1,11 +1,20 @@
-import { useState, useMemo, useEffect } from "react";
-import { useLoadsStore, weekRangeFromKey, currentWeekKey, shiftWeekKey, findLatestWeekKey } from "../store/useLoadsStore";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useLoadsStore, weekRangeFromKey, currentWeekKey, shiftWeekKey } from "../store/useLoadsStore";
 import { useTrucksStore } from "../store/useTrucksStore";
 import { useDriversStore } from "../store/useDriversStore";
 import { useTimeOffStore } from "../store/useTimeOffStore";
 import { auth } from "../lib/firebase";
 
 const haulcarSyncEndpoint = import.meta.env.VITE_HAULCAR_SYNC_ENDPOINT || "/.netlify/functions/haulcarSync";
+
+const LS_KEY = "loadsViewState";
+function readPersistedState() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); }
+  catch { return {}; }
+}
+function writePersistedState(state) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch { /* ignore */ }
+}
 
 function fmtMoney(v) {
   const n = Number(v) || 0;
@@ -564,9 +573,14 @@ export default function LoadsView() {
   const { trucks } = useTrucksStore();
   const { drivers } = useDriversStore();
 
-  const [tab, setTab] = useState("week");      // "week" | "drivers" | "trucks"
-  const [weekKey, setWeekKey] = useState(() => currentWeekKey());
+  // Initial state restored from localStorage (so refresh keeps the user where they were)
+  const persisted = useRef(readPersistedState()).current;
+
+  const [tab, setTab] = useState(persisted.tab || "week");      // "week" | "drivers" | "trucks"
+  const [weekKey, setWeekKey] = useState(persisted.weekKey || currentWeekKey());
   const [selectedGroup, setSelectedGroup] = useState(null); // { kind, label, loads }
+  // Pending restore: detail view state from localStorage, hydrated when loads arrive
+  const [pendingRestore, setPendingRestore] = useState(persisted.selected || null);
 
   const [dispatcherFilter, setDispatcherFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -582,27 +596,41 @@ export default function LoadsView() {
     // No cleanup — keep subscription alive for quick week navigation
   }, [weekKey]);
 
-  // Reset detail selection when week or tab changes
+  // Reset detail selection when week or tab changes (but skip the initial mount)
+  const isInitialMount = useRef(true);
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     setSelectedGroup(null);
   }, [weekKey, tab]);
 
-  // On first mount: if current week is empty after load, jump to latest week with data
+  // Persist user state — week, tab, selected group — to localStorage
   useEffect(() => {
-    let cancelled = false;
-    async function autoDetect() {
-      // Wait a moment for subscription to resolve
-      await new Promise((r) => setTimeout(r, 1500));
-      if (cancelled) return;
-      const { loads: currentLoads } = useLoadsStore.getState();
-      if (currentLoads.length === 0) {
-        const latest = await findLatestWeekKey();
-        if (!cancelled && latest) setWeekKey(latest);
+    writePersistedState({
+      weekKey, tab,
+      selected: selectedGroup ? { kind: selectedGroup.kind, label: selectedGroup.label } : null,
+    });
+  }, [weekKey, tab, selectedGroup]);
+
+  // Hydrate selectedGroup from persisted state once loads arrive
+  useEffect(() => {
+    if (!pendingRestore || loads.length === 0) return;
+    const { kind, label } = pendingRestore;
+    const groupLoads = loads.filter((l) => {
+      if (kind === "driver") {
+        const computedKey = l.driverName || `unit-${l.unit || "unknown"}`;
+        return computedKey === label || l.driverName === label;
       }
+      if (kind === "truck") return (l.unit || "(no unit)") === label;
+      return false;
+    });
+    if (groupLoads.length > 0) {
+      setSelectedGroup({ kind, label, loads: groupLoads });
     }
-    autoDetect();
-    return () => { cancelled = true; };
-  }, []);
+    setPendingRestore(null); // one-shot
+  }, [pendingRestore, loads]);
 
   async function handleSync() {
     if (syncing) return;
