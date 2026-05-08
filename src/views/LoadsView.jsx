@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { useLoadsStore, weekRangeFromKey, currentWeekKey, shiftWeekKey, fetchLoadsForWeeks } from "../store/useLoadsStore";
+import { useLoadsStore, weekRangeFromKey, currentWeekKey, shiftWeekKey, fetchLoadsForWeeks, isPendingLoad } from "../store/useLoadsStore";
 import { db } from "../lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { useTrucksStore } from "../store/useTrucksStore";
@@ -247,6 +247,65 @@ function GroupTable({ loads, groupBy /* "unit" | "driver" */, trucks, drivers, o
               <td style={{ ...cellStyle, textAlign: "right", fontWeight: 800, color: "#16a34a", fontFamily: "monospace" }}>
                 {fmtMoney(g.gross)}
               </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   PENDING SECTION — newly booked loads (status=new), shown above main
+══════════════════════════════════════════════ */
+function PendingSection({ loads }) {
+  const cellStyle = { padding: "9px 12px", borderBottom: "1px solid #fde68a", fontSize: 12, verticalAlign: "middle" };
+  const headStyle = { padding: "9px 12px", fontSize: 10, fontWeight: 700, color: "#92400e", textTransform: "uppercase", letterSpacing: ".05em", textAlign: "left", borderBottom: "1px solid #fde68a", whiteSpace: "nowrap", background: "#fef9c3" };
+
+  return (
+    <div style={{
+      marginBottom: 14, background: "#fffbeb",
+      border: "1px solid #fde68a", borderRadius: 12, overflow: "hidden",
+    }}>
+      <div style={{
+        padding: "10px 14px", borderBottom: "1px solid #fde68a",
+        display: "flex", alignItems: "center", gap: 10, background: "#fef9c3",
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: "#92400e" }}>
+          ⏳ Pending
+        </div>
+        <div style={{ fontSize: 11, color: "#a16207" }}>
+          {loads.length} newly booked load{loads.length === 1 ? "" : "s"} — not yet picked up
+        </div>
+      </div>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            <th style={headStyle}>Pickup</th>
+            <th style={headStyle}>From</th>
+            <th style={headStyle}>To</th>
+            <th style={headStyle}>Delivery</th>
+            <th style={headStyle}>Truck</th>
+            <th style={headStyle}>Driver</th>
+            <th style={headStyle}>Dispatcher</th>
+            <th style={headStyle}>Broker</th>
+            <th style={{ ...headStyle, textAlign: "right" }}>Loaded</th>
+            <th style={{ ...headStyle, textAlign: "right" }}>Rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loads.map((l) => (
+            <tr key={l.id}>
+              <td style={{ ...cellStyle, fontWeight: 600, whiteSpace: "nowrap" }}>{fmtDate(l.puDate)}</td>
+              <td style={cellStyle}>{l.puCity ? `${l.puCity}, ${l.puState || ""}` : "—"}</td>
+              <td style={cellStyle}>{l.delCity ? `${l.delCity}, ${l.delState || ""}` : "—"}</td>
+              <td style={{ ...cellStyle, color: "var(--text-muted)", whiteSpace: "nowrap" }}>{fmtDate(l.delDate)}</td>
+              <td style={{ ...cellStyle, fontWeight: 700, fontFamily: "monospace" }}>{l.unit || "—"}</td>
+              <td style={cellStyle}>{l.driverName || "—"}</td>
+              <td style={{ ...cellStyle, color: "var(--text-muted)" }}>{l.dispatcher || "—"}</td>
+              <td style={{ ...cellStyle, color: "var(--text-muted)" }}>{l.broker || "—"}</td>
+              <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace" }}>{fmtNum(l.loadedMiles)}</td>
+              <td style={{ ...cellStyle, textAlign: "right", fontWeight: 700, color: "#16a34a" }}>{fmtMoney(l.rate)}</td>
             </tr>
           ))}
         </tbody>
@@ -1045,6 +1104,10 @@ export default function LoadsView() {
     });
   }, [loads, weekKey, dispatcherFilter, statusFilter, unitFilter, search]);
 
+  // Split into pending (status=new) vs confirmed for display
+  const pendingLoads = useMemo(() => filteredLoads.filter(isPendingLoad), [filteredLoads]);
+  const confirmedLoads = useMemo(() => filteredLoads.filter((l) => !isPendingLoad(l)), [filteredLoads]);
+
   const dispatchers = useMemo(() => {
     const set = new Set(loads.map((l) => l.dispatcher).filter(Boolean));
     return [...set].sort();
@@ -1167,7 +1230,7 @@ export default function LoadsView() {
           <span>
             {syncResult.error
               ? <>⚠ {syncResult.error}</>
-              : <>✅ Fetched {syncResult.fetched}{syncResult.apiTotal != null ? `/${syncResult.apiTotal}` : ""} loads · written {syncResult.report?.written} · skipped {syncResult.report?.skipped}{syncResult.report?.deleted > 0 ? ` · deleted ${syncResult.report.deleted}` : ""} · {syncResult.elapsedMs}ms</>}
+              : <>✅ Fetched {syncResult.fetched}{syncResult.apiTotal != null ? `/${syncResult.apiTotal}` : ""} loads · written {syncResult.report?.written} · skipped {syncResult.report?.skipped} · {syncResult.elapsedMs}ms</>}
           </span>
           <button onClick={() => setSyncResult(null)} style={{ background: "none", border: "none", color: "inherit", fontSize: 16, cursor: "pointer" }}>✕</button>
         </div>
@@ -1198,11 +1261,14 @@ export default function LoadsView() {
               />
             ) : (
               <>
-                <StatsBar loads={filteredLoads} />
-                {tab === "week"    && <LoadsTable loads={filteredLoads} />}
-                {tab === "drivers" && <GroupTable loads={filteredLoads} groupBy="driver" trucks={trucks} drivers={drivers}
+                <StatsBar loads={confirmedLoads} />
+                {pendingLoads.length > 0 && (
+                  <PendingSection loads={pendingLoads} />
+                )}
+                {tab === "week"    && <LoadsTable loads={confirmedLoads} />}
+                {tab === "drivers" && <GroupTable loads={confirmedLoads} groupBy="driver" trucks={trucks} drivers={drivers}
                   onRowClick={(g) => setSelectedGroup({ kind: "driver", label: g.label, loads: g.loads })} />}
-                {tab === "trucks"  && <GroupTable loads={filteredLoads} groupBy="unit"   trucks={trucks} drivers={drivers}
+                {tab === "trucks"  && <GroupTable loads={confirmedLoads} groupBy="unit"   trucks={trucks} drivers={drivers}
                   onRowClick={(g) => setSelectedGroup({ kind: "truck",  label: g.label, loads: g.loads })} />}
               </>
             )}

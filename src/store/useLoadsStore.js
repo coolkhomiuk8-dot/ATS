@@ -83,20 +83,17 @@ export function shiftWeekKey(weekKey, delta) {
 }
 
 /**
- * Loads with these statuses are hidden from the UI — they haven't moved
- * past the booking stage in the TMS, so they're not yet relevant for
- * dispatcher tracking. They reappear once status advances.
+ * Loads with status "new" are still in the booking stage — kept separate
+ * from confirmed loads in the UI (shown as a "Pending" section).
  */
-const HIDDEN_STATUSES = new Set(["new"]);
-function isVisibleLoad(l) {
+export function isPendingLoad(l) {
   const s = String(l?.status || "").toLowerCase().trim();
-  return !HIDDEN_STATUSES.has(s);
+  return s === "new";
 }
 
 /**
  * Fetch loads matching any of the given weekKeys (Firestore `in` allows up to 30).
  * Returns plain load objects (not subscribed). For monthly aggregates etc.
- * Filters out loads still in the "new" stage.
  */
 export async function fetchLoadsForWeeks(weekKeys) {
   if (!isFirebaseConfigured || !db) return [];
@@ -108,10 +105,7 @@ export async function fetchLoadsForWeeks(weekKeys) {
   for (const chunk of chunks) {
     const q = query(collection(db, "loads"), where("weekKey", "in", chunk));
     const snap = await getDocs(q);
-    snap.docs.forEach((d) => {
-      const data = { id: d.id, ...d.data() };
-      if (isVisibleLoad(data)) all.push(data);
-    });
+    snap.docs.forEach((d) => all.push({ id: d.id, ...d.data() }));
   }
   return all;
 }
@@ -166,7 +160,6 @@ export const useLoadsStore = create((set, get) => ({
       (snapshot) => {
         const loads = snapshot.docs
           .map((snap) => ({ id: snap.id, ...snap.data() }))
-          .filter(isVisibleLoad)
           .sort((a, b) => String(b.puDate || "").localeCompare(String(a.puDate || "")));
         set({ loads, isLoading: false, syncError: null });
       },

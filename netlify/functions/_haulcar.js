@@ -153,12 +153,8 @@ function normalizeLoad(raw) {
  *
  * Returns: { written, skipped, errors }
  */
-function isHiddenStatus(status) {
-  return String(status || "").toLowerCase().trim() === "new";
-}
-
 async function syncLoadsToFirestore(db, loads, { now = new Date().toISOString() } = {}) {
-  const report = { written: 0, skipped: 0, deleted: 0, errors: [] };
+  const report = { written: 0, skipped: 0, errors: [] };
 
   // Read existing in batches (Firestore has a 10-key `in` limit, so we
   // just read the whole collection once — cheaper than N targeted reads).
@@ -176,26 +172,6 @@ async function syncLoadsToFirestore(db, loads, { now = new Date().toISOString() 
   let count = 0;
   for (const raw of loads) {
     const id = loadDocId(raw);
-
-    // Skip loads still in the "new" stage. If we previously stored them,
-    // delete the existing doc so they disappear from the UI until status
-    // advances (at which point a fresh write happens).
-    if (isHiddenStatus(raw.status)) {
-      const existing = existingMap.get(id);
-      if (existing) {
-        batch.delete(db.collection("loads").doc(id));
-        count++;
-        report.deleted++;
-      } else {
-        report.skipped++;
-      }
-      if (count >= 400) {
-        chunks.push(batch);
-        batch = db.batch();
-        count = 0;
-      }
-      continue;
-    }
 
     const normalized = normalizeLoad(raw);
     const contentHash = crypto.createHash("md5").update(JSON.stringify(normalized)).digest("hex");
