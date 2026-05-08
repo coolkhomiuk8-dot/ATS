@@ -124,6 +124,7 @@ function LoadsTable({ loads, onLoadClick }) {
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr style={{ background: "var(--bg-hover)" }}>
+            <th style={headStyle}>Load #</th>
             <th style={headStyle}>Pickup</th>
             <th style={headStyle}>From</th>
             <th style={headStyle}>To</th>
@@ -142,6 +143,7 @@ function LoadsTable({ loads, onLoadClick }) {
         <tbody>
           {loads.map((l) => (
             <tr key={l.id} style={{ cursor: onLoadClick ? "pointer" : "default" }} onClick={() => onLoadClick?.(l)}>
+              <td style={{ ...cellStyle, fontFamily: "monospace", fontWeight: 600, color: "var(--text-secondary)" }}>{l.loadNumber || "—"}</td>
               <td style={{ ...cellStyle, fontWeight: 600, whiteSpace: "nowrap" }}>{fmtDate(l.puDate)}</td>
               <td style={cellStyle}>{l.puCity ? `${l.puCity}, ${l.puState || ""}` : "—"}</td>
               <td style={cellStyle}>{l.delCity ? `${l.delCity}, ${l.delState || ""}` : "—"}</td>
@@ -281,6 +283,7 @@ function PendingSection({ loads }) {
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
+            <th style={headStyle}>Load #</th>
             <th style={headStyle}>Pickup</th>
             <th style={headStyle}>From</th>
             <th style={headStyle}>To</th>
@@ -296,6 +299,7 @@ function PendingSection({ loads }) {
         <tbody>
           {loads.map((l) => (
             <tr key={l.id}>
+              <td style={{ ...cellStyle, fontFamily: "monospace", fontWeight: 600, color: "#92400e" }}>{l.loadNumber || "—"}</td>
               <td style={{ ...cellStyle, fontWeight: 600, whiteSpace: "nowrap" }}>{fmtDate(l.puDate)}</td>
               <td style={cellStyle}>{l.puCity ? `${l.puCity}, ${l.puState || ""}` : "—"}</td>
               <td style={cellStyle}>{l.delCity ? `${l.delCity}, ${l.delState || ""}` : "—"}</td>
@@ -756,6 +760,7 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
           <thead>
             <tr style={{ background: "var(--bg-hover)" }}>
               <th style={{ ...headStyle, width: 36, textAlign: "center" }}>#</th>
+              <th style={headStyle}>Load #</th>
               <th style={headStyle}>PU Date</th>
               <th style={headStyle}>Pick Up</th>
               <th style={headStyle}>Del Date</th>
@@ -777,6 +782,7 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
               return (
                 <tr key={l.id} style={{ background: isCancelled ? "#fef2f2" : "transparent" }}>
                   <td style={{ ...cellStyle, textAlign: "center", color: "var(--text-faint)", fontFamily: "monospace", fontWeight: 600 }}>{idx + 1}</td>
+                  <td style={{ ...cellStyle, fontFamily: "monospace", fontWeight: 600, color: "var(--text-secondary)" }}>{l.loadNumber || "—"}</td>
                   <td style={{ ...cellStyle, fontWeight: 600, whiteSpace: "nowrap" }}>
                     {isCancelled && <span style={{ display: "inline-block", background: "#dc2626", color: "white", fontSize: 9, fontWeight: 800, padding: "1px 5px", borderRadius: 3, marginRight: 6, letterSpacing: ".04em" }}>CANCEL</span>}
                     {fmtDate(l.puDate)}
@@ -797,7 +803,7 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
             })}
             {/* Totals row */}
             <tr style={{ background: "#f0fdf4", fontWeight: 700 }}>
-              <td style={cellStyle} colSpan={kind ? 7 : 6}>TOTAL ({sortedLoads.length} loads)</td>
+              <td style={cellStyle} colSpan={kind ? 8 : 7}>TOTAL ({sortedLoads.length} loads)</td>
               <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace" }}>{fmtNum(stats.loaded)}</td>
               <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace" }}>{fmtNum(stats.empty)}</td>
               <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace" }}>{fmtRpm(stats.avgRpm)}</td>
@@ -1096,7 +1102,9 @@ export default function LoadsView() {
       if (unitFilter && String(l.unit || "").toLowerCase().indexOf(unitFilter.toLowerCase()) < 0) return false;
       if (!q) return true;
       return (
+        String(l.loadNumber || "").toLowerCase().includes(q) ||
         String(l.unit || "").toLowerCase().includes(q) ||
+        String(l.driverName || "").toLowerCase().includes(q) ||
         String(l.broker || "").toLowerCase().includes(q) ||
         String(l.dispatcher || "").toLowerCase().includes(q) ||
         String(l.puCity || "").toLowerCase().includes(q) ||
@@ -1153,7 +1161,7 @@ export default function LoadsView() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search unit, broker, city..."
+            placeholder="Search load #, unit, driver, broker, city..."
             style={{ width: "100%", padding: "8px 12px", fontSize: 13, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 9, color: "var(--text-primary)", outline: "none" }}
           />
         </div>

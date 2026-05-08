@@ -115,7 +115,14 @@ function normalizeLoad(raw) {
     const n = Number(v);
     return Number.isFinite(n) ? n : 0;
   };
+  // Try every likely field name the TMS might use for a load reference number
+  const loadNumber =
+    raw.loadNumber || raw.load_number || raw.loadNo || raw.load_no ||
+    raw.loadId || raw.load_id || raw.id ||
+    raw.number || raw.ref || raw.referenceNumber || raw.reference ||
+    raw.poNumber || raw.po || null;
   return {
+    loadNumber:  loadNumber ? String(loadNumber) : null,
     date:        raw.date     || null,
     status:      raw.status   || null,
     rate:        num(raw.rate),

@@ -33,6 +33,9 @@ export const handler = async (event) => {
 
   try {
     const { items, total } = await fetchAllLoads(apiKey, { pageSize: 200, maxItems: 5000 });
+    // Debug: keys of first item to discover load-number / id field names
+    const sampleKeys = items.length > 0 ? Object.keys(items[0]).sort() : [];
+    const sampleItem = items.length > 0 ? items[0] : null;
     const result = await syncLoadsToFirestore(db, items);
     return json(200, {
       success: true,
@@ -40,6 +43,8 @@ export const handler = async (event) => {
       apiTotal: total,
       report: result,
       elapsedMs: Date.now() - t0,
+      sampleKeys,
+      sampleItem,
     });
   } catch (err) {
     return json(500, { error: err.message || "Sync failed" });
