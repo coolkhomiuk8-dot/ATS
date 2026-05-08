@@ -161,7 +161,7 @@ function normalizeLoad(raw) {
  * Returns: { written, skipped, errors }
  */
 async function syncLoadsToFirestore(db, loads, { now = new Date().toISOString() } = {}) {
-  const report = { written: 0, skipped: 0, errors: [] };
+  const report = { written: 0, skipped: 0, deleted: 0, errors: [] };
 
   // Read existing in batches (Firestore has a 10-key `in` limit, so we
   // just read the whole collection once — cheaper than N targeted reads).
@@ -208,6 +208,30 @@ async function syncLoadsToFirestore(db, loads, { now = new Date().toISOString() 
   for (const b of chunks) {
     try { await b.commit(); }
     catch (e) { report.errors.push(`Batch commit: ${e.message}`); }
+  }
+
+  // Cleanup: remove stale "new" status docs that are no longer in the API response.
+  // These are loads that were canceled / deleted in TMS, OR had a field changed
+  // that altered their computed ID (e.g. user changed pickup date), leaving an
+  // orphan with status="new" behind. We never delete non-"new" docs because the
+  // API only serves a window of recent loads and we'd lose historical data.
+  const apiIds = new Set(loads.map(loadDocId));
+  const orphanedNewIds = [];
+  for (const [id, data] of existingMap.entries()) {
+    if (apiIds.has(id)) continue;
+    const status = String(data.status || "").toLowerCase().trim();
+    if (status === "new") orphanedNewIds.push(id);
+  }
+  for (let i = 0; i < orphanedNewIds.length; i += 400) {
+    const chunk = orphanedNewIds.slice(i, i + 400);
+    const batch = db.batch();
+    for (const id of chunk) batch.delete(db.collection("loads").doc(id));
+    try {
+      await batch.commit();
+      report.deleted += chunk.length;
+    } catch (e) {
+      report.errors.push(`Cleanup batch: ${e.message}`);
+    }
   }
 
   return report;
