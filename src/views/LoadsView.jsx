@@ -393,10 +393,14 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
           </thead>
           <tbody>
             {sortedLoads.map((l) => {
-              const isEmpty = (Number(l.rate) || 0) === 0;
+              const statusLower = String(l.status || "").toLowerCase();
+              const isCancelled = statusLower.includes("cancel") || (Number(l.rate) || 0) === 0;
               return (
-                <tr key={l.id} style={{ background: isEmpty ? "#fef2f2" : "transparent" }}>
-                  <td style={{ ...cellStyle, fontWeight: 600, whiteSpace: "nowrap" }}>{fmtDate(l.puDate)}</td>
+                <tr key={l.id} style={{ background: isCancelled ? "#fef2f2" : "transparent" }}>
+                  <td style={{ ...cellStyle, fontWeight: 600, whiteSpace: "nowrap" }}>
+                    {isCancelled && <span style={{ display: "inline-block", background: "#dc2626", color: "white", fontSize: 9, fontWeight: 800, padding: "1px 5px", borderRadius: 3, marginRight: 6, letterSpacing: ".04em" }}>CANCEL</span>}
+                    {fmtDate(l.puDate)}
+                  </td>
                   <td style={cellStyle}>{l.puCity ? `${l.puCity}, ${l.puState || ""}` : "—"}</td>
                   <td style={{ ...cellStyle, color: "var(--text-muted)", whiteSpace: "nowrap" }}>{fmtDate(l.delDate)}</td>
                   <td style={cellStyle}>{l.delCity ? `${l.delCity}, ${l.delState || ""}` : "—"}</td>
@@ -404,9 +408,9 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
                   {kind === "truck"  && <td style={cellStyle}>{l.driverName || "—"}</td>}
                   <td style={{ ...cellStyle, color: "var(--text-muted)" }}>{l.broker || "—"}</td>
                   <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace" }}>{fmtNum(l.loadedMiles)}</td>
-                  <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace", color: "var(--text-faint)" }}>{fmtNum(l.emptyMiles)}</td>
+                  <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace", color: l.emptyMiles > 0 && isCancelled ? "#dc2626" : "var(--text-faint)", fontWeight: l.emptyMiles > 0 && isCancelled ? 600 : 400 }}>{fmtNum(l.emptyMiles)}</td>
                   <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace", fontWeight: 600 }}>{fmtRpm(l.rpm)}</td>
-                  <td style={{ ...cellStyle, textAlign: "right", fontWeight: 700, color: isEmpty ? "#dc2626" : "#16a34a" }}>{fmtMoney(l.rate)}</td>
+                  <td style={{ ...cellStyle, textAlign: "right", fontWeight: 700, color: isCancelled ? "#dc2626" : "#16a34a" }}>{fmtMoney(l.rate)}</td>
                   <td style={cellStyle}><StatusBadge status={l.status} /></td>
                 </tr>
               );
