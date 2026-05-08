@@ -245,18 +245,37 @@ function GroupTable({ loads, groupBy /* "unit" | "driver" */, trucks, drivers, o
 function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" | "truck" */ }) {
   const range = weekRangeFromKey(weekKey);
 
-  // Build day-by-day map (Mon-Sun) using EST date matching
+  // Build day-by-day map (Mon-Sun) — match loads as ACTIVE if pickup <= day <= delivery
   const days = useMemo(() => {
     if (!range) return [];
     const out = [];
     for (let i = 0; i < 7; i++) {
       const dayDate = new Date(range.monday.getTime() + i * 86400000);
-      const isoDay = dayDate.toLocaleDateString("en-CA", { timeZone: "America/New_York" }); // YYYY-MM-DD
-      const dayLoads = loads.filter((l) => {
-        if (!l.puDate) return false;
-        return String(l.puDate).slice(0, 10) === isoDay;
-      });
-      out.push({ date: dayDate, isoDay, loads: dayLoads });
+      // Use UTC components — range.monday is UTC midnight of EST Monday
+      const y = dayDate.getUTCFullYear();
+      const mo = String(dayDate.getUTCMonth() + 1).padStart(2, "0");
+      const d = String(dayDate.getUTCDate()).padStart(2, "0");
+      const isoDay = `${y}-${mo}-${d}`;
+
+      // Active loads: any load where pickup <= today <= delivery (inclusive)
+      const loadInfo = loads
+        .filter((l) => {
+          const pu = String(l.puDate || "").slice(0, 10);
+          if (!pu) return false;
+          const del = String(l.delDate || "").slice(0, 10) || pu;
+          return pu <= isoDay && isoDay <= del;
+        })
+        .map((l) => {
+          const pu = String(l.puDate || "").slice(0, 10);
+          const del = String(l.delDate || "").slice(0, 10) || pu;
+          let phase;
+          if (pu === del) phase = "sameday";
+          else if (isoDay === pu) phase = "pickup";
+          else if (isoDay === del) phase = "delivery";
+          else phase = "transit";
+          return { load: l, phase };
+        });
+      out.push({ date: dayDate, isoDay, loadInfo });
     }
     return out;
   }, [loads, weekKey]);
@@ -345,25 +364,49 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
           {days.map((d, i) => {
             const isWeekend = i === 5 || i === 6; // Sat=5, Sun=6
-            const hasLoads = d.loads.length > 0;
-            const dayGross = d.loads.reduce((s, l) => s + (Number(l.rate) || 0), 0);
+            const hasActive = d.loadInfo.length > 0;
+            const pickupsToday = d.loadInfo.filter((li) => li.phase === "pickup" || li.phase === "sameday");
+            const transitToday = d.loadInfo.filter((li) => li.phase === "transit");
+            const deliveriesToday = d.loadInfo.filter((li) => li.phase === "delivery");
+            const dayGross = pickupsToday.reduce((s, li) => s + (Number(li.load.rate) || 0), 0);
+
+            // Pick visual style based on activity
+            let bg, border, label, labelColor;
+            if (!hasActive) {
+              if (isWeekend) {
+                bg = "#fafafa"; border = "#e5e5e5";
+                label = "Off day"; labelColor = "var(--text-faint)";
+              } else {
+                bg = "#fef9f3"; border = "#fde7c2";
+                label = "⚠ No load"; labelColor = "#92400e";
+              }
+            } else if (pickupsToday.length > 0) {
+              bg = "var(--bg-surface)"; border = "var(--border)";
+            } else {
+              // Only in-transit / delivery, no new pickup
+              bg = "#fef3c7"; border = "#fde68a";
+              label = transitToday.length > 0 ? "🚛 In transit" : "📦 Delivery";
+              labelColor = "#92400e";
+            }
+
             return (
               <div key={d.isoDay} style={{
-                background: hasLoads ? "var(--bg-surface)" : (isWeekend ? "#fafafa" : "#fef9f3"),
-                border: `1px solid ${hasLoads ? "var(--border)" : (isWeekend ? "#e5e5e5" : "#fde7c2")}`,
-                borderRadius: 10, padding: "10px 12px", minHeight: 90,
-                opacity: hasLoads ? 1 : 0.85,
+                background: bg, border: `1px solid ${border}`,
+                borderRadius: 10, padding: "10px 12px", minHeight: 96,
               }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase" }}>{dayName(d.date)}</div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>{dayDate(d.date)}</div>
-                {hasLoads ? (
+                {pickupsToday.length > 0 ? (
                   <>
                     <div style={{ fontSize: 11, fontWeight: 700, color: "#16a34a" }}>{fmtMoney(dayGross)}</div>
-                    <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 2 }}>{d.loads.length} {d.loads.length === 1 ? "load" : "loads"}</div>
+                    <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 2 }}>
+                      {pickupsToday.length} pickup{pickupsToday.length > 1 ? "s" : ""}
+                      {deliveriesToday.length > 0 && ` · ${deliveriesToday.length} del`}
+                    </div>
                   </>
                 ) : (
-                  <div style={{ fontSize: 11, color: isWeekend ? "var(--text-faint)" : "#92400e", fontWeight: 600, marginTop: 6 }}>
-                    {isWeekend ? "Off day" : "⚠ No load"}
+                  <div style={{ fontSize: 11, color: labelColor, fontWeight: 600, marginTop: 6 }}>
+                    {label}
                   </div>
                 )}
               </div>
