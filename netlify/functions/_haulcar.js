@@ -96,10 +96,12 @@ function weekKeyEst(isoDate) {
     wD += new Date(wY, wM, 0).getDate();
   }
 
-  // ISO week number — count weeks from Jan 4 (always in week 1)
+  // ISO week number — count weeks from week1Mon (Monday of week 1)
   const jan4 = new Date(Date.UTC(wY, 0, 4));
+  const jan4Day = (jan4.getUTCDay() + 6) % 7; // 0 = Mon
+  const week1Mon = new Date(Date.UTC(wY, 0, 4 - jan4Day));
   const target = new Date(Date.UTC(wY, wM - 1, wD));
-  const diffDays = Math.round((target - jan4) / 86400000);
+  const diffDays = Math.round((target - week1Mon) / 86400000);
   const week = Math.floor(diffDays / 7) + 1;
   return `${wY}-W${String(week).padStart(2, "0")}`;
 }

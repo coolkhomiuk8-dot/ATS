@@ -52,8 +52,10 @@ export function currentWeekKey() {
     d += new Date(y, mo, 0).getDate();
   }
   const jan4 = new Date(Date.UTC(y, 0, 4));
+  const jan4Day = (jan4.getUTCDay() + 6) % 7; // 0 = Mon
+  const week1Mon = new Date(Date.UTC(y, 0, 4 - jan4Day));
   const target = new Date(Date.UTC(y, mo - 1, d));
-  const diffDays = Math.round((target - jan4) / 86400000);
+  const diffDays = Math.round((target - week1Mon) / 86400000);
   const week = Math.floor(diffDays / 7) + 1;
   return `${y}-W${String(week).padStart(2, "0")}`;
 }
@@ -72,8 +74,10 @@ export function shiftWeekKey(weekKey, delta) {
   const parts = Object.fromEntries(fmt.formatToParts(newMonday).map((p) => [p.type, p.value]));
   const y = +parts.year, mo = +parts.month, d = +parts.day;
   const jan4 = new Date(Date.UTC(y, 0, 4));
+  const jan4Day = (jan4.getUTCDay() + 6) % 7;
+  const week1Mon = new Date(Date.UTC(y, 0, 4 - jan4Day));
   const target = new Date(Date.UTC(y, mo - 1, d));
-  const diffDays = Math.round((target - jan4) / 86400000);
+  const diffDays = Math.round((target - week1Mon) / 86400000);
   const week = Math.floor(diffDays / 7) + 1;
   return `${y}-W${String(week).padStart(2, "0")}`;
 }
