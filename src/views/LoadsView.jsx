@@ -3,6 +3,7 @@ import { useLoadsStore, weekRangeFromKey, currentWeekKey, shiftWeekKey } from ".
 import { useTrucksStore } from "../store/useTrucksStore";
 import { useDriversStore } from "../store/useDriversStore";
 import { useTimeOffStore } from "../store/useTimeOffStore";
+import { useAdjustmentsStore } from "../store/useAdjustmentsStore";
 import { auth } from "../lib/firebase";
 
 const haulcarSyncEndpoint = import.meta.env.VITE_HAULCAR_SYNC_ENDPOINT || "/.netlify/functions/haulcarSync";
@@ -67,7 +68,7 @@ function StatsBar({ loads }) {
     const loadedMi = loads.reduce((s, l) => s + (Number(l.loadedMiles) || 0), 0);
     const emptyMi = loads.reduce((s, l) => s + (Number(l.emptyMiles) || 0), 0);
     const totalMi = loadedMi + emptyMi;
-    const avgRpm = loadedMi > 0 ? gross / loadedMi : 0;
+    const avgRpm = totalMi > 0 ? gross / totalMi : 0;
     const deadheadPct = totalMi > 0 ? (emptyMi / totalMi) * 100 : 0;
     return { count, gross, loadedMi, emptyMi, totalMi, avgRpm, deadheadPct };
   }, [loads]);
@@ -186,12 +187,15 @@ function GroupTable({ loads, groupBy /* "unit" | "driver" */, trucks, drivers, o
       g.emptyMi  += Number(l.emptyMiles) || 0;
     }
     return [...map.values()]
-      .map((g) => ({
-        ...g,
-        count: g.loads.length,
-        avgRpm:      g.loadedMi > 0 ? g.gross / g.loadedMi : 0,
-        deadheadPct: (g.loadedMi + g.emptyMi) > 0 ? (g.emptyMi / (g.loadedMi + g.emptyMi)) * 100 : 0,
-      }))
+      .map((g) => {
+        const totalMi = g.loadedMi + g.emptyMi;
+        return {
+          ...g,
+          count: g.loads.length,
+          avgRpm:      totalMi > 0 ? g.gross / totalMi : 0,
+          deadheadPct: totalMi > 0 ? (g.emptyMi / totalMi) * 100 : 0,
+        };
+      })
       .sort((a, b) => b.gross - a.gross);
   }, [loads, groupBy, trucks, drivers]);
 
@@ -263,6 +267,20 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
     }
     // intentionally no unsubscribe — store handles re-subscription
   }, [kind, title]);
+
+  // Adjustments (extra pay / miles / notes) — only for drivers, scoped to current week
+  const {
+    entries: adjustments,
+    subscribeForDriverWeek,
+    addAdjustment,
+    updateAdjustment,
+    removeAdjustment,
+  } = useAdjustmentsStore();
+  useEffect(() => {
+    if (kind === "driver" && title && weekKey) {
+      subscribeForDriverWeek(title, weekKey);
+    }
+  }, [kind, title, weekKey]);
 
   // Map of isoDay → time off entry for fast lookup
   const timeOffByDay = useMemo(() => {
@@ -350,17 +368,26 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
   }, [loads]);
 
   const stats = useMemo(() => {
-    const gross = loads.reduce((s, l) => s + (Number(l.rate) || 0), 0);
-    const loaded = loads.reduce((s, l) => s + (Number(l.loadedMiles) || 0), 0);
-    const empty = loads.reduce((s, l) => s + (Number(l.emptyMiles) || 0), 0);
+    const loadGross  = loads.reduce((s, l) => s + (Number(l.rate)        || 0), 0);
+    const loadLoaded = loads.reduce((s, l) => s + (Number(l.loadedMiles) || 0), 0);
+    const loadEmpty  = loads.reduce((s, l) => s + (Number(l.emptyMiles)  || 0), 0);
+    const adjGross   = adjustments.reduce((s, a) => s + (Number(a.amount)      || 0), 0);
+    const adjLoaded  = adjustments.reduce((s, a) => s + (Number(a.loadedMiles) || 0), 0);
+    const adjEmpty   = adjustments.reduce((s, a) => s + (Number(a.emptyMiles)  || 0), 0);
+
+    const gross  = loadGross  + adjGross;
+    const loaded = loadLoaded + adjLoaded;
+    const empty  = loadEmpty  + adjEmpty;
     const totalMi = loaded + empty;
+
     return {
       count: loads.length,
-      gross, loaded, empty,
-      avgRpm: loaded > 0 ? gross / loaded : 0,
+      gross, loaded, empty, totalMi,
+      adjGross, adjLoaded, adjEmpty, adjCount: adjustments.length,
+      avgRpm: totalMi > 0 ? gross / totalMi : 0,
       deadheadPct: totalMi > 0 ? (empty / totalMi) * 100 : 0,
     };
-  }, [loads]);
+  }, [loads, adjustments]);
 
   // Track which trucks/drivers were used (for context)
   const associated = useMemo(() => {
@@ -417,16 +444,21 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
         borderRadius: 12, marginBottom: 16,
       }}>
         {[
-          { label: "Loads",      value: stats.count,                            color: "#2563eb" },
-          { label: "Gross",      value: fmtMoney(stats.gross),                  color: "#16a34a" },
-          { label: "Loaded mi",  value: fmtNum(stats.loaded),                   color: "#0891b2" },
-          { label: "Empty mi",   value: fmtNum(stats.empty),                    color: "#d97706" },
+          { label: "Loads",      value: stats.count,                            color: "#2563eb",
+            sub: stats.adjCount > 0 ? `+${stats.adjCount} adj` : null },
+          { label: "Gross",      value: fmtMoney(stats.gross),                  color: "#16a34a",
+            sub: stats.adjGross !== 0 ? `incl ${fmtMoney(stats.adjGross)} adj` : null },
+          { label: "Loaded mi",  value: fmtNum(stats.loaded),                   color: "#0891b2",
+            sub: stats.adjLoaded !== 0 ? `incl ${fmtNum(stats.adjLoaded)} adj` : null },
+          { label: "Empty mi",   value: fmtNum(stats.empty),                    color: "#d97706",
+            sub: stats.adjEmpty !== 0 ? `incl ${fmtNum(stats.adjEmpty)} adj` : null },
           { label: "Avg RPM",    value: fmtRpm(stats.avgRpm),                   color: "#7c3aed" },
           { label: "Deadhead %", value: `${stats.deadheadPct.toFixed(1)}%`,     color: "#ea580c" },
         ].map((s) => (
           <div key={s.label}>
             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>{s.label}</div>
             <div style={{ fontSize: 19, fontWeight: 800, color: s.color, letterSpacing: "-0.5px" }}>{s.value}</div>
+            {s.sub && <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 1 }}>{s.sub}</div>}
           </div>
         ))}
       </div>
@@ -562,6 +594,191 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
           </tbody>
         </table>
       </div>
+
+      {/* Adjustments — only for drivers */}
+      {kind === "driver" && (
+        <AdjustmentsSection
+          adjustments={adjustments}
+          driverName={title}
+          weekKey={weekKey}
+          range={range}
+          onAdd={addAdjustment}
+          onUpdate={updateAdjustment}
+          onRemove={removeAdjustment}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   ADJUSTMENTS SECTION — extra pay / miles / notes
+══════════════════════════════════════════════ */
+function AdjustmentsSection({ adjustments, driverName, weekKey, range, onAdd, onUpdate, onRemove }) {
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState({ isoDay: "", loadedMiles: 0, emptyMiles: 0, amount: 0, note: "" });
+  const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+
+  // Default isoDay to monday of week when opening form
+  function startAdd() {
+    const monday = range?.monday;
+    const isoDay = monday
+      ? `${monday.getUTCFullYear()}-${String(monday.getUTCMonth() + 1).padStart(2, "0")}-${String(monday.getUTCDate()).padStart(2, "0")}`
+      : new Date().toISOString().slice(0, 10);
+    setDraft({ isoDay, loadedMiles: 0, emptyMiles: 0, amount: 0, note: "" });
+    setEditingId(null);
+    setAdding(true);
+  }
+
+  function startEdit(a) {
+    setDraft({
+      isoDay: a.isoDay,
+      loadedMiles: a.loadedMiles || 0,
+      emptyMiles:  a.emptyMiles  || 0,
+      amount:      a.amount      || 0,
+      note:        a.note        || "",
+    });
+    setEditingId(a.id);
+    setAdding(true);
+  }
+
+  async function save() {
+    if (!draft.note.trim() && !draft.amount && !draft.loadedMiles && !draft.emptyMiles) return;
+    setSaving(true);
+    try {
+      if (editingId) {
+        await onUpdate(editingId, {
+          isoDay: draft.isoDay,
+          loadedMiles: draft.loadedMiles,
+          emptyMiles:  draft.emptyMiles,
+          amount:      draft.amount,
+          note:        draft.note,
+        });
+      } else {
+        await onAdd({
+          driverName, weekKey,
+          isoDay: draft.isoDay,
+          loadedMiles: draft.loadedMiles,
+          emptyMiles:  draft.emptyMiles,
+          amount:      draft.amount,
+          note:        draft.note,
+        });
+      }
+      setAdding(false);
+      setEditingId(null);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleRemove(id) {
+    if (!window.confirm("Remove this adjustment?")) return;
+    await onRemove(id);
+  }
+
+  const cellStyle = { padding: "10px 12px", borderBottom: "1px solid var(--border)", fontSize: 12, verticalAlign: "middle" };
+  const headStyle = { padding: "10px 12px", fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", textAlign: "left", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" };
+  const inpStyle = { padding: "6px 10px", fontSize: 12, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-primary)", outline: "none", width: "100%" };
+
+  return (
+    <div style={{ marginTop: 18 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em" }}>
+          Adjustments {adjustments.length > 0 && `(${adjustments.length})`}
+        </div>
+        {!adding && (
+          <button onClick={startAdd}
+            style={{ background: "#2563eb", color: "white", border: "none", padding: "6px 14px", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+            + Add adjustment
+          </button>
+        )}
+      </div>
+
+      {/* Form (add or edit) */}
+      {adding && (
+        <div style={{
+          background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10,
+          padding: 14, marginBottom: 10,
+        }}>
+          <div style={{ display: "grid", gridTemplateColumns: "150px 1fr 110px 110px 130px", gap: 10, marginBottom: 10 }}>
+            <div>
+              <label style={{ fontSize: 10, fontWeight: 600, color: "var(--text-faint)", display: "block", marginBottom: 3 }}>Date</label>
+              <input type="date" value={draft.isoDay} onChange={(e) => setDraft((d) => ({ ...d, isoDay: e.target.value }))} style={inpStyle} />
+            </div>
+            <div>
+              <label style={{ fontSize: 10, fontWeight: 600, color: "var(--text-faint)", display: "block", marginBottom: 3 }}>Note</label>
+              <input value={draft.note} onChange={(e) => setDraft((d) => ({ ...d, note: e.target.value }))}
+                placeholder="e.g. Helped recovery move from KS" style={inpStyle} />
+            </div>
+            <div>
+              <label style={{ fontSize: 10, fontWeight: 600, color: "var(--text-faint)", display: "block", marginBottom: 3 }}>Loaded mi</label>
+              <input type="number" value={draft.loadedMiles} onChange={(e) => setDraft((d) => ({ ...d, loadedMiles: e.target.value }))} style={inpStyle} />
+            </div>
+            <div>
+              <label style={{ fontSize: 10, fontWeight: 600, color: "var(--text-faint)", display: "block", marginBottom: 3 }}>Empty mi</label>
+              <input type="number" value={draft.emptyMiles} onChange={(e) => setDraft((d) => ({ ...d, emptyMiles: e.target.value }))} style={inpStyle} />
+            </div>
+            <div>
+              <label style={{ fontSize: 10, fontWeight: 600, color: "var(--text-faint)", display: "block", marginBottom: 3 }}>Extra pay ($)</label>
+              <input type="number" value={draft.amount} onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))} style={inpStyle} />
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button onClick={() => { setAdding(false); setEditingId(null); }}
+              style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", padding: "7px 14px", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer", color: "var(--text-secondary)" }}>
+              Cancel
+            </button>
+            <button onClick={save} disabled={saving}
+              style={{ background: "#16a34a", color: "white", border: "none", padding: "7px 16px", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: saving ? "wait" : "pointer" }}>
+              {saving ? "Saving…" : editingId ? "Save changes" : "Add"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* List */}
+      {adjustments.length === 0 ? (
+        <div style={{ fontSize: 12, color: "var(--text-faint)", padding: "16px 0", textAlign: "center" }}>
+          No adjustments for this week.
+        </div>
+      ) : (
+        <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "var(--bg-hover)" }}>
+                <th style={headStyle}>Date</th>
+                <th style={headStyle}>Note</th>
+                <th style={{ ...headStyle, textAlign: "right" }}>Loaded</th>
+                <th style={{ ...headStyle, textAlign: "right" }}>Empty</th>
+                <th style={{ ...headStyle, textAlign: "right" }}>Pay</th>
+                <th style={{ ...headStyle, width: 90 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {adjustments.map((a) => (
+                <tr key={a.id}>
+                  <td style={{ ...cellStyle, fontWeight: 600, whiteSpace: "nowrap" }}>{fmtDate(a.isoDay)}</td>
+                  <td style={cellStyle}>{a.note || "—"}</td>
+                  <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace" }}>{fmtNum(a.loadedMiles)}</td>
+                  <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace", color: "var(--text-faint)" }}>{fmtNum(a.emptyMiles)}</td>
+                  <td style={{ ...cellStyle, textAlign: "right", fontWeight: 700, color: "#16a34a" }}>{fmtMoney(a.amount)}</td>
+                  <td style={{ ...cellStyle, textAlign: "right", whiteSpace: "nowrap" }}>
+                    <button onClick={() => startEdit(a)}
+                      style={{ background: "transparent", border: "none", color: "#2563eb", fontSize: 12, fontWeight: 600, cursor: "pointer", marginRight: 6 }}>
+                      Edit
+                    </button>
+                    <button onClick={() => handleRemove(a.id)}
+                      style={{ background: "transparent", border: "none", color: "#dc2626", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

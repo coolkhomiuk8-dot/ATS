@@ -60,6 +60,11 @@ service cloud.firestore {
       allow read, create, update, delete: if isUser();
     }
 
+    match /driverAdjustments/{docId} {
+      // dispatchers can add manual adjustments (extra pay / miles / notes)
+      allow read, create, update, delete: if isUser();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
