@@ -210,17 +210,18 @@ async function syncLoadsToFirestore(db, loads, { now = new Date().toISOString() 
     catch (e) { report.errors.push(`Batch commit: ${e.message}`); }
   }
 
-  // Cleanup: remove stale "new" status docs that are no longer in the API response.
-  // These are loads that were canceled / deleted in TMS, OR had a field changed
-  // that altered their computed ID (e.g. user changed pickup date), leaving an
-  // orphan with status="new" behind. We never delete non-"new" docs because the
-  // API only serves a window of recent loads and we'd lose historical data.
+  // Cleanup: remove stale pre-pickup status docs that are no longer in the API
+  // response. These are loads that were canceled / deleted in TMS, OR had a
+  // field changed that altered their computed ID (e.g. user changed pickup date),
+  // leaving an orphan behind. We never delete loads in later statuses because
+  // the API only serves a recent window and we'd lose historical data.
+  const PENDING_STATUSES = new Set(["new", "rolling to pu", "rolling to pickup"]);
   const apiIds = new Set(loads.map(loadDocId));
   const orphanedNewIds = [];
   for (const [id, data] of existingMap.entries()) {
     if (apiIds.has(id)) continue;
     const status = String(data.status || "").toLowerCase().trim();
-    if (status === "new") orphanedNewIds.push(id);
+    if (PENDING_STATUSES.has(status)) orphanedNewIds.push(id);
   }
   for (let i = 0; i < orphanedNewIds.length; i += 400) {
     const chunk = orphanedNewIds.slice(i, i + 400);

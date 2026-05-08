@@ -83,12 +83,14 @@ export function shiftWeekKey(weekKey, delta) {
 }
 
 /**
- * Loads with status "new" are still in the booking stage — kept separate
- * from confirmed loads in the UI (shown as a "Pending" section).
+ * Loads that haven't been picked up yet — kept separate from confirmed
+ * loads in the UI (shown as a "Pending" section). Includes both freshly
+ * booked ("new") and en-route-to-pickup ("rolling to pu").
  */
+const PENDING_STATUSES = new Set(["new", "rolling to pu", "rolling to pickup"]);
 export function isPendingLoad(l) {
   const s = String(l?.status || "").toLowerCase().trim();
-  return s === "new";
+  return PENDING_STATUSES.has(s);
 }
 
 /**

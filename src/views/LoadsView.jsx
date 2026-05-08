@@ -277,13 +277,14 @@ function PendingSection({ loads }) {
           ⏳ Pending
         </div>
         <div style={{ fontSize: 11, color: "#a16207" }}>
-          {loads.length} newly booked load{loads.length === 1 ? "" : "s"} — not yet picked up
+          {loads.length} load{loads.length === 1 ? "" : "s"} — booked / rolling to pickup, not yet picked up
         </div>
       </div>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
             <th style={headStyle}>Load #</th>
+            <th style={headStyle}>Status</th>
             <th style={headStyle}>Pickup</th>
             <th style={headStyle}>From</th>
             <th style={headStyle}>To</th>
@@ -300,6 +301,7 @@ function PendingSection({ loads }) {
           {loads.map((l) => (
             <tr key={l.id}>
               <td style={{ ...cellStyle, fontFamily: "monospace", fontWeight: 600, color: "#92400e" }}>{l.loadNumber || "—"}</td>
+              <td style={cellStyle}><StatusBadge status={l.status} /></td>
               <td style={{ ...cellStyle, fontWeight: 600, whiteSpace: "nowrap" }}>{fmtDate(l.puDate)}</td>
               <td style={cellStyle}>{l.puCity ? `${l.puCity}, ${l.puState || ""}` : "—"}</td>
               <td style={cellStyle}>{l.delCity ? `${l.delCity}, ${l.delState || ""}` : "—"}</td>
