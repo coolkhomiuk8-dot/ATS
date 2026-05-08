@@ -83,6 +83,25 @@ export function shiftWeekKey(weekKey, delta) {
 }
 
 /**
+ * Fetch loads matching any of the given weekKeys (Firestore `in` allows up to 30).
+ * Returns plain load objects (not subscribed). For monthly aggregates etc.
+ */
+export async function fetchLoadsForWeeks(weekKeys) {
+  if (!isFirebaseConfigured || !db) return [];
+  if (!Array.isArray(weekKeys) || weekKeys.length === 0) return [];
+  // Firestore `in` operator caps at 30 values
+  const chunks = [];
+  for (let i = 0; i < weekKeys.length; i += 30) chunks.push(weekKeys.slice(i, i + 30));
+  const all = [];
+  for (const chunk of chunks) {
+    const q = query(collection(db, "loads"), where("weekKey", "in", chunk));
+    const snap = await getDocs(q);
+    snap.docs.forEach((d) => all.push({ id: d.id, ...d.data() }));
+  }
+  return all;
+}
+
+/**
  * Find the most recent weekKey that has loads in Firestore.
  * Returns null if collection is empty or on error.
  */

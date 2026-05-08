@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { useLoadsStore, weekRangeFromKey, currentWeekKey, shiftWeekKey } from "../store/useLoadsStore";
+import { useLoadsStore, weekRangeFromKey, currentWeekKey, shiftWeekKey, fetchLoadsForWeeks } from "../store/useLoadsStore";
+import { db } from "../lib/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { useTrucksStore } from "../store/useTrucksStore";
 import { useDriversStore } from "../store/useDriversStore";
 import { useTimeOffStore } from "../store/useTimeOffStore";
@@ -282,6 +284,95 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
     }
   }, [kind, title, weekKey]);
 
+  // Monthly stats — last 4 weeks (rolling, including current)
+  const [monthly, setMonthly] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!title || !weekKey) return;
+
+    async function loadMonthly() {
+      // 4 weeks: current + 3 previous
+      const weeks = [];
+      let wk = weekKey;
+      for (let i = 0; i < 4; i++) {
+        weeks.push(wk);
+        wk = shiftWeekKey(wk, -1);
+      }
+
+      try {
+        const [allLoads, allAdj] = await Promise.all([
+          fetchLoadsForWeeks(weeks),
+          (async () => {
+            // Adjustments: query in chunks of 30
+            const chunks = [];
+            for (let i = 0; i < weeks.length; i += 30) chunks.push(weeks.slice(i, i + 30));
+            const out = [];
+            for (const c of chunks) {
+              const q = query(collection(db, "driverAdjustments"), where("weekKey", "in", c));
+              const snap = await getDocs(q);
+              snap.docs.forEach((d) => out.push({ id: d.id, ...d.data() }));
+            }
+            return out;
+          })(),
+        ]);
+        if (cancelled) return;
+
+        const filterFn = kind === "driver"
+          ? (l) => l.driverName === title || (`unit-${l.unit || "unknown"}`) === title
+          : (l) => (l.unit || "(no unit)") === title;
+        const myLoads = allLoads.filter(filterFn);
+        const myAdj   = kind === "driver" ? allAdj.filter((a) => a.driverName === title) : [];
+
+        const loadGross  = myLoads.reduce((s, l) => s + (Number(l.rate)        || 0), 0);
+        const loadLoaded = myLoads.reduce((s, l) => s + (Number(l.loadedMiles) || 0), 0);
+        const loadEmpty  = myLoads.reduce((s, l) => s + (Number(l.emptyMiles)  || 0), 0);
+        const adjGross   = myAdj.reduce((s, a) => s + (Number(a.amount)      || 0), 0);
+        const adjLoaded  = myAdj.reduce((s, a) => s + (Number(a.loadedMiles) || 0), 0);
+        const adjEmpty   = myAdj.reduce((s, a) => s + (Number(a.emptyMiles)  || 0), 0);
+
+        const gross  = loadGross  + adjGross;
+        const loaded = loadLoaded + adjLoaded;
+        const empty  = loadEmpty  + adjEmpty;
+        const totalMi = loaded + empty;
+
+        // Per-week breakdown
+        const byWeek = weeks.map((w) => {
+          const wL = myLoads.filter((l) => l.weekKey === w);
+          const wA = myAdj.filter((a) => a.weekKey === w);
+          const g = wL.reduce((s, l) => s + (Number(l.rate)        || 0), 0)
+                  + wA.reduce((s, a) => s + (Number(a.amount)      || 0), 0);
+          const ld = wL.reduce((s, l) => s + (Number(l.loadedMiles) || 0), 0)
+                   + wA.reduce((s, a) => s + (Number(a.loadedMiles) || 0), 0);
+          const em = wL.reduce((s, l) => s + (Number(l.emptyMiles)  || 0), 0)
+                   + wA.reduce((s, a) => s + (Number(a.emptyMiles)  || 0), 0);
+          const t = ld + em;
+          return {
+            weekKey: w,
+            count: wL.length,
+            gross: g, loaded: ld, empty: em,
+            avgRpm: t > 0 ? g / t : 0,
+            range: weekRangeFromKey(w),
+          };
+        });
+
+        setMonthly({
+          weeks,
+          count: myLoads.length,
+          gross, loaded, empty, totalMi,
+          avgRpm: totalMi > 0 ? gross / totalMi : 0,
+          deadheadPct: totalMi > 0 ? (empty / totalMi) * 100 : 0,
+          adjCount: myAdj.length,
+          byWeek,
+        });
+      } catch (err) {
+        if (!cancelled) console.warn("Monthly stats fetch failed:", err);
+      }
+    }
+
+    loadMonthly();
+    return () => { cancelled = true; };
+  }, [title, weekKey, kind]);
+
   // Map of isoDay → time off entry for fast lookup
   const timeOffByDay = useMemo(() => {
     const m = {};
@@ -463,6 +554,66 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
         ))}
       </div>
 
+      {/* Monthly stats — last 4 weeks rolling */}
+      {monthly && monthly.count + monthly.adjCount > 0 && (
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em" }}>
+              Last 4 weeks
+            </div>
+            <div style={{ fontSize: 11, color: "var(--text-faint)" }}>
+              {monthly.count} loads {monthly.adjCount > 0 ? `· +${monthly.adjCount} adj` : ""}
+            </div>
+          </div>
+
+          {/* Aggregate row */}
+          <div style={{
+            display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10,
+            padding: "12px 16px", background: "linear-gradient(180deg, #fafbff 0%, #f4f6fb 100%)",
+            border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 10,
+          }}>
+            {[
+              { label: "Gross",      value: fmtMoney(monthly.gross),                 color: "#16a34a" },
+              { label: "Loaded mi",  value: fmtNum(monthly.loaded),                  color: "#0891b2" },
+              { label: "Empty mi",   value: fmtNum(monthly.empty),                   color: "#d97706" },
+              { label: "Avg RPM",    value: fmtRpm(monthly.avgRpm),                  color: "#7c3aed" },
+              { label: "Deadhead %", value: `${monthly.deadheadPct.toFixed(1)}%`,    color: "#ea580c" },
+            ].map((s) => (
+              <div key={s.label}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 3 }}>{s.label}</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: s.color, letterSpacing: "-0.3px" }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Per-week breakdown — 4 mini-cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+            {monthly.byWeek.map((w, i) => {
+              const isCurrent = w.weekKey === weekKey;
+              return (
+                <div key={w.weekKey} style={{
+                  background: isCurrent ? "#eff6ff" : "var(--bg-surface)",
+                  border: `1px solid ${isCurrent ? "#bfdbfe" : "var(--border)"}`,
+                  borderRadius: 10, padding: "10px 12px",
+                }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>
+                    {w.weekKey} {isCurrent && <span style={{ color: "#1d4ed8", fontWeight: 800 }}>· current</span>}
+                  </div>
+                  <div style={{ fontSize: 10, color: "var(--text-faint)", marginBottom: 4 }}>{w.range?.label}</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "#16a34a" }}>{fmtMoney(w.gross)}</div>
+                    <div style={{ fontSize: 10, color: "var(--text-faint)" }}>{w.count} loads</div>
+                  </div>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>
+                    {fmtNum(w.loaded + w.empty)} mi · {fmtRpm(w.avgRpm)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Day-by-day timeline */}
       <div style={{ marginBottom: 18 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 }}>
@@ -544,6 +695,7 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "var(--bg-hover)" }}>
+              <th style={{ ...headStyle, width: 36, textAlign: "center" }}>#</th>
               <th style={headStyle}>PU Date</th>
               <th style={headStyle}>Pick Up</th>
               <th style={headStyle}>Del Date</th>
@@ -559,11 +711,12 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
             </tr>
           </thead>
           <tbody>
-            {sortedLoads.map((l) => {
+            {sortedLoads.map((l, idx) => {
               const statusLower = String(l.status || "").toLowerCase();
               const isCancelled = statusLower.includes("cancel") || (Number(l.rate) || 0) === 0;
               return (
                 <tr key={l.id} style={{ background: isCancelled ? "#fef2f2" : "transparent" }}>
+                  <td style={{ ...cellStyle, textAlign: "center", color: "var(--text-faint)", fontFamily: "monospace", fontWeight: 600 }}>{idx + 1}</td>
                   <td style={{ ...cellStyle, fontWeight: 600, whiteSpace: "nowrap" }}>
                     {isCancelled && <span style={{ display: "inline-block", background: "#dc2626", color: "white", fontSize: 9, fontWeight: 800, padding: "1px 5px", borderRadius: 3, marginRight: 6, letterSpacing: ".04em" }}>CANCEL</span>}
                     {fmtDate(l.puDate)}
@@ -584,7 +737,7 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
             })}
             {/* Totals row */}
             <tr style={{ background: "#f0fdf4", fontWeight: 700 }}>
-              <td style={cellStyle} colSpan={kind ? 6 : 5}>TOTAL</td>
+              <td style={cellStyle} colSpan={kind ? 7 : 6}>TOTAL ({sortedLoads.length} loads)</td>
               <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace" }}>{fmtNum(stats.loaded)}</td>
               <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace" }}>{fmtNum(stats.empty)}</td>
               <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace" }}>{fmtRpm(stats.avgRpm)}</td>
