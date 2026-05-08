@@ -32,9 +32,17 @@ function fmtRpm(v) {
 }
 function fmtDate(iso) {
   if (!iso) return "—";
+  // Date-only strings (YYYY-MM-DD) should display as calendar dates with no
+  // timezone shift. `new Date("2026-05-11")` parses as UTC midnight which
+  // becomes May 10 8PM in EST — wrong.
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})(?!T)/.exec(String(iso));
+  if (dateOnly) {
+    const d = new Date(+dateOnly[1], +dateOnly[2] - 1, +dateOnly[3]);
+    return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  }
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  return d.toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric" });
 }
 
 function statusColor(status) {

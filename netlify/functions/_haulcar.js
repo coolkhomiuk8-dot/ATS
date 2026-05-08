@@ -75,18 +75,33 @@ function loadDocId(load) {
  */
 function weekKeyEst(isoDate) {
   if (!isoDate) return null;
-  const d = new Date(isoDate);
-  if (Number.isNaN(d.getTime())) return null;
 
-  // Convert to EST/EDT
-  const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    year: "numeric", month: "2-digit", day: "2-digit", weekday: "short",
-  });
-  const parts = Object.fromEntries(fmt.formatToParts(d).map((p) => [p.type, p.value]));
-  const y = +parts.year, m = +parts.month, day = +parts.day;
+  let y, m, day, weekdayStr;
+
+  // Date-only strings (YYYY-MM-DD): treat as calendar date, no TZ shift.
+  // Otherwise May 11 stored as "2026-05-11" gets converted to May 10 in EST.
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})(?!T)/.exec(String(isoDate));
+  if (dateOnly) {
+    y = +dateOnly[1]; m = +dateOnly[2]; day = +dateOnly[3];
+    // Compute weekday using UTC noon to avoid local TZ edge cases
+    const tmp = new Date(Date.UTC(y, m - 1, day, 12));
+    const wdNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    weekdayStr = wdNames[tmp.getUTCDay()];
+  } else {
+    const d = new Date(isoDate);
+    if (Number.isNaN(d.getTime())) return null;
+    // Datetime → convert to EST/EDT
+    const fmt = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York",
+      year: "numeric", month: "2-digit", day: "2-digit", weekday: "short",
+    });
+    const parts = Object.fromEntries(fmt.formatToParts(d).map((p) => [p.type, p.value]));
+    y = +parts.year; m = +parts.month; day = +parts.day;
+    weekdayStr = parts.weekday;
+  }
+
   const wdMap = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
-  const fromMon = wdMap[parts.weekday] ?? 0;
+  const fromMon = wdMap[weekdayStr] ?? 0;
 
   // Roll back to Monday of that week
   let wY = y, wM = m, wD = day - fromMon;
