@@ -153,7 +153,7 @@ function LoadsTable({ loads, onLoadClick }) {
 /* ══════════════════════════════════════════════
    GROUP TABLE — by truck or by driver
 ══════════════════════════════════════════════ */
-function GroupTable({ loads, groupBy /* "unit" | "driver" */, trucks, drivers }) {
+function GroupTable({ loads, groupBy /* "unit" | "driver" */, trucks, drivers, onRowClick }) {
   const groups = useMemo(() => {
     const map = new Map();
     for (const l of loads) {
@@ -212,8 +212,13 @@ function GroupTable({ loads, groupBy /* "unit" | "driver" */, trucks, drivers })
         </thead>
         <tbody>
           {groups.map((g) => (
-            <tr key={g.label}>
-              <td style={{ ...cellStyle, fontWeight: 700 }}>{g.label}</td>
+            <tr key={g.label}
+              onClick={onRowClick ? () => onRowClick(g) : undefined}
+              style={{ cursor: onRowClick ? "pointer" : "default", transition: "background 120ms" }}
+              onMouseEnter={onRowClick ? (e) => (e.currentTarget.style.background = "var(--bg-hover)") : undefined}
+              onMouseLeave={onRowClick ? (e) => (e.currentTarget.style.background = "transparent") : undefined}
+            >
+              <td style={{ ...cellStyle, fontWeight: 700, color: onRowClick ? "#2563eb" : "inherit" }}>{g.label}</td>
               <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace" }}>{g.count}</td>
               <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace" }}>{fmtNum(g.loadedMi)}</td>
               <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace", color: "var(--text-faint)" }}>{fmtNum(g.emptyMi)}</td>
@@ -235,6 +240,194 @@ function GroupTable({ loads, groupBy /* "unit" | "driver" */, trucks, drivers })
 }
 
 /* ══════════════════════════════════════════════
+   DRIVER / TRUCK DETAIL VIEW — week breakdown by day
+══════════════════════════════════════════════ */
+function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" | "truck" */ }) {
+  const range = weekRangeFromKey(weekKey);
+
+  // Build day-by-day map (Mon-Sun) using EST date matching
+  const days = useMemo(() => {
+    if (!range) return [];
+    const out = [];
+    for (let i = 0; i < 7; i++) {
+      const dayDate = new Date(range.monday.getTime() + i * 86400000);
+      const isoDay = dayDate.toLocaleDateString("en-CA", { timeZone: "America/New_York" }); // YYYY-MM-DD
+      const dayLoads = loads.filter((l) => {
+        if (!l.puDate) return false;
+        return String(l.puDate).slice(0, 10) === isoDay;
+      });
+      out.push({ date: dayDate, isoDay, loads: dayLoads });
+    }
+    return out;
+  }, [loads, weekKey]);
+
+  const sortedLoads = useMemo(() => {
+    return [...loads].sort((a, b) => String(a.puDate || "").localeCompare(String(b.puDate || "")));
+  }, [loads]);
+
+  const stats = useMemo(() => {
+    const gross = loads.reduce((s, l) => s + (Number(l.rate) || 0), 0);
+    const loaded = loads.reduce((s, l) => s + (Number(l.loadedMiles) || 0), 0);
+    const empty = loads.reduce((s, l) => s + (Number(l.emptyMiles) || 0), 0);
+    const totalMi = loaded + empty;
+    return {
+      count: loads.length,
+      gross, loaded, empty,
+      avgRpm: loaded > 0 ? gross / loaded : 0,
+      deadheadPct: totalMi > 0 ? (empty / totalMi) * 100 : 0,
+    };
+  }, [loads]);
+
+  // Track which trucks/drivers were used (for context)
+  const associated = useMemo(() => {
+    const set = new Set();
+    for (const l of loads) {
+      if (kind === "driver" && l.unit) set.add(l.unit);
+      if (kind === "truck"  && l.driverName) set.add(l.driverName);
+    }
+    return [...set];
+  }, [loads, kind]);
+
+  const dayName = (d) => d.toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short" });
+  const dayDate = (d) => d.toLocaleDateString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric" });
+
+  const cellStyle = { padding: "10px 12px", borderBottom: "1px solid var(--border)", fontSize: 12, verticalAlign: "middle" };
+  const headStyle = { padding: "10px 12px", fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", textAlign: "left", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" };
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+        <button onClick={onBack} style={{
+          background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8,
+          padding: "6px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--text-secondary)",
+        }}>← Back</button>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>{title}</div>
+          {subtitle && <div style={{ fontSize: 12, color: "var(--text-faint)", marginTop: 2 }}>{subtitle}</div>}
+        </div>
+        {associated.length > 0 && (
+          <div style={{ fontSize: 11, color: "var(--text-faint)", textAlign: "right" }}>
+            {kind === "driver" ? "Trucks used:" : "Drivers:"}<br />
+            <span style={{ fontFamily: "monospace", color: "var(--text-secondary)", fontWeight: 600 }}>
+              {associated.join(", ")}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Stats */}
+      <div style={{
+        display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10,
+        padding: "14px 18px", background: "var(--bg-surface)", border: "1px solid var(--border)",
+        borderRadius: 12, marginBottom: 16,
+      }}>
+        {[
+          { label: "Loads",      value: stats.count,                            color: "#2563eb" },
+          { label: "Gross",      value: fmtMoney(stats.gross),                  color: "#16a34a" },
+          { label: "Loaded mi",  value: fmtNum(stats.loaded),                   color: "#0891b2" },
+          { label: "Empty mi",   value: fmtNum(stats.empty),                    color: "#d97706" },
+          { label: "Avg RPM",    value: fmtRpm(stats.avgRpm),                   color: "#7c3aed" },
+          { label: "Deadhead %", value: `${stats.deadheadPct.toFixed(1)}%`,     color: "#ea580c" },
+        ].map((s) => (
+          <div key={s.label}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>{s.label}</div>
+            <div style={{ fontSize: 19, fontWeight: 800, color: s.color, letterSpacing: "-0.5px" }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Day-by-day timeline */}
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 }}>
+          Week timeline
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
+          {days.map((d, i) => {
+            const isWeekend = i === 5 || i === 6; // Sat=5, Sun=6
+            const hasLoads = d.loads.length > 0;
+            const dayGross = d.loads.reduce((s, l) => s + (Number(l.rate) || 0), 0);
+            return (
+              <div key={d.isoDay} style={{
+                background: hasLoads ? "var(--bg-surface)" : (isWeekend ? "#fafafa" : "#fef9f3"),
+                border: `1px solid ${hasLoads ? "var(--border)" : (isWeekend ? "#e5e5e5" : "#fde7c2")}`,
+                borderRadius: 10, padding: "10px 12px", minHeight: 90,
+                opacity: hasLoads ? 1 : 0.85,
+              }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase" }}>{dayName(d.date)}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>{dayDate(d.date)}</div>
+                {hasLoads ? (
+                  <>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#16a34a" }}>{fmtMoney(dayGross)}</div>
+                    <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 2 }}>{d.loads.length} {d.loads.length === 1 ? "load" : "loads"}</div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: 11, color: isWeekend ? "var(--text-faint)" : "#92400e", fontWeight: 600, marginTop: 6 }}>
+                    {isWeekend ? "Off day" : "⚠ No load"}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Detailed table */}
+      <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ background: "var(--bg-hover)" }}>
+              <th style={headStyle}>PU Date</th>
+              <th style={headStyle}>Pick Up</th>
+              <th style={headStyle}>Del Date</th>
+              <th style={headStyle}>Delivery</th>
+              {kind === "driver" && <th style={headStyle}>Truck</th>}
+              {kind === "truck"  && <th style={headStyle}>Driver</th>}
+              <th style={headStyle}>Broker</th>
+              <th style={{ ...headStyle, textAlign: "right" }}>Loaded</th>
+              <th style={{ ...headStyle, textAlign: "right" }}>Empty</th>
+              <th style={{ ...headStyle, textAlign: "right" }}>RPM</th>
+              <th style={{ ...headStyle, textAlign: "right" }}>Rate</th>
+              <th style={headStyle}>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedLoads.map((l) => {
+              const isEmpty = (Number(l.rate) || 0) === 0;
+              return (
+                <tr key={l.id} style={{ background: isEmpty ? "#fef2f2" : "transparent" }}>
+                  <td style={{ ...cellStyle, fontWeight: 600, whiteSpace: "nowrap" }}>{fmtDate(l.puDate)}</td>
+                  <td style={cellStyle}>{l.puCity ? `${l.puCity}, ${l.puState || ""}` : "—"}</td>
+                  <td style={{ ...cellStyle, color: "var(--text-muted)", whiteSpace: "nowrap" }}>{fmtDate(l.delDate)}</td>
+                  <td style={cellStyle}>{l.delCity ? `${l.delCity}, ${l.delState || ""}` : "—"}</td>
+                  {kind === "driver" && <td style={{ ...cellStyle, fontFamily: "monospace", fontWeight: 700 }}>{l.unit || "—"}</td>}
+                  {kind === "truck"  && <td style={cellStyle}>{l.driverName || "—"}</td>}
+                  <td style={{ ...cellStyle, color: "var(--text-muted)" }}>{l.broker || "—"}</td>
+                  <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace" }}>{fmtNum(l.loadedMiles)}</td>
+                  <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace", color: "var(--text-faint)" }}>{fmtNum(l.emptyMiles)}</td>
+                  <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace", fontWeight: 600 }}>{fmtRpm(l.rpm)}</td>
+                  <td style={{ ...cellStyle, textAlign: "right", fontWeight: 700, color: isEmpty ? "#dc2626" : "#16a34a" }}>{fmtMoney(l.rate)}</td>
+                  <td style={cellStyle}><StatusBadge status={l.status} /></td>
+                </tr>
+              );
+            })}
+            {/* Totals row */}
+            <tr style={{ background: "#f0fdf4", fontWeight: 700 }}>
+              <td style={cellStyle} colSpan={kind ? 6 : 5}>TOTAL</td>
+              <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace" }}>{fmtNum(stats.loaded)}</td>
+              <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace" }}>{fmtNum(stats.empty)}</td>
+              <td style={{ ...cellStyle, textAlign: "right", fontFamily: "monospace" }}>{fmtRpm(stats.avgRpm)}</td>
+              <td style={{ ...cellStyle, textAlign: "right", color: "#16a34a", fontFamily: "monospace" }}>{fmtMoney(stats.gross)}</td>
+              <td style={cellStyle}></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
    MAIN VIEW
 ══════════════════════════════════════════════ */
 export default function LoadsView() {
@@ -244,6 +437,7 @@ export default function LoadsView() {
 
   const [tab, setTab] = useState("week");      // "week" | "drivers" | "trucks"
   const [weekKey, setWeekKey] = useState(() => currentWeekKey());
+  const [selectedGroup, setSelectedGroup] = useState(null); // { kind, label, loads }
 
   const [dispatcherFilter, setDispatcherFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -258,6 +452,11 @@ export default function LoadsView() {
     subscribeLoads(weekKey);
     // No cleanup — keep subscription alive for quick week navigation
   }, [weekKey]);
+
+  // Reset detail selection when week or tab changes
+  useEffect(() => {
+    setSelectedGroup(null);
+  }, [weekKey, tab]);
 
   // On first mount: if current week is empty after load, jump to latest week with data
   useEffect(() => {
@@ -460,10 +659,25 @@ export default function LoadsView() {
           </div>
         ) : (
           <>
-            <StatsBar loads={filteredLoads} />
-            {tab === "week"    && <LoadsTable loads={filteredLoads} />}
-            {tab === "drivers" && <GroupTable loads={filteredLoads} groupBy="driver" trucks={trucks} drivers={drivers} />}
-            {tab === "trucks"  && <GroupTable loads={filteredLoads} groupBy="unit"   trucks={trucks} drivers={drivers} />}
+            {selectedGroup ? (
+              <DetailView
+                title={selectedGroup.label}
+                subtitle={`${range?.label || ""} · ${weekKey}`}
+                loads={selectedGroup.loads}
+                weekKey={weekKey}
+                kind={selectedGroup.kind}
+                onBack={() => setSelectedGroup(null)}
+              />
+            ) : (
+              <>
+                <StatsBar loads={filteredLoads} />
+                {tab === "week"    && <LoadsTable loads={filteredLoads} />}
+                {tab === "drivers" && <GroupTable loads={filteredLoads} groupBy="driver" trucks={trucks} drivers={drivers}
+                  onRowClick={(g) => setSelectedGroup({ kind: "driver", label: g.label, loads: g.loads })} />}
+                {tab === "trucks"  && <GroupTable loads={filteredLoads} groupBy="unit"   trucks={trucks} drivers={drivers}
+                  onRowClick={(g) => setSelectedGroup({ kind: "truck",  label: g.label, loads: g.loads })} />}
+              </>
+            )}
           </>
         )}
       </div>
