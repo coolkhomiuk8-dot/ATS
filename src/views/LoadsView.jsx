@@ -379,7 +379,8 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
         const filterFn = kind === "driver"
           ? (l) => l.driverName === title || (`unit-${l.unit || "unknown"}`) === title
           : (l) => (l.unit || "(no unit)") === title;
-        const myLoads = allLoads.filter(filterFn);
+        // Exclude pending (status=new) from monthly stats — only confirmed work counts
+        const myLoads = allLoads.filter((l) => filterFn(l) && !isPendingLoad(l));
         const myAdj   = kind === "driver" ? allAdj.filter((a) => a.driverName === title) : [];
 
         const loadGross  = myLoads.reduce((s, l) => s + (Number(l.rate)        || 0), 0);
@@ -1261,7 +1262,8 @@ export default function LoadsView() {
               />
             ) : (
               <>
-                <StatsBar loads={confirmedLoads} />
+                {/* Main board (By Week) includes pending in stats; other tabs exclude */}
+                <StatsBar loads={tab === "week" ? filteredLoads : confirmedLoads} />
                 {pendingLoads.length > 0 && (
                   <PendingSection loads={pendingLoads} />
                 )}
