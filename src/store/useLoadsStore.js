@@ -23,7 +23,7 @@ export function weekRangeFromKey(weekKey) {
   const monday = new Date(week1Mon.getTime() + (week - 1) * 7 * 86400000);
   const sunday = new Date(monday.getTime() + 6 * 86400000 + 86399999);
 
-  const fmt = (d) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const fmt = (d) => d.toLocaleDateString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric" });
   return {
     start: monday.toISOString(),
     end:   sunday.toISOString(),
