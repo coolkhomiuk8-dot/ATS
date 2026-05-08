@@ -362,24 +362,18 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
           Week timeline
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
-          {days.map((d, i) => {
-            const isWeekend = i === 5 || i === 6; // Sat=5, Sun=6
+          {days.map((d) => {
             const hasActive = d.loadInfo.length > 0;
             const pickupsToday = d.loadInfo.filter((li) => li.phase === "pickup" || li.phase === "sameday");
             const transitToday = d.loadInfo.filter((li) => li.phase === "transit");
             const deliveriesToday = d.loadInfo.filter((li) => li.phase === "delivery");
             const dayGross = pickupsToday.reduce((s, li) => s + (Number(li.load.rate) || 0), 0);
 
-            // Pick visual style based on activity
+            // Every day is a working day — empty days are always a "no load" warning
             let bg, border, label, labelColor;
             if (!hasActive) {
-              if (isWeekend) {
-                bg = "#fafafa"; border = "#e5e5e5";
-                label = "Off day"; labelColor = "var(--text-faint)";
-              } else {
-                bg = "#fef9f3"; border = "#fde7c2";
-                label = "⚠ No load"; labelColor = "#92400e";
-              }
+              bg = "#fef9f3"; border = "#fde7c2";
+              label = "⚠ No load"; labelColor = "#92400e";
             } else if (pickupsToday.length > 0) {
               bg = "var(--bg-surface)"; border = "var(--border)";
             } else {
