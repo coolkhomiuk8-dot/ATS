@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useLoadsStore, weekRangeFromKey, currentWeekKey, shiftWeekKey, findLatestWeekKey } from "../store/useLoadsStore";
 import { useTrucksStore } from "../store/useTrucksStore";
 import { useDriversStore } from "../store/useDriversStore";
+import { useTimeOffStore } from "../store/useTimeOffStore";
 import { auth } from "../lib/firebase";
 
 const haulcarSyncEndpoint = import.meta.env.VITE_HAULCAR_SYNC_ENDPOINT || "/.netlify/functions/haulcarSync";
@@ -245,6 +246,61 @@ function GroupTable({ loads, groupBy /* "unit" | "driver" */, trucks, drivers, o
 function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" | "truck" */ }) {
   const range = weekRangeFromKey(weekKey);
 
+  // Time-off tracking — only for drivers
+  const { entries: timeOffEntries, subscribeForDriver, markTimeOff, removeTimeOff } = useTimeOffStore();
+  useEffect(() => {
+    if (kind === "driver" && title) {
+      subscribeForDriver(title);
+    }
+    // intentionally no unsubscribe — store handles re-subscription
+  }, [kind, title]);
+
+  // Map of isoDay → time off entry for fast lookup
+  const timeOffByDay = useMemo(() => {
+    const m = {};
+    for (const e of timeOffEntries) m[e.isoDay] = e;
+    return m;
+  }, [timeOffEntries]);
+
+  // Stats: home days in last 30 / 60 days, and "days since last home"
+  const homeStats = useMemo(() => {
+    if (kind !== "driver") return null;
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const day30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+    const day60 = new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10);
+    let last30 = 0, last60 = 0;
+    let mostRecent = null;
+    for (const e of timeOffEntries) {
+      if (e.isoDay >= day30 && e.isoDay <= todayIso) last30++;
+      if (e.isoDay >= day60 && e.isoDay <= todayIso) last60++;
+      if (e.isoDay <= todayIso && (!mostRecent || e.isoDay > mostRecent)) mostRecent = e.isoDay;
+    }
+    let daysSince = null;
+    if (mostRecent) {
+      const diff = Math.floor((new Date(todayIso) - new Date(mostRecent)) / 86400000);
+      daysSince = diff;
+    }
+    return { last30, last60, daysSince, mostRecent };
+  }, [timeOffEntries, kind]);
+
+  async function handleDayClick(d) {
+    if (kind !== "driver") return;
+    const existing = timeOffByDay[d.isoDay];
+    if (existing) {
+      const ok = window.confirm(`Remove time off for ${d.isoDay}?${existing.note ? `\n\nNote: ${existing.note}` : ""}`);
+      if (ok) await removeTimeOff(existing.id);
+      return;
+    }
+    // Don't mark active days (driver had a load on this day) unless user really wants
+    if (d.loadInfo.length > 0) {
+      const ok = window.confirm(`This day has ${d.loadInfo.length} active load(s). Mark as time off anyway?`);
+      if (!ok) return;
+    }
+    const note = window.prompt(`Mark ${d.isoDay} as time off.\n\nOptional note (e.g. "home time", "sick", "personal"):`, "home time");
+    if (note === null) return; // cancelled
+    await markTimeOff(title, d.isoDay, { type: "home", note });
+  }
+
   // Build day-by-day map (Mon-Sun) — match loads as ACTIVE if pickup <= day <= delivery
   const days = useMemo(() => {
     if (!range) return [];
@@ -325,6 +381,16 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
           <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>{title}</div>
           {subtitle && <div style={{ fontSize: 12, color: "var(--text-faint)", marginTop: 2 }}>{subtitle}</div>}
         </div>
+        {kind === "driver" && homeStats && (
+          <div style={{ fontSize: 11, color: "var(--text-faint)", textAlign: "right", lineHeight: 1.4, marginRight: 12 }}>
+            <div>Home days last 30: <strong style={{ color: homeStats.last30 > 8 ? "#dc2626" : homeStats.last30 > 5 ? "#d97706" : "#16a34a" }}>{homeStats.last30}</strong></div>
+            <div>Last home: <strong style={{ color: "var(--text-secondary)" }}>{
+              homeStats.daysSince == null ? "never tracked" :
+              homeStats.daysSince === 0 ? "today" :
+              `${homeStats.daysSince}d ago`
+            }</strong></div>
+          </div>
+        )}
         {associated.length > 0 && (
           <div style={{ fontSize: 11, color: "var(--text-faint)", textAlign: "right" }}>
             {kind === "driver" ? "Trucks used:" : "Drivers:"}<br />
@@ -368,29 +434,51 @@ function DetailView({ title, subtitle, loads, weekKey, onBack, kind /* "driver" 
             const transitToday = d.loadInfo.filter((li) => li.phase === "transit");
             const deliveriesToday = d.loadInfo.filter((li) => li.phase === "delivery");
             const dayGross = pickupsToday.reduce((s, li) => s + (Number(li.load.rate) || 0), 0);
+            const offDay = timeOffByDay[d.isoDay];
 
-            // Every day is a working day — empty days are always a "no load" warning
+            // Pick visual style based on state (priority: time off > active > no-load)
             let bg, border, label, labelColor;
-            if (!hasActive) {
+            if (offDay) {
+              bg = "#dbeafe"; border = "#93c5fd";
+              label = "🏠 Home"; labelColor = "#1d4ed8";
+            } else if (!hasActive) {
               bg = "#fef9f3"; border = "#fde7c2";
               label = "⚠ No load"; labelColor = "#92400e";
             } else if (pickupsToday.length > 0) {
               bg = "var(--bg-surface)"; border = "var(--border)";
             } else {
-              // Only in-transit / delivery, no new pickup
               bg = "#fef3c7"; border = "#fde68a";
               label = transitToday.length > 0 ? "🚛 In transit" : "📦 Delivery";
               labelColor = "#92400e";
             }
 
+            const clickable = kind === "driver";
+
             return (
-              <div key={d.isoDay} style={{
-                background: bg, border: `1px solid ${border}`,
-                borderRadius: 10, padding: "10px 12px", minHeight: 96,
-              }}>
+              <div key={d.isoDay}
+                onClick={clickable ? () => handleDayClick(d) : undefined}
+                title={clickable ? (offDay ? `Click to remove time off${offDay.note ? `\n\n${offDay.note}` : ""}` : "Click to mark as time off (home / sick / etc.)") : undefined}
+                style={{
+                  background: bg, border: `1px solid ${border}`,
+                  borderRadius: 10, padding: "10px 12px", minHeight: 96,
+                  cursor: clickable ? "pointer" : "default",
+                  transition: "transform 100ms",
+                }}
+                onMouseEnter={clickable ? (e) => (e.currentTarget.style.transform = "translateY(-1px)") : undefined}
+                onMouseLeave={clickable ? (e) => (e.currentTarget.style.transform = "translateY(0)") : undefined}
+              >
                 <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase" }}>{dayName(d.date)}</div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>{dayDate(d.date)}</div>
-                {pickupsToday.length > 0 ? (
+                {offDay ? (
+                  <>
+                    <div style={{ fontSize: 11, color: labelColor, fontWeight: 700 }}>{label}</div>
+                    {offDay.note && (
+                      <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 3, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                        {offDay.note}
+                      </div>
+                    )}
+                  </>
+                ) : pickupsToday.length > 0 ? (
                   <>
                     <div style={{ fontSize: 11, fontWeight: 700, color: "#16a34a" }}>{fmtMoney(dayGross)}</div>
                     <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 2 }}>

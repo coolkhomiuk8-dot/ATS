@@ -55,6 +55,11 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    match /driverTimeOff/{docId} {
+      // dispatchers (any signed-in user with a role) can manage time off
+      allow read, create, update, delete: if isUser();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
