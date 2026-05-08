@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { db, isFirebaseConfigured } from "../lib/firebase";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 
 /**
  * Compute Mon-00:00 EST → Sun-23:59 EST date range for a given week key
@@ -78,23 +78,53 @@ export function shiftWeekKey(weekKey, delta) {
   return `${y}-W${String(week).padStart(2, "0")}`;
 }
 
+/**
+ * Find the most recent weekKey that has loads in Firestore.
+ * Returns null if collection is empty or on error.
+ */
+export async function findLatestWeekKey() {
+  if (!isFirebaseConfigured || !db) return null;
+  try {
+    const snap = await getDocs(
+      query(collection(db, "loads"), orderBy("puDate", "desc"), limit(1))
+    );
+    if (snap.empty) return null;
+    return snap.docs[0].data().weekKey || null;
+  } catch {
+    return null;
+  }
+}
+
 export const useLoadsStore = create((set, get) => ({
   loads: [],
   isLoading: false,
   syncError: null,
   _unsub: null,
+  _subscribedWeek: null,
 
-  subscribeLoads: () => {
-    if (get()._unsub) return;
+  subscribeLoads: (weekKey) => {
+    const { _unsub, _subscribedWeek } = get();
+
+    // Already subscribed to this exact week — nothing to do
+    if (_subscribedWeek === weekKey && _unsub) return;
+
+    // Unsubscribe from previous week
+    if (_unsub) _unsub();
+
     if (!isFirebaseConfigured || !db) {
       set({ syncError: "Firebase is not configured.", isLoading: false });
       return;
     }
 
-    set({ isLoading: true, syncError: null });
+    set({ isLoading: true, syncError: null, loads: [], _subscribedWeek: weekKey });
+
+    const q = query(
+      collection(db, "loads"),
+      where("weekKey", "==", weekKey)
+    );
 
     const unsub = onSnapshot(
-      collection(db, "loads"),
+      q,
       (snapshot) => {
         const loads = snapshot.docs
           .map((snap) => ({ id: snap.id, ...snap.data() }))
@@ -112,6 +142,6 @@ export const useLoadsStore = create((set, get) => ({
   unsubscribeLoads: () => {
     const unsub = get()._unsub;
     if (unsub) unsub();
-    set({ _unsub: null });
+    set({ _unsub: null, _subscribedWeek: null });
   },
 }));

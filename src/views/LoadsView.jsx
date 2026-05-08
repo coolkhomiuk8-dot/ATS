@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useLoadsStore, weekRangeFromKey, currentWeekKey, shiftWeekKey } from "../store/useLoadsStore";
+import { useLoadsStore, weekRangeFromKey, currentWeekKey, shiftWeekKey, findLatestWeekKey } from "../store/useLoadsStore";
 import { useTrucksStore } from "../store/useTrucksStore";
 import { useDriversStore } from "../store/useDriversStore";
 import { auth } from "../lib/firebase";
@@ -242,14 +242,9 @@ export default function LoadsView() {
   const { trucks } = useTrucksStore();
   const { drivers } = useDriversStore();
 
-  useEffect(() => {
-    subscribeLoads();
-    return () => unsubscribeLoads();
-  }, []);
-
   const [tab, setTab] = useState("week");      // "week" | "drivers" | "trucks"
   const [weekKey, setWeekKey] = useState(() => currentWeekKey());
-  const [weekAutoDetected, setWeekAutoDetected] = useState(false);
+
   const [dispatcherFilter, setDispatcherFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [unitFilter, setUnitFilter] = useState("");
@@ -258,17 +253,28 @@ export default function LoadsView() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState(null);
 
-  // Auto-navigate to the most recent week that has loads if current week is empty
+  // Subscribe only to the current week — fast (50-100 docs vs 2800+)
   useEffect(() => {
-    if (weekAutoDetected || loads.length === 0) return;
-    const hasLoadsThisWeek = loads.some((l) => l.weekKey === weekKey);
-    if (!hasLoadsThisWeek) {
-      const weeks = [...new Set(loads.map((l) => l.weekKey).filter(Boolean))].sort();
-      const latest = weeks[weeks.length - 1];
-      if (latest) setWeekKey(latest);
+    subscribeLoads(weekKey);
+    // No cleanup — keep subscription alive for quick week navigation
+  }, [weekKey]);
+
+  // On first mount: if current week is empty after load, jump to latest week with data
+  useEffect(() => {
+    let cancelled = false;
+    async function autoDetect() {
+      // Wait a moment for subscription to resolve
+      await new Promise((r) => setTimeout(r, 1500));
+      if (cancelled) return;
+      const { loads: currentLoads } = useLoadsStore.getState();
+      if (currentLoads.length === 0) {
+        const latest = await findLatestWeekKey();
+        if (!cancelled && latest) setWeekKey(latest);
+      }
     }
-    setWeekAutoDetected(true);
-  }, [loads]);
+    autoDetect();
+    return () => { cancelled = true; };
+  }, []);
 
   async function handleSync() {
     if (syncing) return;
@@ -331,7 +337,7 @@ export default function LoadsView() {
         <div style={{ flexShrink: 0 }}>
           <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>Loads</div>
           <div style={{ fontSize: 12, color: "var(--text-faint)", marginTop: 1 }}>
-            {loads.length.toLocaleString()} total · synced from Haulcar Pro
+            {isLoading ? "Loading…" : `${loads.length} loads this week`} · Haulcar Pro
           </div>
         </div>
 
