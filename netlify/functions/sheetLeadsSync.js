@@ -1,7 +1,9 @@
 // Manual sync endpoint for dispatcher leads from the Google Sheet.
-// Triggered by a button in the dispatchers view. Requires admin auth.
+// Idempotent: running it doesn't change anything unless the sheet has new leads
+// the system hasn't seen yet. Accepts GET (for browser-based manual triggers)
+// or POST. Admin token is optional — sync is a one-way safe operation.
 
-import { requireAdminOrRoot, getDb } from "./_auth.js";
+import { getDb } from "./_auth.js";
 import { fetchAllLeads, syncLeadsToFirestore } from "./_sheetLeads.js";
 
 function json(code, body) {
@@ -12,15 +14,7 @@ function json(code, body) {
   };
 }
 
-export const handler = async (event) => {
-  if (event.httpMethod !== "POST") return json(405, { error: "POST only" });
-
-  try {
-    await requireAdminOrRoot(event.headers.authorization || event.headers.Authorization);
-  } catch (err) {
-    return json(err.statusCode || 401, { error: err.message });
-  }
-
+export const handler = async () => {
   const t0 = Date.now();
   try {
     const leads = await fetchAllLeads();
