@@ -11,6 +11,9 @@
 [functions."haulcarCron"]
   schedule = "*/10 * * * *"
 
+[functions."sheetLeadsCron"]
+  schedule = "*/15 * * * *"
+
 [functions."dispatcher-reminders"]
   schedule = "*/30 * * * *"
 
