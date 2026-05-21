@@ -1040,8 +1040,21 @@ export default function LoadsView() {
   // Subscribe only to the current week — fast (50-100 docs vs 2800+)
   useEffect(() => {
     subscribeLoads(weekKey);
-    // No cleanup — keep subscription alive for quick week navigation
+    // No cleanup here — store handles re-subscription on weekKey change.
   }, [weekKey]);
+
+  // Unsubscribe ALL stores on unmount, so cron writes (~1400 docs / 10 min)
+  // don't keep triggering snapshot updates in the background when the user
+  // navigates to a different view. Prevents JS thread lag and UI hangs.
+  const { unsubscribe: unsubTimeOff } = useTimeOffStore();
+  const { unsubscribe: unsubAdjustments } = useAdjustmentsStore();
+  useEffect(() => {
+    return () => {
+      unsubscribeLoads();
+      unsubTimeOff();
+      unsubAdjustments();
+    };
+  }, []);
 
   // Reset detail selection when week or tab changes (but skip the initial mount)
   const isInitialMount = useRef(true);
