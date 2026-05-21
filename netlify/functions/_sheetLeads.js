@@ -150,16 +150,82 @@ export function normalizeLead(row) {
   };
 }
 
+/* ───────────── Telegram notification ───────────── */
+
+function escapeHtml(s) {
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function buildLeadMessage(lead, rawRow) {
+  const lines = [`🆕 <b>Новий лід — ${escapeHtml(lead.role)}</b>`, ""];
+  lines.push(`👤 <b>${escapeHtml(lead.name || "(no name)")}</b>`);
+  if (lead.phone) {
+    const phoneDisplay = escapeHtml(lead.phone);
+    lines.push(`📞 <a href="tel:${phoneDisplay}">${phoneDisplay}</a>`);
+  }
+  if (lead.telegram) {
+    const tg = lead.telegram.replace(/^@/, "");
+    // If it looks like a username (no spaces, no plus), link it
+    if (/^[A-Za-z0-9_.]+$/.test(tg)) {
+      lines.push(`📱 Telegram: <a href="https://t.me/${tg}">@${escapeHtml(tg)}</a>`);
+    } else {
+      lines.push(`📱 Telegram: ${escapeHtml(lead.telegram)}`);
+    }
+  }
+  if (lead.englishLevel) lines.push(`🇬🇧 English: <b>${escapeHtml(lead.englishLevel)}</b>`);
+  if (lead.campaign)     lines.push(`📺 Кампанія: ${escapeHtml(lead.campaign)}`);
+
+  const knowledge = rawRow["щось_знаєш_про_американську_логістику?"];
+  if (knowledge) {
+    lines.push("");
+    lines.push(`💬 ${escapeHtml(knowledge)}`);
+  }
+
+  if (lead.createdTime) {
+    const d = new Date(lead.createdTime);
+    if (!Number.isNaN(d.getTime())) {
+      lines.push("");
+      lines.push(`<i>${d.toLocaleString("uk-UA", { timeZone: "Europe/Kyiv", dateStyle: "short", timeStyle: "short" })} (Kyiv)</i>`);
+    }
+  }
+  return lines.join("\n");
+}
+
+async function sendTelegramMessage(text) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_HR_CHAT_ID;
+  if (!token || !chatId) return; // silently skip if not configured
+
+  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      parse_mode: "HTML",
+      disable_web_page_preview: true,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Telegram ${res.status}: ${body}`);
+  }
+}
+
 /* ───────────── Sync ───────────── */
 
 /**
  * Insert new leads into the `dispatchers` collection. Skips any whose Firestore
  * doc already exists — never overwrites stage / note changes made by humans.
+ * Sends a separate Telegram message to the HR chat for each new lead written.
  *
- * Returns { written, skipped, errors }.
+ * Returns { written, skipped, notified, errors }.
  */
 export async function syncLeadsToFirestore(db, rawLeads) {
-  const report = { written: 0, skipped: 0, errors: [] };
+  const report = { written: 0, skipped: 0, notified: 0, errors: [] };
 
   // Read existing lead-IDs only (much cheaper than reading the full collection)
   const existing = new Set();
@@ -171,15 +237,20 @@ export async function syncLeadsToFirestore(db, rawLeads) {
     return report;
   }
 
-  let batch = db.batch();
-  let count = 0;
-  const commits = [];
-
+  // Collect new leads for both writing AND telegram notification
+  const newLeads = []; // [{ normalized, raw }]
   for (const raw of rawLeads) {
     const normalized = normalizeLead(raw);
     if (!normalized) { report.skipped++; continue; }
     if (existing.has(normalized.id)) { report.skipped++; continue; }
+    newLeads.push({ normalized, raw });
+  }
 
+  // Batch-write all new leads
+  let batch = db.batch();
+  let count = 0;
+  const commits = [];
+  for (const { normalized } of newLeads) {
     batch.set(db.collection("dispatchers").doc(normalized.id), normalized);
     count++;
     report.written++;
@@ -190,10 +261,21 @@ export async function syncLeadsToFirestore(db, rawLeads) {
     }
   }
   if (count > 0) commits.push(batch);
-
   for (const b of commits) {
     try { await b.commit(); }
     catch (e) { report.errors.push(`batch commit: ${e.message}`); }
+  }
+
+  // Send Telegram notification per new lead (sequential — Telegram has 30 msgs/sec limit)
+  for (const { normalized, raw } of newLeads) {
+    try {
+      await sendTelegramMessage(buildLeadMessage(normalized, raw));
+      report.notified++;
+      // Small delay to stay well under Telegram's rate limits
+      await new Promise((r) => setTimeout(r, 100));
+    } catch (e) {
+      report.errors.push(`telegram for ${normalized.id}: ${e.message}`);
+    }
   }
 
   return report;
