@@ -159,6 +159,49 @@ function escapeHtml(s) {
     .replace(/>/g, "&gt;");
 }
 
+function buildOutreachTemplate(lead) {
+  const role = lead.role === "Fleet" ? "Fleet" : "Dispatcher";
+  const name = lead.name || "";
+  return [
+    `Привіт${name ? ", " + name : ""}! 👋`,
+    "",
+    `Бачу ти залишив(ла) заявку на роль ${role} в нашій команді 212 Expedite.`,
+    "",
+    "Готов(а) обговорити деталі — коли зручно поспілкуватись?",
+  ].join("\n");
+}
+
+/** Build inline keyboard with a "Write to candidate" button (Telegram/phone-based). */
+function buildLeadKeyboard(lead) {
+  const text = encodeURIComponent(buildOutreachTemplate(lead));
+
+  // 1) If telegram field looks like a username — direct chat link
+  const tgRaw = String(lead.telegram || "").trim();
+  const tgClean = tgRaw.replace(/^@/, "");
+  const isUsername = /^[A-Za-z0-9_]{4,32}$/.test(tgClean);
+  if (isUsername) {
+    return {
+      inline_keyboard: [[
+        { text: "✍️ Написати в Telegram", url: `https://t.me/${tgClean}?text=${text}` },
+      ]],
+    };
+  }
+
+  // 2) Phone-only fallback — try tg://resolve?phone (lucky-or-not)
+  if (lead.phone) {
+    const phoneClean = String(lead.phone).replace(/[^\d]/g, "");
+    if (phoneClean.length >= 7) {
+      return {
+        inline_keyboard: [[
+          { text: "💬 Telegram (по номеру)", url: `tg://resolve?phone=${phoneClean}&text=${text}` },
+        ]],
+      };
+    }
+  }
+
+  return null;
+}
+
 function buildLeadMessage(lead, rawRow) {
   const lines = [`🆕 <b>Новий лід — ${escapeHtml(lead.role)}</b>`, ""];
   lines.push(`👤 <b>${escapeHtml(lead.name || "(no name)")}</b>`);
@@ -194,21 +237,24 @@ function buildLeadMessage(lead, rawRow) {
   return lines.join("\n");
 }
 
-async function sendTelegramMessage(text, { maxRetries = 2 } = {}) {
+async function sendTelegramMessage(text, { maxRetries = 2, reply_markup = null } = {}) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_HR_CHAT_ID;
   if (!token || !chatId) return; // silently skip if not configured
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const payload = {
+      chat_id: chatId,
+      text,
+      parse_mode: "HTML",
+      disable_web_page_preview: true,
+    };
+    if (reply_markup) payload.reply_markup = reply_markup;
+
     const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        parse_mode: "HTML",
-        disable_web_page_preview: true,
-      }),
+      body: JSON.stringify(payload),
     });
     if (res.ok) return;
     if (res.status === 429 && attempt < maxRetries) {
@@ -301,7 +347,9 @@ export async function syncLeadsToFirestore(db, rawLeads) {
     const normalized = item.normalized;
     const raw = item.raw;
     try {
-      await sendTelegramMessage(buildLeadMessage(normalized, raw));
+      await sendTelegramMessage(buildLeadMessage(normalized, raw), {
+        reply_markup: buildLeadKeyboard(normalized),
+      });
       // Mark as notified in Firestore so it isn't retried next run
       await db.collection("dispatchers").doc(normalized.id).update({
         notifiedAt: new Date().toISOString(),
