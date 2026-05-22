@@ -176,9 +176,11 @@ function buildLeadKeyboard(lead) {
   const text = encodeURIComponent(buildOutreachTemplate(lead));
 
   // 1) If telegram field looks like a username — direct chat link
+  // Telegram usernames must start with a letter and be 5-32 chars (letters, digits, underscores).
+  // Pure digits (e.g. "0964160626") are phone numbers people typed into the wrong field.
   const tgRaw = String(lead.telegram || "").trim();
   const tgClean = tgRaw.replace(/^@/, "");
-  const isUsername = /^[A-Za-z0-9_]{4,32}$/.test(tgClean);
+  const isUsername = /^[A-Za-z][A-Za-z0-9_]{3,31}$/.test(tgClean);
   if (isUsername) {
     return {
       inline_keyboard: [[
@@ -211,8 +213,8 @@ function buildLeadMessage(lead, rawRow) {
   }
   if (lead.telegram) {
     const tg = lead.telegram.replace(/^@/, "");
-    // If it looks like a username (no spaces, no plus), link it
-    if (/^[A-Za-z0-9_.]+$/.test(tg)) {
+    // Only auto-link if it looks like a real Telegram username (starts with a letter)
+    if (/^[A-Za-z][A-Za-z0-9_]{3,31}$/.test(tg)) {
       lines.push(`📱 Telegram: <a href="https://t.me/${tg}">@${escapeHtml(tg)}</a>`);
     } else {
       lines.push(`📱 Telegram: ${escapeHtml(lead.telegram)}`);
