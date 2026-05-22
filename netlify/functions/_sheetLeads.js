@@ -194,22 +194,30 @@ function buildLeadMessage(lead, rawRow) {
   return lines.join("\n");
 }
 
-async function sendTelegramMessage(text) {
+async function sendTelegramMessage(text, { maxRetries = 2 } = {}) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_HR_CHAT_ID;
   if (!token || !chatId) return; // silently skip if not configured
 
-  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      parse_mode: "HTML",
-      disable_web_page_preview: true,
-    }),
-  });
-  if (!res.ok) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        parse_mode: "HTML",
+        disable_web_page_preview: true,
+      }),
+    });
+    if (res.ok) return;
+    if (res.status === 429 && attempt < maxRetries) {
+      // Respect Telegram's Retry-After hint
+      const body = await res.json().catch(() => ({}));
+      const retryAfter = (body?.parameters?.retry_after || 5) * 1000;
+      await new Promise((r) => setTimeout(r, retryAfter + 500));
+      continue;
+    }
     const body = await res.text().catch(() => "");
     throw new Error(`Telegram ${res.status}: ${body}`);
   }
@@ -220,38 +228,55 @@ async function sendTelegramMessage(text) {
 /**
  * Insert new leads into the `dispatchers` collection. Skips any whose Firestore
  * doc already exists — never overwrites stage / note changes made by humans.
- * Sends a separate Telegram message to the HR chat for each new lead written.
+ * Sends a separate Telegram message to the HR chat for each new lead written;
+ * also retries notifications for any previously-stored lead whose notifiedAt
+ * is still null (e.g. Telegram was rate-limited on a previous sync).
  *
  * Returns { written, skipped, notified, errors }.
  */
 export async function syncLeadsToFirestore(db, rawLeads) {
   const report = { written: 0, skipped: 0, notified: 0, errors: [] };
 
-  // Read existing lead-IDs only (much cheaper than reading the full collection)
-  const existing = new Set();
+  // Read existing docs so we know what's new AND which need re-notification.
+  // existing: Map<id, { notifiedAt, ...data }>
+  const existing = new Map();
   try {
     const snap = await db.collection("dispatchers").get();
-    snap.forEach((d) => existing.add(d.id));
+    snap.forEach((d) => existing.set(d.id, d.data()));
   } catch (e) {
     report.errors.push(`read dispatchers: ${e.message}`);
     return report;
   }
 
-  // Collect new leads for both writing AND telegram notification
-  const newLeads = []; // [{ normalized, raw }]
+  // Index raw rows by lead id so we can rebuild messages for retries
+  const rawById = new Map();
+  for (const raw of rawLeads) {
+    const leadId = `lead_${sanitizeId(raw.id)}`;
+    rawById.set(leadId, raw);
+  }
+
+  // Collect new leads (write + notify) and stale leads (re-notify only)
+  const newLeads = [];   // [{ normalized, raw }]
+  const retryLeads = []; // [{ id, raw, existingDoc }]
   for (const raw of rawLeads) {
     const normalized = normalizeLead(raw);
     if (!normalized) { report.skipped++; continue; }
-    if (existing.has(normalized.id)) { report.skipped++; continue; }
-    newLeads.push({ normalized, raw });
+    const prev = existing.get(normalized.id);
+    if (!prev) {
+      newLeads.push({ normalized, raw });
+    } else {
+      // Existing — never overwrite, but check if notification still pending
+      if (!prev.notifiedAt) retryLeads.push({ id: normalized.id, raw, normalized });
+      report.skipped++;
+    }
   }
 
-  // Batch-write all new leads
+  // Batch-write new leads with notifiedAt: null (will be set after Telegram succeeds)
   let batch = db.batch();
   let count = 0;
   const commits = [];
   for (const { normalized } of newLeads) {
-    batch.set(db.collection("dispatchers").doc(normalized.id), normalized);
+    batch.set(db.collection("dispatchers").doc(normalized.id), { ...normalized, notifiedAt: null });
     count++;
     report.written++;
     if (count >= 400) {
@@ -266,15 +291,26 @@ export async function syncLeadsToFirestore(db, rawLeads) {
     catch (e) { report.errors.push(`batch commit: ${e.message}`); }
   }
 
-  // Send Telegram notification per new lead (sequential — Telegram has 30 msgs/sec limit)
-  for (const { normalized, raw } of newLeads) {
+  // Send Telegram per lead. Hard cap per run so we don't exceed function timeout
+  // — anything left will be picked up by the next cron tick.
+  const PER_RUN_CAP = 8;        // 8 msgs × ~4s ≈ 32s, safe within 60s Lambda
+  const DELAY_MS    = 3500;     // Telegram group limit ≈ 20 msg/min → ~3s gap
+
+  const toNotify = [...newLeads, ...retryLeads].slice(0, PER_RUN_CAP);
+  for (const item of toNotify) {
+    const normalized = item.normalized;
+    const raw = item.raw;
     try {
       await sendTelegramMessage(buildLeadMessage(normalized, raw));
+      // Mark as notified in Firestore so it isn't retried next run
+      await db.collection("dispatchers").doc(normalized.id).update({
+        notifiedAt: new Date().toISOString(),
+      });
       report.notified++;
-      // Small delay to stay well under Telegram's rate limits
-      await new Promise((r) => setTimeout(r, 100));
+      await new Promise((r) => setTimeout(r, DELAY_MS));
     } catch (e) {
       report.errors.push(`telegram for ${normalized.id}: ${e.message}`);
+      // Don't break — try the next one in case it's a transient issue
     }
   }
 
