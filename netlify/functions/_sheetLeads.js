@@ -239,7 +239,8 @@ function buildLeadMessage(lead, rawRow) {
 
 async function sendTelegramMessage(text, { maxRetries = 2, reply_markup = null } = {}) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_HR_CHAT_ID;
+  // Dedicated leads chat takes precedence; fall back to HR chat for backwards compat
+  const chatId = process.env.TELEGRAM_LEADS_CHAT_ID || process.env.TELEGRAM_HR_CHAT_ID;
   if (!token || !chatId) return; // silently skip if not configured
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
