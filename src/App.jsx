@@ -15,6 +15,7 @@ import DispatchersView from "./views/DispatchersView";
 import TrucksView from "./views/TrucksView";
 import DriversView from "./views/DriversView";
 import LoadsView from "./views/LoadsView";
+import ExpensesView from "./views/ExpensesView";
 import DriverDrawer from "./components/DriverDrawer";
 import AddModal from "./components/AddModal";
 import ImportIndeedModal from "./components/ImportIndeedModal";
@@ -34,7 +35,7 @@ export default function App() {
   const [firebaseUser, setFirebaseUser] = useState(() => auth?.currentUser || null);
   const [authLoading, setAuthLoading] = useState(isFirebaseConfigured);
 
-  const VALID_VIEWS = ["pipeline", "dispatchers", "fleet", "drivers", "loads", "dashboard", "templates"];
+  const VALID_VIEWS = ["pipeline", "dispatchers", "fleet", "drivers", "loads", "expenses", "dashboard", "templates"];
   function getInitialView() {
     const hash = window.location.hash.replace("#", "");
     return VALID_VIEWS.includes(hash) ? hash : "pipeline";
@@ -461,6 +462,7 @@ export default function App() {
           { id: "fleet",      title: "Fleet" },
           { id: "drivers",    title: "Drivers" },
           { id: "loads",      title: "Loads" },
+          { id: "expenses",   title: "Expenses" },
           { id: "dashboard",  title: "Dashboard" },
           { id: "templates",  title: "Templates" },
         ].map((item) => (
@@ -942,6 +944,8 @@ export default function App() {
           {view === "drivers" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}><DriversView onSelectDriver={setSelectedId} /></div>}
 
           {view === "loads" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}><LoadsView /></div>}
+
+          {view === "expenses" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}><ExpensesView /></div>}
 
           {view === "dashboard" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}><DashboardView drivers={drivers} /></div>}
 
