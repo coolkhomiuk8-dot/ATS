@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { memo, useCallback, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { DOC_LIST, FLAGS_OPT } from "../constants/data";
 import { minutesUntil } from "../utils/date";
@@ -11,15 +11,20 @@ const FLAG_STYLES = {
   default: { background: "var(--bg-raised)", color: "var(--text-muted)", border: "1px solid var(--border)" },
 };
 
-export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragging }) {
+function KCard({ driver, onClick, onDragStart, onDragEnd, isDragging }) {
   useTick();
   const [dlPreview, setDlPreview] = useState(null); // {x, y}
   const hoverTimer = useRef(null);
 
-  const { trucks } = useTrucksStore();
+  // Use a selector — subscribes only to trucks slice, not whole store state.
+  const trucks = useTrucksStore((s) => s.trucks);
   const assignedTruck = driver.assignedTruckId
     ? trucks.find((t) => t.id === driver.assignedTruckId)
     : null;
+
+  // Stable click handler — receives driverId, parent gives us a stable onClick.
+  const handleClick = useCallback(() => { onClick(driver.id); }, [onClick, driver.id]);
+  const handleDragStartLocal = useCallback((event) => { onDragStart(event, driver.id); }, [onDragStart, driver.id]);
 
   const dlFile = (driver.files || []).find(f => f.linkedDoc === "Driver License");
   // Try thumbnail first, fall back to direct URL
@@ -64,9 +69,9 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
   return (
     <div
       className={`card-hover driver-card ${over ? "driver-card--overdue" : ""} ${soon ? "driver-card--soon" : ""} ${isDragging ? "driver-card-dragging" : ""}`}
-      onClick={onClick}
+      onClick={handleClick}
       draggable
-      onDragStart={(event) => onDragStart(event, driver.id)}
+      onDragStart={handleDragStartLocal}
       onDragEnd={onDragEnd}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -236,3 +241,9 @@ export default function KCard({ driver, onClick, onDragStart, onDragEnd, isDragg
     </div>
   );
 }
+
+// Memo wrap — skip re-rendering cards whose props haven't changed.
+// driver / onClick / onDragStart / onDragEnd / isDragging are all referentially
+// stable now (parent uses useCallback + identity-preserved driver objects), so
+// most snapshot updates won't ripple through every card on screen.
+export default memo(KCard);

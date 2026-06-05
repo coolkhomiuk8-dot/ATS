@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import KCard from "./KCard";
 
 export default function PipelineView({ stages, filteredDrivers, onSelectDriver, onDropDriverToStage }) {
@@ -7,17 +7,34 @@ export default function PipelineView({ stages, filteredDrivers, onSelectDriver, 
   const [recentDropStageId, setRecentDropStageId] = useState(null);
   const boardRef = useRef(null);
 
+  // Pre-bucket drivers by stage once per render instead of filtering N times.
+  const cardsByStage = useMemo(() => {
+    const out = {};
+    for (const s of stages) out[s.id] = [];
+    for (const d of filteredDrivers) {
+      const bucket = out[d.stage];
+      if (bucket) bucket.push(d);
+    }
+    return out;
+  }, [stages, filteredDrivers]);
 
-  function handleDragStart(event, driverId) {
+  // Stable callbacks — without these every KCard sees fresh prop identities
+  // each render, defeating React.memo on the card component.
+  const handleDragStart = useCallback((event, driverId) => {
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", String(driverId));
     setDraggingDriverId(driverId);
-  }
+  }, []);
 
-  function handleDragEnd() {
+  const handleDragEnd = useCallback(() => {
     setDraggingDriverId(null);
     setActiveDropStageId(null);
-  }
+  }, []);
+
+  // Cards call onClick(driverId) instead of a fresh closure per render.
+  const handleCardClick = useCallback((driverId) => {
+    onSelectDriver(driverId);
+  }, [onSelectDriver]);
 
   function handleDrop(event, toStageId) {
     event.preventDefault();
@@ -39,7 +56,7 @@ export default function PipelineView({ stages, filteredDrivers, onSelectDriver, 
       className={`pipeline-board ${draggingDriverId ? "pipeline-board--dragging" : ""}`}
     >
       {stages.map((stage) => {
-        const cards = filteredDrivers.filter((driver) => driver.stage === stage.id);
+        const cards = cardsByStage[stage.id] || [];
         return (
           <div
             key={stage.id}
@@ -77,7 +94,7 @@ export default function PipelineView({ stages, filteredDrivers, onSelectDriver, 
                 <KCard
                   key={driver.id}
                   driver={driver}
-                  onClick={() => onSelectDriver(driver.id)}
+                  onClick={handleCardClick}
                   onDragStart={handleDragStart}
                   onDragEnd={handleDragEnd}
                   isDragging={draggingDriverId === driver.id}
