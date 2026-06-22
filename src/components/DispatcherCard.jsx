@@ -18,20 +18,22 @@ export default function DispatcherCard({ dispatcher, onClick, onDragStart }) {
       }}
       style={{
         background: "#fff",
-        border: "1px solid #e2e8f0",
+        // Stronger border + layered shadow so cards don't blend into the
+        // slate-100 board background on lower-contrast displays.
+        border: "1px solid #cbd5e1",
         borderRadius: 10,
         padding: "12px 14px",
         cursor: "grab",
         transition: "box-shadow .15s, border-color .15s, opacity .15s",
-        boxShadow: "0 1px 3px rgba(0,0,0,.06)",
+        boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 6px rgba(15, 23, 42, 0.08)",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,.1)";
-        e.currentTarget.style.borderColor = "#c7d2fe";
+        e.currentTarget.style.boxShadow = "0 2px 4px rgba(15, 23, 42, 0.06), 0 8px 20px rgba(15, 23, 42, 0.14)";
+        e.currentTarget.style.borderColor = "#94a3b8";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,.06)";
-        e.currentTarget.style.borderColor = "#e2e8f0";
+        e.currentTarget.style.boxShadow = "0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 6px rgba(15, 23, 42, 0.08)";
+        e.currentTarget.style.borderColor = "#cbd5e1";
       }}
     >
       {/* Name + badges */}
