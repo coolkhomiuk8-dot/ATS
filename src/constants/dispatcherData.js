@@ -29,3 +29,16 @@ export const ROLE_COLORS = {
   Dispatcher:  { bg: "#fdf4ff", color: "#9333ea", border: "#e9d5ff" },
   Fleet:       { bg: "#fff7ed", color: "#ea580c", border: "#fed7aa" },
 };
+
+// Days a candidate can sit in a stage before being flagged "stale".
+// Terminal stages (rejected / hired) are intentionally excluded — they're
+// closed-state and shouldn't generate reminders.
+export const STAGE_STALE_DAYS = {
+  new_lead:    1,
+  no_answer_1: 1,
+  no_answer_2: 2,
+  tg_sent:     3,
+  in_comms:    5,
+  interview:   2,
+  on_hold:     14,
+};
