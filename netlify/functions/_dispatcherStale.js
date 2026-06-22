@@ -54,7 +54,13 @@ export async function buildStaleBuckets(db) {
     const threshold = STAGE_STALE_DAYS[d.stage];
     if (threshold == null) return; // terminal stage (hired / rejected) — skip
 
-    const age = daysSince(d.stageChangedAt || d.createdAt);
+    // Age = days since the most recent touchpoint of any kind.
+    // A logged contact "resets" the staleness clock without moving the candidate.
+    const lastTouch = [d.lastContactAt, d.stageChangedAt, d.createdAt]
+      .filter(Boolean)
+      .sort()
+      .pop();
+    const age = daysSince(lastTouch);
     if (age == null || age <= threshold) return;
 
     if (!byStage[d.stage]) byStage[d.stage] = [];

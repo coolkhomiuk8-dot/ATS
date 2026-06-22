@@ -32,11 +32,17 @@ function staleStyle(daysInStage, threshold) {
 export default function DispatcherCard({ dispatcher, onClick, onDragStart }) {
   const roleStyle = ROLE_COLORS[dispatcher.role] || null;
 
-  // Age in current stage. Fall back to createdAt if stage never changed.
-  const stageAgeDays = daysSince(dispatcher.stageChangedAt || dispatcher.createdAt);
+  // Age since the most recent touchpoint. A logged contact "refreshes" the
+  // candidate without needing to move them between stages.
+  const lastTouchIso = [dispatcher.lastContactAt, dispatcher.stageChangedAt, dispatcher.createdAt]
+    .filter(Boolean)
+    .sort()
+    .pop();
+  const stageAgeDays = daysSince(lastTouchIso);
   const threshold = STAGE_STALE_DAYS[dispatcher.stage];
   const ageColors = staleStyle(stageAgeDays, threshold);
   const createdAtLabel = fmtShortDate(dispatcher.createdAt);
+  const lastContactLabel = fmtShortDate(dispatcher.lastContactAt);
 
   return (
     <div
@@ -137,28 +143,35 @@ export default function DispatcherCard({ dispatcher, onClick, onDragStart }) {
         </div>
       )}
 
-      {/* Footer row: when lead arrived + how long in current stage */}
-      {(createdAtLabel || ageColors) && (
+      {/* Footer: when lead arrived, when last contacted, how long since touch */}
+      {(createdAtLabel || lastContactLabel || ageColors) && (
         <div style={{
           marginTop: 8, paddingTop: 7, borderTop: "1px dashed #e2e8f0",
-          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6,
+          display: "flex", flexDirection: "column", gap: 3,
         }}>
-          {createdAtLabel ? (
-            <div style={{ fontSize: 10, color: "#94a3b8", whiteSpace: "nowrap" }}>
-              📅 Лід: {createdAtLabel}
-            </div>
-          ) : <span />}
-          {ageColors && stageAgeDays != null && (
-            <div title={threshold != null
-              ? `${stageAgeDays}d в стейджі (поріг ${threshold}d)`
-              : `${stageAgeDays}d у стейджі`}
-              style={{
-                fontSize: 10, fontWeight: 700,
-                background: ageColors.bg, color: ageColors.color,
-                border: `1px solid ${ageColors.border}`,
-                borderRadius: 20, padding: "1px 7px", whiteSpace: "nowrap",
-              }}>
-              ⏰ {stageAgeDays}d
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+            {createdAtLabel ? (
+              <div style={{ fontSize: 10, color: "#94a3b8", whiteSpace: "nowrap" }}>
+                📅 Лід: {createdAtLabel}
+              </div>
+            ) : <span />}
+            {ageColors && stageAgeDays != null && (
+              <div title={threshold != null
+                ? `${stageAgeDays}d з останнього торку (поріг ${threshold}d)`
+                : `${stageAgeDays}d з останнього торку`}
+                style={{
+                  fontSize: 10, fontWeight: 700,
+                  background: ageColors.bg, color: ageColors.color,
+                  border: `1px solid ${ageColors.border}`,
+                  borderRadius: 20, padding: "1px 7px", whiteSpace: "nowrap",
+                }}>
+                ⏰ {stageAgeDays}d
+              </div>
+            )}
+          </div>
+          {lastContactLabel && (
+            <div style={{ fontSize: 10, color: "#64748b", whiteSpace: "nowrap" }}>
+              💬 Контакт: {lastContactLabel}
             </div>
           )}
         </div>

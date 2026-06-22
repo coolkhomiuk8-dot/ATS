@@ -17,6 +17,20 @@ export default function DispatcherDrawer({ dispatcher, onClose, onUpd, onRemove 
     setNewEntry("");
   }
 
+  /** Mark "contact happened" without changing stage. Refreshes staleness clock. */
+  function markContact() {
+    const now = new Date();
+    const entry = {
+      text: "💬 Контакт зафіксовано",
+      date: now.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
+      system: true,
+    };
+    onUpd(dispatcher.id, {
+      lastContactAt: now.toISOString(),
+      logs: [...logs, entry],
+    });
+  }
+
   function startEdit() {
     setForm({ ...dispatcher });
     setEditing(true);
@@ -267,9 +281,17 @@ export default function DispatcherDrawer({ dispatcher, onClose, onUpd, onRemove 
                 rows={3}
                 style={{ width: "100%", padding: "9px 11px", fontSize: 13, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, resize: "none", lineHeight: 1.6, outline: "none", boxSizing: "border-box" }}
               />
-              <button onClick={addLog} style={{ marginTop: 6, padding: "7px 16px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                Add Entry
-              </button>
+              <div style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button onClick={addLog}
+                  style={{ padding: "7px 16px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                  Add Entry
+                </button>
+                <button onClick={markContact}
+                  title="Зафіксувати, що контакт з кандидатом відбувся, без зміни стейджу. Скидає лічильник 'stale'."
+                  style={{ padding: "7px 14px", background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                  📞 Записати контакт
+                </button>
+              </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 7, marginTop: 10 }}>
                 {logs.length === 0 && <div style={{ fontSize: 12, color: "#cbd5e1", textAlign: "center", padding: "10px 0" }}>No entries yet</div>}
                 {[...logs].reverse().map((entry, i) => (
