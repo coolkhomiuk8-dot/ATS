@@ -7,6 +7,7 @@ export const DISPATCHER_STAGES = [
   { id: "interview",      label: "Interview Scheduled",    color: "#8b5cf6", light: "#f5f3ff" },
   { id: "on_hold",        label: "❄️ На паузі",            color: "#64748b", light: "#f1f5f9" },
   { id: "rejected",       label: "Rejected",               color: "#ef4444", light: "#fef2f2" },
+  { id: "hired",          label: "✅ Hired",               color: "#059669", light: "#d1fae5" },
 ];
 
 export const DISPATCHER_ROLES = ["HR", "Tracker", "Dispatcher", "Fleet"];
