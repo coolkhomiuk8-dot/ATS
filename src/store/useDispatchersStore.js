@@ -10,6 +10,7 @@ function ensureShape(d) {
     id: d.id || String(Date.now()),
     name: d.name || "",
     telegram: d.telegram || "",
+    instagram: d.instagram || "",
     phone: d.phone || "",
     note: d.note || "",
     role: d.role || "",

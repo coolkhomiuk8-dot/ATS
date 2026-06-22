@@ -128,6 +128,13 @@ export default function DispatcherDrawer({ dispatcher, onClose, onUpd, onRemove 
                 style={inputStyle} placeholder="@username" />
             </div>
 
+            {/* Instagram */}
+            <div>
+              <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Instagram</div>
+              <input value={form.instagram || ""} onChange={(e) => set("instagram", e.target.value)}
+                style={inputStyle} placeholder="@username" />
+            </div>
+
             {/* Phone */}
             <div>
               <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Phone</div>
@@ -168,6 +175,9 @@ export default function DispatcherDrawer({ dispatcher, onClose, onUpd, onRemove 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <InfoCell label="Telegram" value={dispatcher.telegram ? `@${dispatcher.telegram.replace(/^@/, "")}` : "—"} />
               <InfoCell label="Phone" value={dispatcher.phone || "—"} />
+              {dispatcher.instagram && (
+                <InfoCell label="Instagram" value={`@${dispatcher.instagram.replace(/^@/, "")}`} />
+              )}
               {dispatcher.campaign && (
                 <div style={{ gridColumn: "1/-1", background: "#faf5ff", border: "1px solid #e9d5ff", borderRadius: 9, padding: "10px 12px" }}>
                   <div style={{ fontSize: 10, color: "#a855f7", marginBottom: 3 }}>Campaign</div>

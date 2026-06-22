@@ -48,7 +48,7 @@ export default function DispatchersView() {
     const idx = new Map();
     for (const d of dispatchers) {
       const fields = [
-        d.name, d.telegram, d.phone, d.note, d.email,
+        d.name, d.telegram, d.instagram, d.phone, d.note, d.email,
         d.role, d.englishLevel, d.campaign, d.source,
         d.sourceLeadId, d.sourceSheet, d.createdBy, d.resumeName,
       ].filter(Boolean).map(String);

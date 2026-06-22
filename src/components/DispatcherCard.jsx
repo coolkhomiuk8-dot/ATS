@@ -108,6 +108,13 @@ export default function DispatcherCard({ dispatcher, onClick, onDragStart }) {
         </div>
       )}
 
+      {/* Instagram */}
+      {dispatcher.instagram && (
+        <div style={{ fontSize: 11, color: "#db2777", marginBottom: 3 }}>
+          📷 @{dispatcher.instagram.replace(/^@/, "")}
+        </div>
+      )}
+
       {/* Phone */}
       {dispatcher.phone && (
         <div style={{ fontSize: 11, color: "#64748b", marginBottom: 3 }}>{dispatcher.phone}</div>

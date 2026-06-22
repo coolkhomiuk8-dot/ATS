@@ -113,6 +113,23 @@ function buildNote(row) {
   return parts.join("\n\n");
 }
 
+/**
+ * Best-effort lookup of an "instagram" answer in the Meta lead form export.
+ * Column header gets snake-cased by the export, so we fuzzy-match any header
+ * that mentions instagram / інстаграм / іг / ig.
+ */
+function findInstagram(row) {
+  for (const [key, value] of Object.entries(row)) {
+    if (!value) continue;
+    const k = String(key).toLowerCase();
+    if (k.includes("instagram") || k.includes("інстаграм") || k.includes("инстаграм") ||
+        /(^|_)ig(_|$)/.test(k) || /(^|_)іг(_|$)/.test(k)) {
+      return String(value).trim();
+    }
+  }
+  return "";
+}
+
 /** Map a sheet row to the dispatcher shape used in Firestore. */
 export function normalizeLead(row) {
   const leadId = sanitizeId(row.id);
@@ -120,6 +137,7 @@ export function normalizeLead(row) {
 
   const phone     = normalizePhone(row.phone);
   const telegram  = String(row["твій_нікнейм__або_номер_в_телеграм?"] || "").trim();
+  const instagram = findInstagram(row);
   const name      = String(row.full_name || "").trim();
   const role      = normalizeRole(row);
   const english   = normalizeEnglishLevel(row["як_у_тебе_з_англійською?"]);
@@ -136,6 +154,7 @@ export function normalizeLead(row) {
     id: `lead_${leadId}`,
     name: name || telegram || phone || "(no name)",
     telegram,
+    instagram,
     phone,
     note,
     role,
@@ -223,6 +242,15 @@ function buildLeadMessage(lead, rawRow) {
       lines.push(`📱 Telegram: <a href="https://t.me/${tg}">@${escapeHtml(tg)}</a>`);
     } else {
       lines.push(`📱 Telegram: ${escapeHtml(lead.telegram)}`);
+    }
+  }
+  if (lead.instagram) {
+    const ig = lead.instagram.replace(/^@/, "");
+    // Instagram usernames: letters, digits, periods, underscores
+    if (/^[A-Za-z0-9._]{1,30}$/.test(ig)) {
+      lines.push(`📷 Instagram: <a href="https://instagram.com/${ig}">@${escapeHtml(ig)}</a>`);
+    } else {
+      lines.push(`📷 Instagram: ${escapeHtml(lead.instagram)}`);
     }
   }
   if (lead.englishLevel) lines.push(`🇬🇧 English: <b>${escapeHtml(lead.englishLevel)}</b>`);
