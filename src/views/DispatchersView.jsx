@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { DISPATCHER_STAGES, DISPATCHER_ROLES, ROLE_COLORS } from "../constants/dispatcherData";
 import { useDispatchersStore } from "../store/useDispatchersStore";
 import DispatcherCard from "../components/DispatcherCard";
@@ -40,6 +40,52 @@ export default function DispatchersView() {
 
   const selectedDispatcher = dispatchers.find((d) => d.id === selected);
 
+  // Build a searchable index once per dispatchers update, not per render.
+  // Concatenates every text field on the doc so search hits even mis-placed
+  // data (e.g. phone entered into the telegram field, name typed into notes).
+  // Separately keeps a digits-only blob so phone-style queries match.
+  const searchIndex = useMemo(() => {
+    const idx = new Map();
+    for (const d of dispatchers) {
+      const fields = [
+        d.name, d.telegram, d.phone, d.note, d.email,
+        d.role, d.englishLevel, d.campaign, d.source,
+        d.sourceLeadId, d.sourceSheet, d.createdBy, d.resumeName,
+      ].filter(Boolean).map(String);
+      const text = fields.join("  ").toLowerCase().replace(/@/g, "");
+      const digits = fields.join("").replace(/\D/g, "");
+      idx.set(d.id, { text, digits });
+    }
+    return idx;
+  }, [dispatchers]);
+
+  // Apply search filter once across the whole list, then bucket by stage below.
+  const matchesSearch = useMemo(() => {
+    const q = search.trim().toLowerCase().replace(/@/g, "");
+    if (!q) return null; // null = no filter
+    const qDigits = q.replace(/\D/g, "");
+    const matched = new Set();
+    for (const d of dispatchers) {
+      const s = searchIndex.get(d.id);
+      if (!s) continue;
+      if (s.text.includes(q)) { matched.add(d.id); continue; }
+      if (qDigits.length >= 3 && s.digits.includes(qDigits)) matched.add(d.id);
+    }
+    return matched;
+  }, [dispatchers, searchIndex, search]);
+
+  // Pre-bucket per stage — eliminates the N-stage × N-driver filter that ran
+  // on every keystroke and Firestore snapshot before.
+  const cardsByStage = useMemo(() => {
+    const out = {};
+    for (const stage of DISPATCHER_STAGES) out[stage.id] = [];
+    for (const d of dispatchers) {
+      if (matchesSearch && !matchesSearch.has(d.id)) continue;
+      if (out[d.stage]) out[d.stage].push(d);
+    }
+    return out;
+  }, [dispatchers, matchesSearch]);
+
   function setF(key, val) { setForm((p) => ({ ...p, [key]: val })); }
 
   async function handleAdd() {
@@ -69,7 +115,7 @@ export default function DispatchersView() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Ім'я, Telegram, телефон…"
+            placeholder="Ім'я, Telegram, телефон, нотатка…"
             style={{
               width: "100%", padding: "8px 28px 8px 32px", fontSize: 13,
               background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 9,
@@ -100,20 +146,7 @@ export default function DispatchersView() {
       {/* Kanban board */}
       <div style={{ flex: 1, overflowX: "auto", display: "flex", gap: 14, padding: 20 }}>
         {DISPATCHER_STAGES.map((stage) => {
-          const q = search.trim().toLowerCase();
-          const cards = dispatchers.filter((d) => {
-            if (d.stage !== stage.id) return false;
-            if (!q) return true;
-            const tg = String(d.telegram || "").toLowerCase().replace(/^@/, "");
-            const name = String(d.name || "").toLowerCase();
-            const phone = String(d.phone || "").replace(/\D/g, "");
-            const qDigits = q.replace(/\D/g, "");
-            return (
-              name.includes(q) ||
-              tg.includes(q.replace(/^@/, "")) ||
-              (qDigits.length >= 3 && phone.includes(qDigits))
-            );
-          });
+          const cards = cardsByStage[stage.id] || [];
           const isOver = dragOverStage === stage.id;
           return (
             <div
