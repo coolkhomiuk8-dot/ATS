@@ -4,7 +4,6 @@ import { DOC_LIST, FLAGS_OPT } from "../constants/data";
 import { minutesUntil } from "../utils/date";
 import { useTick } from "../hooks/useTick";
 import { useTrucksStore } from "../store/useTrucksStore";
-import { getRecruiter } from "../constants/recruiters";
 
 const FLAG_STYLES = {
   green: { background: "var(--color-success-bg)", color: "var(--color-success-text)", border: "1px solid var(--color-success-border)" },
@@ -67,9 +66,6 @@ function KCard({ driver, onClick, onDragStart, onDragEnd, isDragging }) {
     else if (dt.getTime() === tomorrow.getTime()) naDayBadge = "Tomorrow";
   }
 
-  // Recruiter owner — colored left border + initials badge.
-  const recruiter = getRecruiter(driver.assignedTo);
-
   return (
     <div
       className={`card-hover driver-card ${over ? "driver-card--overdue" : ""} ${soon ? "driver-card--soon" : ""} ${isDragging ? "driver-card-dragging" : ""}`}
@@ -79,22 +75,10 @@ function KCard({ driver, onClick, onDragStart, onDragEnd, isDragging }) {
       onDragEnd={onDragEnd}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      style={{
-        // 3px coloured stripe on the left edge = owner of the lead.
-        borderLeft: `3px solid ${recruiter.color}`,
-      }}
     >
       <div className="driver-card__top">
         <div className="driver-card__name">{driver.name}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          {recruiter.email && (
-            <span title={`${recruiter.name} — owner`} style={{
-              fontSize: 9, fontWeight: 800, letterSpacing: ".04em",
-              background: recruiter.bg, color: recruiter.color,
-              border: `1px solid ${recruiter.border}`,
-              borderRadius: 999, padding: "1px 5px", lineHeight: 1.3,
-            }}>{recruiter.short}</span>
-          )}
           {dlThumbUrl && <span title="Driver License available — hover to preview" style={{ fontSize: 12, opacity: 0.6 }}>🪪</span>}
           <div className="driver-card__interest-dot" style={{ background: intC }} title={driver.interest} />
         </div>

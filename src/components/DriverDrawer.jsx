@@ -5,9 +5,8 @@ import { fmtSize } from "../utils/file";
 import { Btn, FL } from "./UiBits";
 import { useTrucksStore } from "../store/useTrucksStore";
 import { useDriversStore } from "../store/useDriversStore";
-import { RECRUITERS, getRecruiter } from "../constants/recruiters";
 
-export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, onDeleteFile, onStageChange, onDelete, canManageFiles, currentUserEmail = "" }) {
+export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, onDeleteFile, onStageChange, onDelete, canManageFiles }) {
   const [tab, setTab] = useState("info");
   const [note, setNote] = useState("");
   const [editing, setEditing] = useState(false);
@@ -383,11 +382,6 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
         <div style={{ flex: 1, overflowY: "auto", padding: "16px 22px" }}>
           {tab === "info" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-
-              {/* ── OWNER (recruiter assignment) ── */}
-              {RECRUITERS.length > 1 && (
-                <OwnerBar driver={driver} onUpd={onUpd} currentUserEmail={currentUserEmail} />
-              )}
 
               {/* ── INFO ── */}
               {editing ? (
@@ -1308,90 +1302,6 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-/**
- * Recruiter ownership bar — colored pill showing current owner + quick actions
- * for the logged-in user to claim, reassign, or release the lead.
- */
-function OwnerBar({ driver, onUpd, currentUserEmail }) {
-  const owner = getRecruiter(driver.assignedTo);
-  const me = String(currentUserEmail || "").toLowerCase();
-  const iAmOwner = !!me && owner.email === me;
-  const iAmKnown = RECRUITERS.some((r) => r.email === me);
-
-  function assignTo(email) {
-    onUpd(driver.id, {
-      assignedTo: email || null,
-      assignedAt: email ? new Date().toISOString() : null,
-    });
-  }
-
-  return (
-    <div style={{
-      display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8,
-      padding: "8px 12px", borderRadius: 10,
-      background: owner.bg, border: `1px solid ${owner.border}`,
-    }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".06em" }}>
-        Owner
-      </div>
-      <div style={{
-        display: "inline-flex", alignItems: "center", gap: 6,
-        background: "white", border: `1px solid ${owner.border}`,
-        borderRadius: 999, padding: "3px 10px",
-        fontSize: 12, fontWeight: 700, color: owner.color,
-      }}>
-        <span style={{
-          display: "inline-flex", alignItems: "center", justifyContent: "center",
-          width: 18, height: 18, borderRadius: 999, fontSize: 9,
-          background: owner.color, color: "white",
-        }}>{owner.short}</span>
-        {owner.name}
-      </div>
-
-      <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-        {!iAmOwner && iAmKnown && (
-          <button onClick={() => assignTo(me)}
-            style={{
-              padding: "5px 12px", borderRadius: 7, fontSize: 12, fontWeight: 600,
-              background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0",
-              cursor: "pointer",
-            }}>
-            ➕ Взяти собі
-          </button>
-        )}
-
-        {RECRUITERS.map((r) => {
-          if (r.email === owner.email) return null;
-          if (r.email === me) return null; // "take to me" button above handles this
-          return (
-            <button key={r.email} onClick={() => assignTo(r.email)}
-              title={`Передати ${r.name}`}
-              style={{
-                padding: "5px 12px", borderRadius: 7, fontSize: 12, fontWeight: 600,
-                background: r.bg, color: r.color, border: `1px solid ${r.border}`,
-                cursor: "pointer",
-              }}>
-              → {r.name}
-            </button>
-          );
-        })}
-
-        {owner.email && (
-          <button onClick={() => assignTo(null)}
-            title="Зняти власника — лід знову буде Unassigned"
-            style={{
-              padding: "5px 10px", borderRadius: 7, fontSize: 12,
-              background: "transparent", color: "var(--text-faint)", border: "1px dashed var(--border)",
-              cursor: "pointer",
-            }}>
-            ✕
-          </button>
-        )}
-      </div>
     </div>
   );
 }

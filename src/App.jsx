@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { STAGES } from "./constants/data";
-import { RECRUITERS, getRecruiter, isKnownRecruiter } from "./constants/recruiters";
 import { nextActionTs, todayStr } from "./utils/date";
 import { useDriversStore } from "./store/useDriversStore";
 import { SPill } from "./components/UiBits";
@@ -53,7 +52,6 @@ export default function App() {
   const [showDailyReport, setShowDailyReport] = useState(false);
   const [showToolsMenu, setShowToolsMenu] = useState(false);
   const [filterStage, setFilterStage] = useState("all");
-  const [filterRecruiter, setFilterRecruiter] = useState("all");
   const [search, setSearch] = useState("");
   const [searchFocus, setSearchFocus] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
@@ -166,29 +164,9 @@ export default function App() {
   const showDropdown = searchFocus && search.trim().length > 0;
 
   const filtered = useMemo(() => {
-    const list = drivers.filter((driver) => {
-      if (filterStage !== "all" && driver.stage !== filterStage) return false;
-      if (filterRecruiter === "all") return true;
-      const owner = String(driver.assignedTo || "").toLowerCase();
-      if (filterRecruiter === "unassigned") return !owner;
-      return owner === filterRecruiter;
-    });
+    const list = drivers.filter((driver) => filterStage === "all" || driver.stage === filterStage);
     return [...list].sort((a, b) => nextActionTs(a) - nextActionTs(b));
-  }, [drivers, filterStage, filterRecruiter]);
-
-  // Counts for recruiter filter chips — exclude trash so they reflect active workload.
-  const recruiterCounts = useMemo(() => {
-    const counts = { all: 0, unassigned: 0 };
-    for (const r of RECRUITERS) counts[r.email] = 0;
-    for (const d of drivers) {
-      if (d.stage === "trash") continue;
-      counts.all += 1;
-      const owner = String(d.assignedTo || "").toLowerCase();
-      if (!owner) counts.unassigned += 1;
-      else if (counts[owner] != null) counts[owner] += 1;
-    }
-    return counts;
-  }, [drivers]);
+  }, [drivers, filterStage]);
 
   const today = todayStr();
   const yesterdayDate = new Date();
@@ -242,16 +220,6 @@ export default function App() {
       patch.trainedBy = trainedBy;
     } else {
       patch.trainedBy = null;
-    }
-
-    // Auto-claim: first known recruiter to touch an unassigned lead becomes its
-    // owner. Admins (e.g. info@) touching a lead don't trigger auto-claim —
-    // they're not on the recruiter roster.
-    const driver = drivers.find((d) => d.id === driverId);
-    const me = String(firebaseUser?.email || "").toLowerCase();
-    if (driver && !driver.assignedTo && isKnownRecruiter(me)) {
-      patch.assignedTo = me;
-      patch.assignedAt = new Date().toISOString();
     }
 
     upd(driverId, patch);
@@ -961,62 +929,12 @@ export default function App() {
 
         <div style={{ flex: 1, overflow: "hidden", display: "flex", minWidth: 0 }}>
           {view === "pipeline" && (
-            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-              {/* Recruiter filter chips — visible only when 2+ recruiters defined */}
-              {RECRUITERS.length > 1 && (
-                <div style={{
-                  display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6,
-                  padding: "8px 14px", borderBottom: "1px solid var(--border)",
-                  background: "var(--bg-surface)",
-                }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".06em", marginRight: 4 }}>
-                    Recruiter
-                  </span>
-                  {(() => {
-                    const me = String(firebaseUser?.email || "").toLowerCase();
-                    const chips = [
-                      { id: "all", label: "Усі", count: recruiterCounts.all, color: "#475569", bg: "#f1f5f9", border: "#cbd5e1" },
-                      ...RECRUITERS.map((r) => ({
-                        id: r.email,
-                        label: r.email === me ? `${r.name} (мої)` : r.name,
-                        count: recruiterCounts[r.email] || 0,
-                        color: r.color, bg: r.bg, border: r.border,
-                      })),
-                      { id: "unassigned", label: "Без власника", count: recruiterCounts.unassigned, color: "#92400e", bg: "#fef3c7", border: "#fde68a" },
-                    ];
-                    return chips.map((c) => {
-                      const active = filterRecruiter === c.id;
-                      return (
-                        <button key={c.id} onClick={() => setFilterRecruiter(c.id)}
-                          style={{
-                            display: "inline-flex", alignItems: "center", gap: 6,
-                            padding: "4px 10px", borderRadius: 999,
-                            fontSize: 12, fontWeight: 600,
-                            background: active ? c.bg : "transparent",
-                            color: active ? c.color : "var(--text-secondary)",
-                            border: `1px solid ${active ? c.border : "var(--border)"}`,
-                            cursor: "pointer",
-                          }}>
-                          {c.label}
-                          <span style={{
-                            fontSize: 10, fontWeight: 700,
-                            background: active ? "white" : "var(--bg-raised)",
-                            color: active ? c.color : "var(--text-faint)",
-                            borderRadius: 999, padding: "1px 6px",
-                          }}>{c.count}</span>
-                        </button>
-                      );
-                    });
-                  })()}
-                </div>
-              )}
-              <PipelineView
-                stages={STAGES}
-                filteredDrivers={filtered}
-                onSelectDriver={setSelectedId}
-                onDropDriverToStage={requestStageChange}
-              />
-            </div>
+            <PipelineView
+              stages={STAGES}
+              filteredDrivers={filtered}
+              onSelectDriver={setSelectedId}
+              onDropDriverToStage={requestStageChange}
+            />
           )}
 
           {view === "dispatchers" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}><DispatchersView /></div>}
@@ -1046,7 +964,6 @@ export default function App() {
           canManageFiles={canManageFiles}
           onStageChange={requestStageChange}
           onDelete={(id) => { deleteDriver(id); setSelectedId(null); }}
-          currentUserEmail={firebaseUser?.email || ""}
         />
       )}
 
