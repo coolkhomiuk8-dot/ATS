@@ -34,8 +34,19 @@ export default function DispatcherDrawer({ dispatcher, onClose, onUpd, onRemove,
     setEditing(true);
   }
 
+  // Only these scalar fields are user-editable via the edit form.
+  // Anything not in this list (logs, lastContactAt, sourceLeadId, notifiedAt,
+  // stageChangedAt, createdAt, etc.) is preserved as-is on the server so a
+  // stale edit-form snapshot can't overwrite concurrent updates from another
+  // tab or the leads-sync cron.
+  const EDITABLE_FIELDS = ["name", "telegram", "instagram", "phone", "note", "role", "englishLevel"];
+
   function saveEdit() {
-    onUpd(dispatcher.id, { ...form });
+    const patch = {};
+    for (const f of EDITABLE_FIELDS) {
+      if (form[f] !== undefined) patch[f] = form[f];
+    }
+    onUpd(dispatcher.id, patch);
     setEditing(false);
   }
 

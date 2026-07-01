@@ -24,7 +24,12 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
   const fileRef = useRef(null);
 
   const { trucks, assignDriver, unassignDriver } = useTrucksStore();
-  const { upd: updDriver } = useDriversStore();
+  const {
+    upd: updDriver,
+    toggleDoc: storeToggleDoc,
+    toggleFlag: storeToggleFlag,
+    setDocFlags: storeSetDocFlags,
+  } = useDriversStore();
 
   const assignedTruck = driver.assignedTruckId
     ? trucks.find((t) => t.id === driver.assignedTruckId)
@@ -58,8 +63,22 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
   const isDeadEnd = driver.stage === "trash" || driver.stage === "fired";
   const docs = Object.values(driver.docs || {}).filter(Boolean).length;
 
+  // Fields user can actually change through the "Edit Info" form. We never
+  // send notes / files / stageHistory / docs from here — those are managed by
+  // their own dedicated actions and could get overwritten by a stale form
+  // snapshot if we included them.
+  const EDITABLE_INFO_FIELDS = [
+    "name", "phone", "email", "city",
+    "exp", "source", "startDate",
+    "dlExpiry", "hireDate", "truckTypes",
+  ];
+
   function saveInfo() {
-    onUpd(driver.id, editData);
+    const patch = {};
+    for (const f of EDITABLE_INFO_FIELDS) {
+      if (editData[f] !== undefined) patch[f] = editData[f];
+    }
+    onUpd(driver.id, patch);
     setEditing(false);
   }
 
@@ -70,15 +89,15 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
   }
 
   function toggleDoc(doc) {
-    onUpd(driver.id, { docs: { ...driver.docs, [doc]: !driver.docs?.[doc] } });
+    // Store action uses Firestore dotted-path so we only touch that one nested
+    // key — concurrent toggles from two tabs no longer overwrite each other.
+    storeToggleDoc(driver.id, doc);
   }
 
   function toggleFlag(flag) {
-    onUpd(driver.id, {
-      flags: driver.flags.includes(flag)
-        ? driver.flags.filter((value) => value !== flag)
-        : [...driver.flags, flag],
-    });
+    // Store action uses arrayUnion / arrayRemove — no more lost flags when
+    // two recruiters tag the same driver simultaneously.
+    storeToggleFlag(driver.id, flag);
   }
 
   function handleFiles(files) {
@@ -122,16 +141,18 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
     setUploadProgress({ current: 0, total: queue.length });
 
     try {
+      const docUpdates = {}; // keys → true, only for newly-linked docs
       for (let i = 0; i < queue.length; i += 1) {
         const file = queue[i];
         setUploadProgress({ current: i + 1, total: queue.length });
         await Promise.resolve(onFile(driver.id, file));
-        if (file.linkedDoc) nextDocs[file.linkedDoc] = true;
+        if (file.linkedDoc) docUpdates[file.linkedDoc] = true;
       }
 
-      const hasLinkedDocs = queue.some((file) => Boolean(file.linkedDoc));
-      if (hasLinkedDocs) {
-        onUpd(driver.id, { docs: nextDocs });
+      // Use dotted-path per key instead of writing the whole `docs` map —
+      // concurrent edits to unrelated doc keys from another tab survive.
+      if (Object.keys(docUpdates).length > 0) {
+        await storeSetDocFlags(driver.id, docUpdates);
       }
     } finally {
       setIsUploading(false);

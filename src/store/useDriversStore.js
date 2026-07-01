@@ -384,6 +384,94 @@ export const useDriversStore = create((set, get) => ({
     }
   },
 
+  /**
+   * Toggle one docs-checklist entry (DL / Passport / SSN / …) atomically.
+   * Uses a Firestore dotted-path update so we only touch that one nested key,
+   * not the whole `docs` map — concurrent toggles on different keys from two
+   * tabs both survive.
+   */
+  toggleDoc: async (id, docKey) => {
+    const driver = get().drivers.find((d) => d.id === id);
+    if (!driver) return;
+    const next = !driver.docs?.[docKey];
+
+    set((state) => ({
+      drivers: state.drivers.map((d) =>
+        d.id === id ? { ...d, docs: { ...(d.docs || {}), [docKey]: next } } : d,
+      ),
+    }));
+
+    if (!isFirebaseConfigured || !db) return;
+    try {
+      await ensureAuthReady();
+      const currentDriver = get().drivers.find((d) => d.id === id);
+      const docId = getDriverDocId(currentDriver || { id });
+      await updateDoc(doc(db, "drivers", docId), { [`docs.${docKey}`]: next });
+    } catch (error) {
+      set({ syncError: error.message || "Failed to update doc checklist." });
+    }
+  },
+
+  /**
+   * Set multiple docs-checklist entries atomically without touching sibling
+   * keys. Used after a batch file upload that auto-checks the docs the files
+   * were linked to.
+   *
+   * `updates` is a plain object like { DL: true, SSN: true, Passport: false }.
+   * Each key is written via a dotted-path so concurrent edits from another
+   * tab on OTHER doc keys survive.
+   */
+  setDocFlags: async (id, updates) => {
+    const keys = Object.keys(updates || {});
+    if (keys.length === 0) return;
+
+    set((state) => ({
+      drivers: state.drivers.map((d) =>
+        d.id === id ? { ...d, docs: { ...(d.docs || {}), ...updates } } : d,
+      ),
+    }));
+
+    if (!isFirebaseConfigured || !db) return;
+    try {
+      await ensureAuthReady();
+      const current = get().drivers.find((d) => d.id === id);
+      const docId = getDriverDocId(current || { id });
+      const fsPatch = {};
+      for (const k of keys) fsPatch[`docs.${k}`] = updates[k];
+      await updateDoc(doc(db, "drivers", docId), fsPatch);
+    } catch (error) {
+      set({ syncError: error.message || "Failed to update docs." });
+    }
+  },
+
+  /**
+   * Toggle a flag on / off atomically via arrayUnion / arrayRemove.
+   * Concurrent flag toggles from two tabs no longer overwrite each other.
+   */
+  toggleFlag: async (id, flag) => {
+    const driver = get().drivers.find((d) => d.id === id);
+    if (!driver) return;
+    const currentFlags = Array.isArray(driver.flags) ? driver.flags : [];
+    const isSet = currentFlags.includes(flag);
+    const nextFlags = isSet ? currentFlags.filter((f) => f !== flag) : [...currentFlags, flag];
+
+    set((state) => ({
+      drivers: state.drivers.map((d) => (d.id === id ? { ...d, flags: nextFlags } : d)),
+    }));
+
+    if (!isFirebaseConfigured || !db) return;
+    try {
+      await ensureAuthReady();
+      const current = get().drivers.find((d) => d.id === id);
+      const docId = getDriverDocId(current || { id });
+      await updateDoc(doc(db, "drivers", docId), {
+        flags: isSet ? arrayRemove(flag) : arrayUnion(flag),
+      });
+    } catch (error) {
+      set({ syncError: error.message || "Failed to toggle flag." });
+    }
+  },
+
   addNote: async (id, text) => {
     // `ts` makes the entry sortable on read — needed because we now write
     // notes with arrayUnion (which appends) instead of prepending. Older
@@ -508,9 +596,16 @@ export const useDriversStore = create((set, get) => ({
     const nextFiles = currentFiles.filter((_, idx) => idx !== fileIdx);
     const nextDocs = { ...(currentDriver.docs || {}) };
 
+    // Only touch the specific doc-key we're clearing; leave other keys alone
+    // on the server so a concurrent toggle of a different doc from another
+    // tab doesn't get wiped out.
+    let docKeyToClear = null;
     if (fileToDelete?.linkedDoc) {
       const stillLinked = nextFiles.some((item) => item.linkedDoc === fileToDelete.linkedDoc);
-      if (!stillLinked) nextDocs[fileToDelete.linkedDoc] = false;
+      if (!stillLinked) {
+        nextDocs[fileToDelete.linkedDoc] = false;
+        docKeyToClear = fileToDelete.linkedDoc;
+      }
     }
 
     if (!isFirebaseConfigured || !db) return;
@@ -524,11 +619,11 @@ export const useDriversStore = create((set, get) => ({
 
       // arrayRemove deletes by deep equality. fileToDelete came straight from
       // the local snapshot of Firestore data, so its shape matches the
-      // server-stored entry exactly.
-      await updateDoc(doc(db, "drivers", docId), {
-        files: arrayRemove(fileToDelete),
-        docs: nextDocs,
-      });
+      // server-stored entry exactly. Docs key (if any) is cleared via a
+      // dotted-path so sibling checkboxes stay untouched.
+      const fsPatch = { files: arrayRemove(fileToDelete) };
+      if (docKeyToClear) fsPatch[`docs.${docKeyToClear}`] = false;
+      await updateDoc(doc(db, "drivers", docId), fsPatch);
 
       set((state) => ({
         drivers: state.drivers.map((driver) =>
