@@ -6,7 +6,7 @@ import DispatcherDrawer from "../components/DispatcherDrawer";
 import ImportFBModal from "../components/ImportFBModal";
 
 export default function DispatchersView() {
-  const { dispatchers, add, upd, remove } = useDispatchersStore();
+  const { dispatchers, add, upd, remove, appendLog } = useDispatchersStore();
   const [selected, setSelected] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -209,6 +209,7 @@ export default function DispatchersView() {
             dispatcher={selectedDispatcher}
             onClose={() => setSelected(null)}
             onUpd={upd}
+            onAppendLog={appendLog}
             onRemove={handleRemove}
           />
         </>

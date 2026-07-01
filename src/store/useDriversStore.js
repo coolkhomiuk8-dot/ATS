@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { todayStr } from "../utils/date";
 import { auth, db, ensureAuthReady, isFirebaseConfigured } from "../lib/firebase";
 import {
+  arrayRemove,
+  arrayUnion,
   collection,
   deleteDoc,
   doc,
@@ -339,17 +341,29 @@ export const useDriversStore = create((set, get) => ({
   upd: async (id, patch) => {
     const safePatch = stripUndefined(patch);
 
-    // If stage is changing — append entry to stageHistory
+    // Stage change: build a stageHistory entry, but DON'T write the full
+    // array — Firestore would then overwrite a concurrent edit by the other
+    // user. Instead use arrayUnion below to atomically append.
+    let stageHistoryEntry = null;
     if (safePatch.stage) {
       const current = get().drivers.find((d) => d.id === id);
       if (current && current.stage !== safePatch.stage) {
-        const entry = { stage: safePatch.stage, date: todayStr(), ts: Date.now() };
-        safePatch.stageHistory = [...(current.stageHistory || []), entry];
+        stageHistoryEntry = { stage: safePatch.stage, date: todayStr(), ts: Date.now() };
       }
     }
 
+    // Optimistic local update — the entry is shown immediately. Whole-array
+    // shape is fine in local state because Zustand is single-tab; the
+    // concurrency issue is only on the Firestore side.
     set((state) => ({
-      drivers: state.drivers.map((driver) => (driver.id === id ? { ...driver, ...safePatch } : driver)),
+      drivers: state.drivers.map((driver) => {
+        if (driver.id !== id) return driver;
+        const next = { ...driver, ...safePatch };
+        if (stageHistoryEntry) {
+          next.stageHistory = [...(driver.stageHistory || []), stageHistoryEntry];
+        }
+        return next;
+      }),
     }));
 
     if (!isFirebaseConfigured || !db) return;
@@ -358,15 +372,25 @@ export const useDriversStore = create((set, get) => ({
       await ensureAuthReady();
       const current = get().drivers.find((driver) => driver.id === id);
       const docId = getDriverDocId(current || { id });
-      await updateDoc(doc(db, "drivers", docId), safePatch);
+
+      // Build the Firestore patch: scalars from safePatch, plus arrayUnion
+      // for stageHistory if we have an entry. arrayUnion is atomic on the
+      // server — concurrent writes from two tabs merge instead of overwriting.
+      const fsPatch = { ...safePatch };
+      if (stageHistoryEntry) fsPatch.stageHistory = arrayUnion(stageHistoryEntry);
+      await updateDoc(doc(db, "drivers", docId), fsPatch);
     } catch (error) {
       set({ syncError: error.message || "Failed to update driver." });
     }
   },
 
   addNote: async (id, text) => {
+    // `ts` makes the entry sortable on read — needed because we now write
+    // notes with arrayUnion (which appends) instead of prepending. Older
+    // entries without `ts` will land at the bottom on the next render.
     const entry = {
       text,
+      ts: Date.now(),
       date: new Date().toLocaleString("en-US", {
         month: "short",
         day: "numeric",
@@ -375,16 +399,16 @@ export const useDriversStore = create((set, get) => ({
       }),
     };
 
-    let nextNotes = [];
     const lastContact = todayStr();
 
+    // Optimistic: prepend locally so the user sees the new note immediately
+    // at the top (same as before). The on-disk order will be append-only
+    // (older→newer), and the UI sorts by `ts` desc so the rendered order
+    // stays "newest first".
     set((state) => ({
       drivers: state.drivers.map((driver) =>
         driver.id === id
-          ? (() => {
-              nextNotes = [entry, ...(driver.notes || [])];
-              return { ...driver, notes: nextNotes, lastContact };
-            })()
+          ? { ...driver, notes: [entry, ...(driver.notes || [])], lastContact }
           : driver,
       ),
     }));
@@ -396,7 +420,7 @@ export const useDriversStore = create((set, get) => ({
       const current = get().drivers.find((driver) => driver.id === id);
       const docId = getDriverDocId(current || { id });
       await updateDoc(doc(db, "drivers", docId), {
-        notes: nextNotes,
+        notes: arrayUnion(entry),
         lastContact,
       });
     } catch (error) {
@@ -450,14 +474,11 @@ export const useDriversStore = create((set, get) => ({
       return;
     }
 
-    let nextFiles = [];
+    // Optimistic append in local state
     set((state) => ({
       drivers: state.drivers.map((driver) =>
         driver.id === id
-          ? (() => {
-              nextFiles = [...(driver.files || []), savedFile];
-              return { ...driver, docId: resolvedDocId, files: nextFiles };
-            })()
+          ? { ...driver, docId: resolvedDocId, files: [...(driver.files || []), savedFile] }
           : driver,
       ),
     }));
@@ -465,8 +486,10 @@ export const useDriversStore = create((set, get) => ({
     if (!isFirebaseConfigured || !db) return;
 
     try {
+      // arrayUnion appends atomically — two simultaneous uploads from
+      // different tabs both survive instead of overwriting each other.
       await updateDoc(doc(db, "drivers", resolvedDocId), {
-        files: nextFiles,
+        files: arrayUnion(savedFile),
         docId: resolvedDocId,
       });
     } catch (error) {
@@ -499,8 +522,11 @@ export const useDriversStore = create((set, get) => ({
 
       await deleteDriverFileFromDrive(fileToDelete, docId);
 
+      // arrayRemove deletes by deep equality. fileToDelete came straight from
+      // the local snapshot of Firestore data, so its shape matches the
+      // server-stored entry exactly.
       await updateDoc(doc(db, "drivers", docId), {
-        files: nextFiles,
+        files: arrayRemove(fileToDelete),
         docs: nextDocs,
       });
 

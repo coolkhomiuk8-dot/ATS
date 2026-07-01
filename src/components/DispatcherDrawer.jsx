@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { DISPATCHER_STAGES, DISPATCHER_ROLES, ROLE_COLORS, ENGLISH_LEVELS, ENGLISH_COLORS } from "../constants/dispatcherData";
 
-export default function DispatcherDrawer({ dispatcher, onClose, onUpd, onRemove }) {
+export default function DispatcherDrawer({ dispatcher, onClose, onUpd, onRemove, onAppendLog }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -13,7 +13,8 @@ export default function DispatcherDrawer({ dispatcher, onClose, onUpd, onRemove 
     const text = newEntry.trim();
     if (!text) return;
     const entry = { text, date: new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) };
-    onUpd(dispatcher.id, { logs: [...logs, entry] });
+    // appendLog uses Firestore arrayUnion so concurrent writes don't lose entries.
+    onAppendLog(dispatcher.id, entry);
     setNewEntry("");
   }
 
@@ -25,10 +26,7 @@ export default function DispatcherDrawer({ dispatcher, onClose, onUpd, onRemove 
       date: now.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
       system: true,
     };
-    onUpd(dispatcher.id, {
-      lastContactAt: now.toISOString(),
-      logs: [...logs, entry],
-    });
+    onAppendLog(dispatcher.id, entry, { lastContactAt: now.toISOString() });
   }
 
   function startEdit() {

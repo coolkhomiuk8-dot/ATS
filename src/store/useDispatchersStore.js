@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { auth, db, ensureAuthReady, isFirebaseConfigured } from "../lib/firebase";
 import {
   collection, deleteDoc, doc,
-  onSnapshot, query, setDoc, updateDoc,
+  arrayUnion, onSnapshot, query, setDoc, updateDoc,
 } from "firebase/firestore";
 
 function ensureShape(d) {
@@ -67,6 +67,31 @@ export const useDispatchersStore = create((set, get) => ({
       dispatchers: s.dispatchers.map((d) => d.id === id ? { ...d, ...finalPatch } : d),
     }));
     await updateDoc(doc(colRef(), id), finalPatch);
+  },
+
+  /**
+   * Append an entry to the `logs` array atomically — concurrent writes from
+   * two recruiters on the same lead both survive instead of one overwriting
+   * the other. Use this instead of upd({ logs: [...prev, entry] }).
+   *
+   * Extra optional patch can apply scalar updates in the same write
+   * (e.g. lastContactAt). Local optimistic prepend keeps the new entry at
+   * the top of the visible log even though Firestore appends.
+   */
+  async appendLog(id, entry, extraPatch = {}) {
+    await ensureAuthReady();
+    const stamped = { ts: Date.now(), ...entry };
+    set((s) => ({
+      dispatchers: s.dispatchers.map((d) =>
+        d.id === id
+          ? { ...d, ...extraPatch, logs: [...(d.logs || []), stamped] }
+          : d,
+      ),
+    }));
+    await updateDoc(doc(colRef(), id), {
+      ...extraPatch,
+      logs: arrayUnion(stamped),
+    });
   },
 
   async remove(id) {

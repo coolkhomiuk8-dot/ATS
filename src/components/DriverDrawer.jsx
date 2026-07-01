@@ -753,7 +753,10 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                   {driver.notes.length === 0 && (
                     <div style={{ textAlign: "center", padding: 24, fontSize: 13, color: "var(--text-disabled)" }}>No entries yet</div>
                   )}
-                  {driver.notes.map((item, idx) => (
+                  {/* Sort newest-first by `ts`. New entries written via arrayUnion
+                      land at the end of the on-disk array; legacy entries
+                      without `ts` (treated as 0) sort after them. */}
+                  {[...driver.notes].sort((a, b) => (b?.ts || 0) - (a?.ts || 0)).map((item, idx) => (
                     <div
                       key={idx}
                       style={{
