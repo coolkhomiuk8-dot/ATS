@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { db, auth, ensureAuthReady, isFirebaseConfigured } from "../lib/firebase";
 import {
+  arrayRemove,
+  arrayUnion,
   collection,
   deleteDoc,
   doc,
@@ -207,16 +209,23 @@ export const useTrucksStore = create((set, get) => ({
       }
     }
 
-    // Track status changes automatically
+    // Status change: build the "close previous open entry + new entry" history
+    // update. The close-open step still requires a whole-array rewrite because
+    // it modifies an existing entry, but concurrent status changes on the same
+    // truck are effectively impossible (admin-only, single truck at a time).
+    // The new-entry append is safer — we use arrayUnion for that side below.
+    let newStatusEntry = null;
+    let closedStatusHistory = null;
     if (patch.status !== undefined) {
       const truck = get().trucks.find((t) => t.id === id);
       if (truck && truck.status !== patch.status) {
         const today = todayStr();
-        const statusHistory = (truck.statusHistory || []).map((entry) =>
+        closedStatusHistory = (truck.statusHistory || []).map((entry) =>
           !entry.to ? { ...entry, to: today } : entry,
         );
-        statusHistory.push({ status: patch.status, from: today, to: null });
-        patch.statusHistory = statusHistory;
+        newStatusEntry = { status: patch.status, from: today, to: null };
+        // Local optimistic state gets the full new array so UI shows it now
+        patch.statusHistory = [...closedStatusHistory, newStatusEntry];
       }
     }
 
@@ -227,7 +236,17 @@ export const useTrucksStore = create((set, get) => ({
     if (!isFirebaseConfigured || !db) return;
     try {
       await ensureAuthReady();
-      await updateDoc(doc(db, "trucks", id), patch);
+      // For the server write, if statusHistory was set inline, split it into
+      // two steps: (1) whole-array rewrite for the "close previous entry" step,
+      // (2) arrayUnion for the new entry — that way at least the append side
+      // is atomic against concurrent writes.
+      if (newStatusEntry) {
+        const fsPatch = { ...patch, statusHistory: closedStatusHistory };
+        await updateDoc(doc(db, "trucks", id), fsPatch);
+        await updateDoc(doc(db, "trucks", id), { statusHistory: arrayUnion(newStatusEntry) });
+      } else {
+        await updateDoc(doc(db, "trucks", id), patch);
+      }
     } catch (error) {
       set({ syncError: error.message || "Failed to update truck." });
     }
@@ -326,8 +345,22 @@ export const useTrucksStore = create((set, get) => ({
     if (!truck) return;
     const unitNumber = String(truck.unitNumber || truckId);
     const uploaded = await uploadTruckFile(truckId, unitNumber, fileObj);
-    const files = [...(truck.files || []), uploaded];
-    return get().updateTruck(truckId, { files });
+
+    // Optimistic local append
+    set((state) => ({
+      trucks: state.trucks.map((t) =>
+        t.id === truckId ? { ...t, files: [...(t.files || []), uploaded] } : t,
+      ),
+    }));
+
+    if (!isFirebaseConfigured || !db) return;
+    try {
+      await ensureAuthReady();
+      // arrayUnion — concurrent uploads from two admins don't overwrite each other.
+      await updateDoc(doc(db, "trucks", truckId), { files: arrayUnion(uploaded) });
+    } catch (error) {
+      set({ syncError: error.message || "Failed to save truck file." });
+    }
   },
 
   addOilChange: async (truckId, { odometer, date, fileObj }) => {
@@ -361,8 +394,26 @@ export const useTrucksStore = create((set, get) => ({
       } : {}),
     });
 
-    const oilChangeLog = [...(truck.oilChangeLog || []), entry];
-    return get().updateTruck(truckId, { lastOilChange: Number(odometer), oilChangeLog });
+    // Optimistic append
+    set((state) => ({
+      trucks: state.trucks.map((t) =>
+        t.id === truckId
+          ? { ...t, lastOilChange: Number(odometer), oilChangeLog: [...(t.oilChangeLog || []), entry] }
+          : t,
+      ),
+    }));
+
+    if (!isFirebaseConfigured || !db) return;
+    try {
+      await ensureAuthReady();
+      // arrayUnion for the log entry + scalar lastOilChange in the same write.
+      await updateDoc(doc(db, "trucks", truckId), {
+        lastOilChange: Number(odometer),
+        oilChangeLog: arrayUnion(entry),
+      });
+    } catch (error) {
+      set({ syncError: error.message || "Failed to save oil change." });
+    }
   },
 
   deleteTruckFile: async (truckId, fileIdx) => {
@@ -382,8 +433,21 @@ export const useTrucksStore = create((set, get) => ({
       } catch (_) { /* non-critical */ }
     }
 
-    // Remove from Firestore + local state after Drive confirms
-    const files = (truck.files || []).filter((_, i) => i !== fileIdx);
-    return get().updateTruck(truckId, { files });
+    // Remove from Firestore + local state after Drive confirms.
+    // arrayRemove — concurrent delete of a DIFFERENT file from another admin
+    // no longer wipes out our delete (and vice versa).
+    set((state) => ({
+      trucks: state.trucks.map((t) =>
+        t.id === truckId ? { ...t, files: (t.files || []).filter((_, i) => i !== fileIdx) } : t,
+      ),
+    }));
+
+    if (!isFirebaseConfigured || !db) return;
+    try {
+      await ensureAuthReady();
+      await updateDoc(doc(db, "trucks", truckId), { files: arrayRemove(file) });
+    } catch (error) {
+      set({ syncError: error.message || "Failed to delete truck file." });
+    }
   },
 }));
