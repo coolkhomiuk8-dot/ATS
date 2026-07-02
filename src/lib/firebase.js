@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -27,7 +27,19 @@ let ensureAuthReady = async () => {};
 
 if (isFirebaseConfigured) {
   app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
+
+  // Force long-polling instead of WebChannel. Restrictive corporate firewalls
+  // / proxies frequently drop the WebChannel connection after the first
+  // successful write, leaving subsequent updateDoc() calls hanging forever.
+  // Long-polling is plain HTTPS requests — slower per-message but immune to
+  // idle-socket termination.
+  //   experimentalAutoDetectLongPolling: also tries WebChannel first and
+  //   automatically falls back to long-polling if it detects the connection
+  //   was broken. Safe to have both flags — long-polling wins if forced.
+  db = initializeFirestore(app, {
+    experimentalAutoDetectLongPolling: true,
+  });
+
   auth = getAuth(app);
 
   // Cheap in-memory throttle so we don't force-refresh on every single
