@@ -30,9 +30,30 @@ if (isFirebaseConfigured) {
   db = getFirestore(app);
   auth = getAuth(app);
 
+  // Cheap in-memory throttle so we don't force-refresh on every single
+  // Firestore write — Firebase caches the id-token internally too, but
+  // proactively pinging it every ~5 min prevents the "SDK silently hangs
+  // forever because a stale token failed to refresh" failure mode.
+  let lastTokenCheck = 0;
+  const TOKEN_CHECK_MS = 5 * 60 * 1000;
+
   ensureAuthReady = async () => {
     if (!auth.currentUser) {
       throw new Error("Not authenticated in Firebase. Sign in with Email/Password or Google.");
+    }
+    const now = Date.now();
+    if (now - lastTokenCheck < TOKEN_CHECK_MS) return;
+    lastTokenCheck = now;
+    try {
+      // getIdToken(true) forces a network refresh against Google's token
+      // endpoint. If the refresh fails (revoked session, network partition),
+      // we throw here — much better than a silent updateDoc hang later.
+      await auth.currentUser.getIdToken(true);
+    } catch (err) {
+      throw new Error(
+        `Не вдалось оновити токен авторизації (${err?.code || "unknown"}). ` +
+        `Спробуй Log out → Log in.`
+      );
     }
   };
 } else {
