@@ -208,7 +208,7 @@ export default function App() {
     setStageModal({ driverId, fromStage: driver.stage, toStage });
   }
 
-  async function confirmStageChange({ driverId, toStage, nextAction, nextActionTime, comment, trainedBy }) {
+  function confirmStageChange({ driverId, toStage, nextAction, nextActionTime, comment, trainedBy }) {
     const patch = { stage: toStage };
 
     if (nextAction) {
@@ -222,24 +222,30 @@ export default function App() {
       patch.trainedBy = null;
     }
 
-    // Diagnostic: surface any Firestore rejection loudly instead of a small
-    // silent banner so the recruiter can immediately see what went wrong.
+    // Grab labels BEFORE closing the modal (stageModal is nulled below,
+    // so its state wouldn't be available in the async note-write).
+    const fromLabel = STAGES.find((item) => item.id === stageModal?.fromStage)?.label || "";
+    const toLabel   = STAGES.find((item) => item.id === toStage)?.label || "";
+
+    // Close modal immediately — optimistic UI shows the move right away and
+    // the recruiter isn't left staring at a hung dialog if the Firestore
+    // round-trip is slow (network, token refresh, whatever). The write still
+    // goes through in the background; any failure surfaces via alert().
+    setStageModal(null);
+
+    // Fire-and-forget the write. Any rejection loudly alerts the recruiter
+    // so they know the change didn't actually persist.
     console.log("[stage-change] attempt", { driverId, toStage, patch });
-    try {
-      await upd(driverId, patch);
-      console.log("[stage-change] ok", { driverId, toStage });
-    } catch (err) {
-      console.error("[stage-change] FAILED", err);
-      alert(`Не вдалось перемістити картку:\n${err?.message || err}\n\nПокажи цей текст програмісту.`);
-    }
+    upd(driverId, patch)
+      .then(() => console.log("[stage-change] ok", { driverId, toStage }))
+      .catch((err) => {
+        console.error("[stage-change] FAILED", err);
+        alert(`Не вдалось перемістити картку:\n${err?.message || err}\n\nПокажи цей текст програмісту.`);
+      });
 
     if (comment && comment.trim()) {
-      const from = STAGES.find((item) => item.id === stageModal?.fromStage)?.label || "";
-      const to = STAGES.find((item) => item.id === toStage)?.label || "";
-      addNote(driverId, `[Stage: ${from} -> ${to}]\n${comment.trim()}`);
+      addNote(driverId, `[Stage: ${fromLabel} -> ${toLabel}]\n${comment.trim()}`);
     }
-
-    setStageModal(null);
   }
 
   function handleAddFile(driverId, fileObj) {
