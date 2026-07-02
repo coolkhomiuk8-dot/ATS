@@ -59,6 +59,9 @@ export default function App() {
   const [stageModal, setStageModal] = useState(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [alertsPanelOpen, setAlertsPanelOpen] = useState(false);
+  // Diagnostic banner — visible in-app messages for stage-change verification.
+  // Persistent (until dismissed) so it can't be missed like a browser alert.
+  const [debugBanner, setDebugBanner] = useState(null);
   const [currentRole, setCurrentRole] = useState("user");
   const [roleLoading, setRoleLoading] = useState(true);
 
@@ -238,36 +241,54 @@ export default function App() {
     // local cache is applied, so a permission failure server-side goes
     // unnoticed unless we explicitly refetch. On refresh the snapshot then
     // restores the old value and it looks like "everything reverts".
+    //
+    // The debugBanner state is a big in-app pill so we can see the outcome
+    // even if a browser alert() is being suppressed by extension / policy.
     console.log("[stage-change] attempt", { driverId, toStage, patch });
+    setDebugBanner({ kind: "info", text: `⏳ Зміна стейджу: перевіряю чи збереглось на сервері… (driver ${driverId} → ${toStage})` });
     (async () => {
       try {
         await upd(driverId, patch);
         console.log("[stage-change] local ok, verifying on server…", { driverId, toStage });
 
-        if (db) {
-          const driverNow = useDriversStore.getState().drivers.find((d) => d.id === driverId);
-          const docId = String(driverNow?.docId || driverNow?.id || driverId);
-          // MUST use getDocFromServer — plain getDoc reads from local cache,
-          // which was just optimistically updated by upd() and would always
-          // "match" even when the write never actually reached the server.
-          const snap = await getDocFromServer(doc(db, "drivers", docId));
-          const serverStage = snap.exists() ? snap.data()?.stage : null;
-          if (serverStage !== toStage) {
-            const detail = snap.exists()
-              ? `Server has stage="${serverStage}" but we tried to set "${toStage}".`
-              : `Driver document doesn't exist on server (docId="${docId}").`;
-            console.error("[stage-change] SERVER MISMATCH", detail);
-            alert(
-              `⚠ Зміна НЕ збереглась на сервері.\n\n${detail}\n\n` +
-              `Найімовірніше цей акаунт не має ролі admin в user_roles. ` +
-              `Покажи це повідомлення програмісту.`
-            );
-            return;
-          }
-          console.log("[stage-change] server confirmed", { driverId, toStage });
+        if (!db) {
+          setDebugBanner({ kind: "warn", text: `⚠ Firebase не сконфігуровано. Zmіна тільки локально.` });
+          return;
         }
+
+        const driverNow = useDriversStore.getState().drivers.find((d) => d.id === driverId);
+        const docId = String(driverNow?.docId || driverNow?.id || driverId);
+        // MUST use getDocFromServer — plain getDoc reads from local cache,
+        // which was just optimistically updated by upd() and would always
+        // "match" even when the write never actually reached the server.
+        const snap = await getDocFromServer(doc(db, "drivers", docId));
+        const serverStage = snap.exists() ? snap.data()?.stage : null;
+        if (serverStage !== toStage) {
+          const detail = snap.exists()
+            ? `Сервер має stage="${serverStage}", а ми намагалися записати "${toStage}".`
+            : `Документ водія не існує на сервері (docId="${docId}").`;
+          console.error("[stage-change] SERVER MISMATCH", detail);
+          setDebugBanner({
+            kind: "error",
+            text: `⚠ Зміна НЕ збереглась на сервері. ${detail} Найімовірніше цей акаунт не має ролі admin в user_roles.`,
+          });
+          alert(
+            `⚠ Зміна НЕ збереглась на сервері.\n\n${detail}\n\n` +
+            `Найімовірніше цей акаунт не має ролі admin в user_roles. ` +
+            `Покажи це повідомлення програмісту.`
+          );
+          return;
+        }
+        console.log("[stage-change] server confirmed", { driverId, toStage });
+        // Success — flash green banner briefly so the user visibly knows.
+        setDebugBanner({ kind: "ok", text: `✅ Стейдж збережено на сервері: ${toStage}` });
+        window.setTimeout(() => setDebugBanner(null), 2500);
       } catch (err) {
         console.error("[stage-change] FAILED", err);
+        setDebugBanner({
+          kind: "error",
+          text: `⚠ Помилка при збереженні: ${err?.message || err}`,
+        });
         alert(`Не вдалось перемістити картку:\n${err?.message || err}\n\nПокажи цей текст програмісту.`);
       }
     })();
@@ -968,6 +989,52 @@ export default function App() {
             }}
           >
             {syncError}
+          </div>
+        )}
+
+        {debugBanner && (
+          <div
+            style={{
+              padding: "10px 16px",
+              borderBottom: "1px solid",
+              borderColor:
+                debugBanner.kind === "error" ? "#fecaca"
+                : debugBanner.kind === "ok"    ? "#a7f3d0"
+                : debugBanner.kind === "warn"  ? "#fde68a"
+                : "#bfdbfe",
+              background:
+                debugBanner.kind === "error" ? "#fef2f2"
+                : debugBanner.kind === "ok"    ? "#ecfdf5"
+                : debugBanner.kind === "warn"  ? "#fffbeb"
+                : "#eff6ff",
+              color:
+                debugBanner.kind === "error" ? "#b91c1c"
+                : debugBanner.kind === "ok"    ? "#047857"
+                : debugBanner.kind === "warn"  ? "#92400e"
+                : "#1e40af",
+              fontSize: 13,
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+            }}
+          >
+            <span style={{ flex: 1 }}>{debugBanner.text}</span>
+            <button
+              onClick={() => setDebugBanner(null)}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "inherit",
+                fontSize: 18,
+                fontWeight: 700,
+                cursor: "pointer",
+                lineHeight: 1,
+              }}
+            >
+              ✕
+            </button>
           </div>
         )}
 
