@@ -445,6 +445,38 @@ export const useDriversStore = create((set, get) => ({
   },
 
   /**
+   * Generic atomic add/remove on any driver array field. Use for lists like
+   * insuranceCompanies, truckTypes, qualifications, etc. — anywhere the UI
+   * offers "add value / remove value" affordances.
+   *
+   * `op` is either "add" (arrayUnion) or "remove" (arrayRemove).
+   */
+  updateArrayField: async (id, field, value, op) => {
+    const driver = get().drivers.find((d) => d.id === id);
+    if (!driver) return;
+    const current = Array.isArray(driver[field]) ? driver[field] : [];
+    const next = op === "add"
+      ? (current.includes(value) ? current : [...current, value])
+      : current.filter((x) => x !== value);
+
+    set((state) => ({
+      drivers: state.drivers.map((d) => (d.id === id ? { ...d, [field]: next } : d)),
+    }));
+
+    if (!isFirebaseConfigured || !db) return;
+    try {
+      await ensureAuthReady();
+      const currentDriver = get().drivers.find((d) => d.id === id);
+      const docId = getDriverDocId(currentDriver || { id });
+      await updateDoc(doc(db, "drivers", docId), {
+        [field]: op === "add" ? arrayUnion(value) : arrayRemove(value),
+      });
+    } catch (error) {
+      set({ syncError: error.message || `Failed to ${op} ${field}.` });
+    }
+  },
+
+  /**
    * Toggle a flag on / off atomically via arrayUnion / arrayRemove.
    * Concurrent flag toggles from two tabs no longer overwrite each other.
    */

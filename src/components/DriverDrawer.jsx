@@ -29,6 +29,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
     toggleDoc: storeToggleDoc,
     toggleFlag: storeToggleFlag,
     setDocFlags: storeSetDocFlags,
+    updateArrayField: storeUpdateArrayField,
   } = useDriversStore();
 
   const assignedTruck = driver.assignedTruckId
@@ -698,11 +699,12 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                 function addIns() {
                   const v = insInput.trim();
                   if (!v || companies.includes(v)) return;
-                  updDriver(driver.id, { insuranceCompanies: [...companies, v] });
+                  // arrayUnion — concurrent adds from two tabs both survive.
+                  storeUpdateArrayField(driver.id, "insuranceCompanies", v, "add");
                   setInsInput("");
                 }
                 function removeIns(c) {
-                  updDriver(driver.id, { insuranceCompanies: companies.filter((x) => x !== c) });
+                  storeUpdateArrayField(driver.id, "insuranceCompanies", c, "remove");
                 }
                 return (
                   <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, marginTop: 4 }}>
