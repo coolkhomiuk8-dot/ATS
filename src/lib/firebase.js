@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { initializeFirestore } from "firebase/firestore";
+import { initializeFirestore, memoryLocalCache } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -28,16 +28,22 @@ let ensureAuthReady = async () => {};
 if (isFirebaseConfigured) {
   app = initializeApp(firebaseConfig);
 
-  // Force long-polling instead of WebChannel. Restrictive corporate firewalls
-  // / proxies frequently drop the WebChannel connection after the first
-  // successful write, leaving subsequent updateDoc() calls hanging forever.
-  // Long-polling is plain HTTPS requests — slower per-message but immune to
-  // idle-socket termination.
-  //   experimentalAutoDetectLongPolling: also tries WebChannel first and
-  //   automatically falls back to long-polling if it detects the connection
-  //   was broken. Safe to have both flags — long-polling wins if forced.
+  // Two hardening flags for hostile client environments:
+  //
+  //   experimentalAutoDetectLongPolling — probes the network on init and
+  //   falls back to plain HTTPS long-polling whenever WebChannel (the
+  //   default persistent stream) gets severed. Corporate firewalls / proxies
+  //   love killing idle streams after the first message.
+  //
+  //   localCache: memoryLocalCache() — disables IndexedDB persistence and
+  //   uses in-memory only. Recruiter's browser was showing a pattern where
+  //   N writes succeeded then subsequent ones hung forever, which matches a
+  //   corrupted or quota-full IndexedDB store. Memory cache eliminates that
+  //   entire failure mode; the only downside is losing pending writes on
+  //   full-page reload, which for a CRM is completely fine.
   db = initializeFirestore(app, {
     experimentalAutoDetectLongPolling: true,
+    localCache: memoryLocalCache(),
   });
 
   auth = getAuth(app);
