@@ -381,6 +381,9 @@ export const useDriversStore = create((set, get) => ({
       await updateDoc(doc(db, "drivers", docId), fsPatch);
     } catch (error) {
       set({ syncError: error.message || "Failed to update driver." });
+      // Re-throw so UI callers can catch the specific failure and surface it
+      // to the user immediately (e.g. an alert on failed stage change).
+      throw error;
     }
   },
 

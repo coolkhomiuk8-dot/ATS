@@ -208,7 +208,7 @@ export default function App() {
     setStageModal({ driverId, fromStage: driver.stage, toStage });
   }
 
-  function confirmStageChange({ driverId, toStage, nextAction, nextActionTime, comment, trainedBy }) {
+  async function confirmStageChange({ driverId, toStage, nextAction, nextActionTime, comment, trainedBy }) {
     const patch = { stage: toStage };
 
     if (nextAction) {
@@ -222,7 +222,16 @@ export default function App() {
       patch.trainedBy = null;
     }
 
-    upd(driverId, patch);
+    // Diagnostic: surface any Firestore rejection loudly instead of a small
+    // silent banner so the recruiter can immediately see what went wrong.
+    console.log("[stage-change] attempt", { driverId, toStage, patch });
+    try {
+      await upd(driverId, patch);
+      console.log("[stage-change] ok", { driverId, toStage });
+    } catch (err) {
+      console.error("[stage-change] FAILED", err);
+      alert(`Не вдалось перемістити картку:\n${err?.message || err}\n\nПокажи цей текст програмісту.`);
+    }
 
     if (comment && comment.trim()) {
       const from = STAGES.find((item) => item.id === stageModal?.fromStage)?.label || "";
