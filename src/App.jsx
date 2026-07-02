@@ -245,23 +245,38 @@ export default function App() {
     // The debugBanner state is a big in-app pill so we can see the outcome
     // even if a browser alert() is being suppressed by extension / policy.
     console.log("[stage-change] attempt", { driverId, toStage, patch });
-    setDebugBanner({ kind: "info", text: `⏳ Зміна стейджу: перевіряю чи збереглось на сервері… (driver ${driverId} → ${toStage})` });
+    setDebugBanner({ kind: "info", text: `⏳ Крок 1/2: локальний запис для driver ${driverId} → ${toStage}…` });
+
+    // 8-second timeout wrapper. Firestore SDK can silently sit forever if the
+    // network/auth state is off (e.g. token failed to refresh, offline queue
+    // stuck). Without this the recruiter just sees "verifying…" indefinitely.
+    function withTimeout(promise, ms, label) {
+      return Promise.race([
+        promise,
+        new Promise((_, reject) =>
+          window.setTimeout(() => reject(new Error(`${label} > ${ms}ms — Firestore не відповідає (auth/мережа?)`)), ms)
+        ),
+      ]);
+    }
+
     (async () => {
       try {
-        await upd(driverId, patch);
-        console.log("[stage-change] local ok, verifying on server…", { driverId, toStage });
+        await withTimeout(upd(driverId, patch), 8000, "локальний write");
+        console.log("[stage-change] local ok", { driverId, toStage });
+        setDebugBanner({ kind: "info", text: `⏳ Крок 2/2: перевіряю на сервері (driver ${driverId})…` });
 
         if (!db) {
-          setDebugBanner({ kind: "warn", text: `⚠ Firebase не сконфігуровано. Zmіна тільки локально.` });
+          setDebugBanner({ kind: "warn", text: `⚠ Firebase не сконфігуровано. Зміна лише локально.` });
           return;
         }
 
         const driverNow = useDriversStore.getState().drivers.find((d) => d.id === driverId);
         const docId = String(driverNow?.docId || driverNow?.id || driverId);
+
         // MUST use getDocFromServer — plain getDoc reads from local cache,
         // which was just optimistically updated by upd() and would always
         // "match" even when the write never actually reached the server.
-        const snap = await getDocFromServer(doc(db, "drivers", docId));
+        const snap = await withTimeout(getDocFromServer(doc(db, "drivers", docId)), 8000, "server read");
         const serverStage = snap.exists() ? snap.data()?.stage : null;
         if (serverStage !== toStage) {
           const detail = snap.exists()
@@ -272,24 +287,17 @@ export default function App() {
             kind: "error",
             text: `⚠ Зміна НЕ збереглась на сервері. ${detail} Найімовірніше цей акаунт не має ролі admin в user_roles.`,
           });
-          alert(
-            `⚠ Зміна НЕ збереглась на сервері.\n\n${detail}\n\n` +
-            `Найімовірніше цей акаунт не має ролі admin в user_roles. ` +
-            `Покажи це повідомлення програмісту.`
-          );
           return;
         }
         console.log("[stage-change] server confirmed", { driverId, toStage });
-        // Success — flash green banner briefly so the user visibly knows.
         setDebugBanner({ kind: "ok", text: `✅ Стейдж збережено на сервері: ${toStage}` });
         window.setTimeout(() => setDebugBanner(null), 2500);
       } catch (err) {
         console.error("[stage-change] FAILED", err);
         setDebugBanner({
           kind: "error",
-          text: `⚠ Помилка при збереженні: ${err?.message || err}`,
+          text: `⚠ ${err?.message || err}. Скоріш за все Firestore не приймає write — акаунт без ролі admin, або токен протух. Спробуй Log out → Log in.`,
         });
-        alert(`Не вдалось перемістити картку:\n${err?.message || err}\n\nПокажи цей текст програмісту.`);
       }
     })();
 
