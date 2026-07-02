@@ -233,15 +233,42 @@ export default function App() {
     // goes through in the background; any failure surfaces via alert().
     setStageModal(null);
 
-    // Fire-and-forget the write. Any rejection loudly alerts the recruiter
-    // so they know the change didn't actually persist.
+    // Fire the write. Verify on the SERVER that the change actually landed —
+    // Firestore's latency compensation makes updateDoc resolve as soon as the
+    // local cache is applied, so a permission failure server-side goes
+    // unnoticed unless we explicitly refetch. On refresh the snapshot then
+    // restores the old value and it looks like "everything reverts".
     console.log("[stage-change] attempt", { driverId, toStage, patch });
-    upd(driverId, patch)
-      .then(() => console.log("[stage-change] ok", { driverId, toStage }))
-      .catch((err) => {
+    (async () => {
+      try {
+        await upd(driverId, patch);
+        console.log("[stage-change] local ok, verifying on server…", { driverId, toStage });
+
+        if (db) {
+          const driverNow = useDriversStore.getState().drivers.find((d) => d.id === driverId);
+          const docId = String(driverNow?.docId || driverNow?.id || driverId);
+          // Force a server read (not from cache) so we know the write persisted.
+          const snap = await getDoc(doc(db, "drivers", docId));
+          const serverStage = snap.exists() ? snap.data()?.stage : null;
+          if (serverStage !== toStage) {
+            const detail = snap.exists()
+              ? `Server has stage="${serverStage}" but we tried to set "${toStage}".`
+              : `Driver document doesn't exist on server (docId="${docId}").`;
+            console.error("[stage-change] SERVER MISMATCH", detail);
+            alert(
+              `⚠ Зміна НЕ збереглась на сервері.\n\n${detail}\n\n` +
+              `Найімовірніше цей акаунт не має ролі admin в user_roles. ` +
+              `Покажи це повідомлення програмісту.`
+            );
+            return;
+          }
+          console.log("[stage-change] server confirmed", { driverId, toStage });
+        }
+      } catch (err) {
         console.error("[stage-change] FAILED", err);
         alert(`Не вдалось перемістити картку:\n${err?.message || err}\n\nПокажи цей текст програмісту.`);
-      });
+      }
+    })();
 
     if (comment && comment.trim()) {
       addNote(driverId, `[Stage: ${fromLabel} -> ${toLabel}]\n${comment.trim()}`);
