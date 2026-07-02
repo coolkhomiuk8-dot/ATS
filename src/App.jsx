@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc, getDocFromServer, serverTimestamp, setDoc } from "firebase/firestore";
 import { STAGES } from "./constants/data";
 import { nextActionTs, todayStr } from "./utils/date";
 import { useDriversStore } from "./store/useDriversStore";
@@ -247,8 +247,10 @@ export default function App() {
         if (db) {
           const driverNow = useDriversStore.getState().drivers.find((d) => d.id === driverId);
           const docId = String(driverNow?.docId || driverNow?.id || driverId);
-          // Force a server read (not from cache) so we know the write persisted.
-          const snap = await getDoc(doc(db, "drivers", docId));
+          // MUST use getDocFromServer — plain getDoc reads from local cache,
+          // which was just optimistically updated by upd() and would always
+          // "match" even when the write never actually reached the server.
+          const snap = await getDocFromServer(doc(db, "drivers", docId));
           const serverStage = snap.exists() ? snap.data()?.stage : null;
           if (serverStage !== toStage) {
             const detail = snap.exists()
