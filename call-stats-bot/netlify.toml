@@ -10,3 +10,6 @@
 
 [functions."call-stats-digest"]
   schedule = "0 23 * * *"
+
+[functions."call-stats-digest-group"]
+  schedule = "0 22 * * *"

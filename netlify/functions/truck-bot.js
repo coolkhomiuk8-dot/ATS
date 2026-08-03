@@ -7,15 +7,18 @@
 //   /addtruck 145        — add new truck
 //   /removetruck 145     — remove truck
 //   /calls               — call stats digest on demand (owner's personal chat only)
-//   (any other text)     — free-text call-stats question, answered via Claude (owner's chat only)
+//   (any other text)     — free-text call-stats question, answered via Claude
+//                          (owner's chat: any text · dispatch group chat: must @-mention the bot)
 
 import { withLambda } from "@netlify/aws-lambda-compat";
 import { getDb } from "./_auth.js";
 import { FieldValue } from "firebase-admin/firestore";
 
-const BOT_TOKEN     = process.env.TELEGRAM_BOT_TOKEN;
-const HR_CHAT_ID    = process.env.TELEGRAM_HR_CHAT_ID;
-const OWNER_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "384588590";
+const BOT_TOKEN       = process.env.TELEGRAM_BOT_TOKEN;
+const HR_CHAT_ID      = process.env.TELEGRAM_HR_CHAT_ID;
+const OWNER_CHAT_ID   = process.env.TELEGRAM_CHAT_ID || "384588590";
+const DISPATCH_CHAT_ID = process.env.TELEGRAM_DISPATCH_CHAT_ID;
+const BOT_MENTION     = /@hrbot212_bot/i;
 
 async function reply(chatId, text) {
   const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -113,13 +116,14 @@ async function cmdCalls() {
   if (!res.ok) console.error("call-stats-oncall trigger failed:", res.status, await res.text());
 }
 
-// Any free-text message (not a slash command) in the owner's personal chat is
-// treated as a question about call stats, e.g. "скільки дзвінків вчора у Andrew?"
-async function cmdAsk(question) {
+// Free-text question about call stats, e.g. "скільки дзвінків вчора у Andrew?"
+// chatId is passed through so the group chat gets its answer back in the
+// group, not always in the owner's personal chat.
+async function cmdAsk(question, chatId) {
   const res = await fetch("https://ats-call-stats-bot.netlify.app/.netlify/functions/call-stats-ask", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, chatId }),
   });
   if (!res.ok) console.error("call-stats-ask trigger failed:", res.status, await res.text());
 }
@@ -143,8 +147,8 @@ export default withLambda(async (event) => {
     return { statusCode: 200, body: "ok" };
   }
 
-  // All other commands — HR chat and whitelisted personal chats only
-  const allowedChats = [String(HR_CHAT_ID), String(OWNER_CHAT_ID)];
+  // All other commands — HR chat, dispatch chat, and whitelisted personal chats only
+  const allowedChats = [String(HR_CHAT_ID), String(OWNER_CHAT_ID), String(DISPATCH_CHAT_ID)];
   if (!allowedChats.includes(chatId)) return { statusCode: 200, body: "ok" };
 
   const db = getDb();
@@ -180,7 +184,12 @@ export default withLambda(async (event) => {
       if (chatId === String(OWNER_CHAT_ID)) await cmdCalls();
 
     } else if (!text.startsWith("/") && chatId === String(OWNER_CHAT_ID)) {
-      await cmdAsk(text);
+      // Personal chat — any text is a question, no need to @-mention the bot.
+      await cmdAsk(text, chatId);
+
+    } else if (chatId === String(DISPATCH_CHAT_ID) && BOT_MENTION.test(text)) {
+      // Group chat — only responds when tagged, so it doesn't answer every message.
+      await cmdAsk(text.replace(BOT_MENTION, "").trim(), chatId);
     }
   } catch (e) {
     console.error("truck-bot error:", e.message);

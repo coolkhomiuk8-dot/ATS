@@ -1,8 +1,8 @@
 // Free-text call-stats questions, triggered internally by the main site's
-// truck-bot.js — any non-command message from the owner's personal chat gets
-// forwarded here instead of just the fixed /calls digest.
+// truck-bot.js — non-command messages from the owner's personal chat, or
+// @-mentions of the bot in the dispatch group chat, land here.
 
-import { answerCallStatsQuestion, sendToOwner } from "./_call-stats.js";
+import { answerCallStatsQuestion, sendTelegramMessage, sendToOwner } from "./_call-stats.js";
 
 export const handler = async (event) => {
   if (event.httpMethod !== "POST") return { statusCode: 200, body: "ok" };
@@ -15,7 +15,8 @@ export const handler = async (event) => {
 
   try {
     const answer = await answerCallStatsQuestion(question);
-    await sendToOwner(`💬 ${answer}`);
+    if (body.chatId) await sendTelegramMessage(body.chatId, `💬 ${answer}`);
+    else await sendToOwner(`💬 ${answer}`);
   } catch (e) {
     console.error("call-stats-ask error:", e.message);
   }

@@ -156,10 +156,12 @@ export async function answerCallStatsQuestion(question) {
   }
 }
 
-export async function sendToOwner(text) {
+// Sends to an explicit chat — used when the request (via truck-bot.js) tells
+// us which chat asked, so a group chat gets its answer back in that group,
+// not always in the owner's personal chat.
+export async function sendTelegramMessage(chatId, text) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  if (!token || !chatId) throw new Error("Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID");
+  if (!token || !chatId) throw new Error("Missing TELEGRAM_BOT_TOKEN or chatId");
 
   const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
@@ -170,4 +172,11 @@ export async function sendToOwner(text) {
     const body = await res.text();
     throw new Error(`Telegram API error ${res.status}: ${body}`);
   }
+}
+
+// Scheduled digests (midday/EOD) always go to the owner's own chat.
+export async function sendToOwner(text) {
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!chatId) throw new Error("Missing TELEGRAM_CHAT_ID");
+  return sendTelegramMessage(chatId, text);
 }
