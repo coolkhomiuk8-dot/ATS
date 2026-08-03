@@ -13,3 +13,6 @@
 
 [functions."call-stats-digest-group"]
   schedule = "0 22 * * *"
+
+[functions."call-stats-snapshot"]
+  schedule = "*/30 * * * *"
