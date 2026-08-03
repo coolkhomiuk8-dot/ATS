@@ -30,11 +30,8 @@
 [functions."driver-digest-pm"]
   schedule = "0 22 * * *"
 
-[functions."call-stats-midday"]
-  schedule = "0 16 * * *"
-
-[functions."call-stats-digest"]
-  schedule = "0 23 * * *"
+# call-stats-midday / call-stats-digest now live on the separate
+# call-stats-bot Netlify site (see call-stats-bot/netlify.toml).
 
 [[redirects]]
   from = "/*"

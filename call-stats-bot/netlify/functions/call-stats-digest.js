@@ -2,10 +2,9 @@
 // End-of-day call stats digest → owner's personal chat, with AI commentary
 // and an explicit zero-activity flag for anyone who made no calls all day.
 
-import { withLambda } from "@netlify/aws-lambda-compat";
 import { buildCallStatsMessage, sendToOwner } from "./_call-stats.js";
 
-export default withLambda(async () => {
+export const handler = async () => {
   const day = new Date().toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short" });
   if (day === "Sat" || day === "Sun") return { statusCode: 200, body: "Weekend — skipped" };
 
@@ -19,4 +18,4 @@ export default withLambda(async () => {
 
   await sendToOwner(fullMsg.trimEnd());
   return { statusCode: 200, body: `Digest sent. ${zeroActivity.length} with zero activity.` };
-});
+};

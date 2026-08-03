@@ -105,8 +105,10 @@ async function cmdRemove(db, chatId, args) {
 // Forwarded to its own function (not imported directly) to keep this
 // function's env-var footprint small — see call-stats-oncall.js.
 async function cmdCalls() {
-  const base = process.env.URL || "https://ats-drivers-project.netlify.app";
-  const res = await fetch(`${base}/.netlify/functions/call-stats-oncall`, { method: "POST" });
+  // Hosted on its own Netlify site (ats-call-stats-bot) — see call-stats-bot/ —
+  // because tracking two RingCentral accounts alongside this site's Firebase
+  // credentials blows AWS Lambda's 4KB env-var cap.
+  const res = await fetch("https://ats-call-stats-bot.netlify.app/.netlify/functions/call-stats-oncall", { method: "POST" });
   if (!res.ok) console.error("call-stats-oncall trigger failed:", res.status, await res.text());
 }
 

@@ -1,0 +1,12 @@
+[build]
+  command = "echo no build needed"
+  publish = "public"
+
+[functions]
+  directory = "netlify/functions"
+
+[functions."call-stats-midday"]
+  schedule = "0 16 * * *"
+
+[functions."call-stats-digest"]
+  schedule = "0 23 * * *"
