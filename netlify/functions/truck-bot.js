@@ -6,12 +6,15 @@
 //   /vin 102 1HGBH...    — set VIN for a truck
 //   /addtruck 145        — add new truck
 //   /removetruck 145     — remove truck
+//   /calls               — call stats digest on demand (owner's personal chat only)
 
 import { getDb } from "./_auth.js";
 import { FieldValue } from "firebase-admin/firestore";
+import { buildCallStatsMessage } from "./_call-stats.js";
 
-const BOT_TOKEN  = process.env.TELEGRAM_BOT_TOKEN;
-const HR_CHAT_ID = process.env.TELEGRAM_HR_CHAT_ID;
+const BOT_TOKEN     = process.env.TELEGRAM_BOT_TOKEN;
+const HR_CHAT_ID    = process.env.TELEGRAM_HR_CHAT_ID;
+const OWNER_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "384588590";
 
 async function reply(chatId, text) {
   await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -98,6 +101,11 @@ async function cmdRemove(db, chatId, args) {
   return reply(chatId, `Трак <b>${unit}</b> видалено.`);
 }
 
+async function cmdCalls(chatId) {
+  const { msg } = await buildCallStatsMessage({ title: "Статистика дзвінків — зараз" });
+  return reply(chatId, msg);
+}
+
 export const handler = async (event) => {
   if (event.httpMethod !== "POST") return { statusCode: 200, body: "ok" };
 
@@ -118,7 +126,6 @@ export const handler = async (event) => {
   }
 
   // All other commands — HR chat and whitelisted personal chats only
-  const OWNER_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "384588590";
   const allowedChats = [String(HR_CHAT_ID), String(OWNER_CHAT_ID)];
   if (!allowedChats.includes(chatId)) return { statusCode: 200, body: "ok" };
 
@@ -149,6 +156,10 @@ export const handler = async (event) => {
     } else if (/^\/removetruck(@\S+)?\s/i.test(text)) {
       const args = text.replace(/^\/removetruck(@\S+)?\s*/i, "");
       await cmdRemove(db, chatId, args);
+
+    } else if (/^\/calls(@\S+)?$/i.test(text)) {
+      // Personal only — call stats stay private to the owner, not the HR group.
+      if (chatId === String(OWNER_CHAT_ID)) await cmdCalls(chatId);
     }
   } catch (e) {
     console.error("truck-bot error:", e.message);
