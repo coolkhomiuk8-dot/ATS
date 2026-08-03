@@ -158,17 +158,16 @@ const ACCOUNT1_EXTENSIONS = parseExtensionList(
     "484808034:Tony Dispatcher,484768034:Tyler Mans"
 );
 
-// TODO: these are still the short "Ext." numbers from the admin UI, not resolved
-// internal ids — account 2's RC app is also missing the "Read Call Log"
-// permission entirely (confirmed 2026-08-03: API returned
-// InsufficientPermissions/ReadCallLog for the company call-log endpoint).
-// Once that permission is added in RC2's Developer Console app, re-resolve each
-// person's internal id the same way account 1's were resolved (pull ~30 days of
-// company call-log and read `extension.id` off a record from each person).
+// Resolved 2026-08-03 from 30 days of company call-log after "Read Call Log"
+// was added to account 2's app. Roy Torres made no calls in that window, so
+// his internal id couldn't be resolved this way — add him once he's made at
+// least one call, or get his id from an admin export.
 const ACCOUNT2_EXTENSIONS = parseExtensionList(
-  "5570:Alex Dispatcher,5568:Andrew Kondes,5571:Blake Skylar,5575:Bob Perez," +
-    "5569:Dennis Milton,120:Jeff Watson,102:Kelsey Jones,103:Matt White," +
-    "5574:Michael Hayes,5572:Rick Cash,5576:Ross Lopez,5573:Roy Torres,5566:UT Service"
+  "2198706019:Alex Dispatcher,2186731019:Andrew Kondes,2200528019:Blake Skylar," +
+    "882868018:Bob Perez,2186732019:Dennis Milton,2186520019:Jeff Watson," +
+    "1905511019:Kelsey Jones,2153100019:Mason Collins,2061583019:Matt White," +
+    "2201980019:Michael Hayes,2201973019:Rick Cash,2203136019:Ross Lopez," +
+    "1905371019:UT Service"
 );
 
 function accountConfigs() {
