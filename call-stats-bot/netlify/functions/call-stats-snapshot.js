@@ -2,11 +2,10 @@
 // stats to Netlify Blobs, so the dashboard (dashboard.html + call-stats-history.js)
 // can show trends over the past week instead of only "right now".
 
-import { getStore } from "@netlify/blobs";
+import { getHistoryStore } from "./_blobs-store.js";
 import { getAllTrackedCallStats } from "./_ringcentral.js";
 import Anthropic from "@anthropic-ai/sdk";
 
-const STORE_NAME = "call-stats-history";
 const KEY = "snapshots";
 const MAX_AGE_MS = 7 * 24 * 3600 * 1000; // keep a week, per the dashboard's scope
 
@@ -48,7 +47,7 @@ export const handler = async () => {
   const stats = await getAllTrackedCallStats();
   const now = Date.now();
 
-  const store = getStore(STORE_NAME);
+  const store = getHistoryStore();
   const existing = (await store.get(KEY, { type: "json" })) || [];
   const previous = existing[existing.length - 1] || null;
 
