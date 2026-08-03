@@ -4,12 +4,14 @@
 // in truck-bot.js) so this function's own env footprint stays small: it never
 // touches Firestore, so it doesn't need FIREBASE_PRIVATE_KEY etc. alongside
 // both RingCentral accounts' credentials in the same bundle.
+//
+// Native modern Functions signature (Request/Response) — no Lambda-compat
+// shim at all, to rule out AWS Lambda's 4KB env limit for this function.
 
-import { withLambda } from "@netlify/aws-lambda-compat";
 import { buildCallStatsMessage, sendToOwner } from "./_call-stats.js";
 
-export default withLambda(async (event) => {
-  if (event.httpMethod !== "POST") return { statusCode: 200, body: "ok" };
+export default async (req) => {
+  if (req.method !== "POST") return new Response("ok");
 
   try {
     const { msg } = await buildCallStatsMessage({ title: "Статистика дзвінків — зараз" });
@@ -18,5 +20,5 @@ export default withLambda(async (event) => {
     console.error("call-stats-oncall error:", e.message);
   }
 
-  return { statusCode: 200, body: "ok" };
-});
+  return new Response("ok");
+};
