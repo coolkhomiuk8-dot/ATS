@@ -104,6 +104,23 @@ export async function getEmmaCallStats() {
   }
 }
 
+// Roster (extension id -> name) lives in code, not env vars: it's not a secret,
+// and Netlify bakes every env var into every function's Lambda bundle, which is
+// capped at 4KB total (AWS Lambda limit) — a long roster string blows that budget.
+// To update who's tracked, just edit these two lists.
+const ACCOUNT1_EXTENSIONS = parseExtensionList(
+  "110:Amara HR Manager,119:Anastasiia General,109:Antony Fleet,101:David David," +
+    "113:Diana Gomez,106:Emma HR,107:Henry Anderson,111:Jim Davis,120:Johnny Morgan," +
+    "114:Kateryna Fleet Management,105:Kent White,118:Maxym Dispatcher,116:Nick Dispatch," +
+    "117:Tony Dispatcher,115:Tyler Mans"
+);
+
+const ACCOUNT2_EXTENSIONS = parseExtensionList(
+  "5570:Alex Dispatcher,5568:Andrew Kondes,5571:Blake Skylar,5575:Bob Perez," +
+    "5569:Dennis Milton,120:Jeff Watson,102:Kelsey Jones,103:Matt White," +
+    "5574:Michael Hayes,5572:Rick Cash,5576:Ross Lopez,5573:Roy Torres,5566:UT Service"
+);
+
 function accountConfigs() {
   return [
     {
@@ -111,14 +128,14 @@ function accountConfigs() {
       clientId: process.env.RC_CLIENT_ID,
       clientSecret: process.env.RC_CLIENT_SECRET,
       jwt: process.env.RC_JWT_TOKEN,
-      extensions: parseExtensionList(process.env.RC_ACCOUNT1_EXTENSIONS || "106:Emma"),
+      extensions: ACCOUNT1_EXTENSIONS,
     },
     {
       label: "Акаунт 2",
       clientId: process.env.RC_CLIENT_ID_2,
       clientSecret: process.env.RC_CLIENT_SECRET_2,
       jwt: process.env.RC_JWT_TOKEN_2,
-      extensions: parseExtensionList(process.env.RC_ACCOUNT2_EXTENSIONS),
+      extensions: ACCOUNT2_EXTENSIONS,
     },
   ];
 }
