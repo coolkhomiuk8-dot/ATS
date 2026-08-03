@@ -6,6 +6,7 @@
 //   TELEGRAM_BOT_TOKEN   — token from @BotFather
 //   TELEGRAM_CHAT_ID     — your personal chat ID (get it from @userinfobot)
 
+import { withLambda } from "@netlify/aws-lambda-compat";
 import { getDb } from "./_auth.js";
 
 async function sendTelegram(text) {
@@ -24,7 +25,7 @@ async function sendTelegram(text) {
   }
 }
 
-export const handler = async () => {
+export default withLambda(async () => {
   const db = getDb();
   const snap = await db.collection("dispatchers").get();
   const dispatchers = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -52,4 +53,4 @@ export const handler = async () => {
   }
 
   return { statusCode: 200, body: `Checked ${dispatchers.length} dispatchers, sent ${due.length} reminders` };
-};
+});

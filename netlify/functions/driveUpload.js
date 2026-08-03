@@ -1,3 +1,4 @@
+import { withLambda } from "@netlify/aws-lambda-compat";
 import Busboy from "busboy";
 import { Readable } from "node:stream";
 import { getDriveClient, ensureDriverFolder, makeFilePublicReadable } from "./_drive.js";
@@ -55,7 +56,7 @@ function parseMultipart(event) {
   });
 }
 
-export const handler = async (event) => {
+export default withLambda(async (event) => {
   if (event.httpMethod !== "POST") {
     return json(405, { error: "Method not allowed" });
   }
@@ -127,4 +128,4 @@ export const handler = async (event) => {
       error: error.message || "Failed to upload file to Google Drive.",
     });
   }
-};
+});

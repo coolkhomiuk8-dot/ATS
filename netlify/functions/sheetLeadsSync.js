@@ -3,6 +3,7 @@
 // the system hasn't seen yet. Accepts GET (for browser-based manual triggers)
 // or POST. Admin token is optional — sync is a one-way safe operation.
 
+import { withLambda } from "@netlify/aws-lambda-compat";
 import { getDb } from "./_auth.js";
 import { fetchAllLeads, syncLeadsToFirestore } from "./_sheetLeads.js";
 
@@ -14,7 +15,7 @@ function json(code, body) {
   };
 }
 
-export const handler = async () => {
+export default withLambda(async () => {
   const t0 = Date.now();
   try {
     const leads = await fetchAllLeads();
@@ -29,4 +30,4 @@ export const handler = async () => {
   } catch (err) {
     return json(500, { error: err.message || "Sync failed" });
   }
-};
+});

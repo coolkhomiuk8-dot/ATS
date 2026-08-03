@@ -1,3 +1,4 @@
+import { withLambda } from "@netlify/aws-lambda-compat";
 import { ensureDriverFolder, getDriveClient } from "./_drive.js";
 import { requireAdminOrRoot } from "./_auth.js";
 
@@ -85,7 +86,7 @@ async function findFilesByNameInFolder(drive, folderId, fileName) {
   return result.data.files || [];
 }
 
-export const handler = async (event) => {
+export default withLambda(async (event) => {
   if (event.httpMethod !== "POST") {
     return json(405, { error: "Method not allowed" });
   }
@@ -170,4 +171,4 @@ export const handler = async (event) => {
       error: error.message || "Failed to delete file from Google Drive.",
     });
   }
-};
+});

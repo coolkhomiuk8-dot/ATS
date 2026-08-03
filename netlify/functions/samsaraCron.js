@@ -4,6 +4,7 @@
 // Required env vars:
 //   SAMSARA_API_KEY — Samsara API token (Settings → Developer → API Tokens)
 
+import { withLambda } from "@netlify/aws-lambda-compat";
 import { getDb } from "./_auth.js";
 import { appendSnapshot, buildConsumption, buildMileage } from "./_fuelTracking.js";
 
@@ -48,7 +49,7 @@ function parseCityState(formatted) {
   return stateCode ? `${city}, ${stateCode}` : city;
 }
 
-export const handler = async () => {
+export default withLambda(async () => {
   const apiKey = process.env.SAMSARA_API_KEY;
   if (!apiKey) {
     console.warn("[samsaraCron] SAMSARA_API_KEY not set — skipping.");
@@ -231,4 +232,4 @@ export const handler = async () => {
   }
 
   return { statusCode: 200 };
-};
+});

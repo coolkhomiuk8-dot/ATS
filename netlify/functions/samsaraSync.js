@@ -1,3 +1,4 @@
+import { withLambda } from "@netlify/aws-lambda-compat";
 import { requireAdminOrRoot, getDb } from "./_auth.js";
 import { appendSnapshot, buildConsumption, buildMileage } from "./_fuelTracking.js";
 
@@ -41,7 +42,7 @@ async function fetchAllStats(type, apiKey) {
   return results;
 }
 
-export const handler = async (event) => {
+export default withLambda(async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "POST only" });
 
   try {
@@ -281,4 +282,4 @@ export const handler = async (event) => {
       apiErrors,
     },
   });
-};
+});

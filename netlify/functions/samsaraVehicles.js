@@ -2,6 +2,7 @@
  * Returns the list of vehicles from Samsara so the frontend can
  * display them and let the admin manually link each one to a truck.
  */
+import { withLambda } from "@netlify/aws-lambda-compat";
 import { requireAdminOrRoot } from "./_auth.js";
 
 const SAMSARA_BASE = "https://api.samsara.com";
@@ -14,7 +15,7 @@ function json(code, body) {
   };
 }
 
-export const handler = async (event) => {
+export default withLambda(async (event) => {
   if (event.httpMethod !== "GET") return json(405, { error: "GET only" });
 
   try {
@@ -51,4 +52,4 @@ export const handler = async (event) => {
   } while (cursor);
 
   return json(200, { vehicles });
-};
+});
