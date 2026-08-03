@@ -2,11 +2,10 @@
 // Pushes a single message into the leads chat listing dispatchers stalled
 // in their current stage beyond the per-stage threshold.
 
-import { withLambda } from "@netlify/aws-lambda-compat";
 import { getDb } from "./_auth.js";
 import { buildAndSend } from "./_dispatcherStale.js";
 
-export default withLambda(async () => {
+export const handler = async () => {
   const t0 = Date.now();
   try {
     const db = getDb();
@@ -19,4 +18,4 @@ export default withLambda(async () => {
     console.error("[dispatcher-stale-digest] Error:", err.message);
   }
   return { statusCode: 200 };
-});
+};

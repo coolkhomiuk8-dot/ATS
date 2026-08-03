@@ -2,7 +2,6 @@
 // for testing changes to thresholds or message format without waiting until
 // 9 AM Kyiv tomorrow.
 
-import { withLambda } from "@netlify/aws-lambda-compat";
 import { getDb } from "./_auth.js";
 import { buildAndSend, buildStaleBuckets, formatDigest } from "./_dispatcherStale.js";
 
@@ -14,7 +13,7 @@ function json(code, body) {
   };
 }
 
-export default withLambda(async (event) => {
+export const handler = async (event) => {
   const dryRun = (event.queryStringParameters || {}).dry === "1";
   try {
     const db = getDb();
@@ -28,4 +27,4 @@ export default withLambda(async (event) => {
   } catch (err) {
     return json(500, { error: err.message });
   }
-});
+};

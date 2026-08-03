@@ -1,4 +1,3 @@
-import { withLambda } from "@netlify/aws-lambda-compat";
 import {
   getDriveClient,
   ensureTruckFolder,
@@ -45,7 +44,7 @@ async function moveFile(drive, fileId, targetFolderId) {
   }
 }
 
-export default withLambda(async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "POST only" });
 
   try {
@@ -164,4 +163,4 @@ export default withLambda(async (event) => {
 
   const totalMoved = report.trucks.filesMoved + report.drivers.filesMoved;
   return json(200, { success: true, totalMoved, report });
-});
+};

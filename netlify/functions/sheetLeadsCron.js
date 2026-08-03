@@ -2,11 +2,10 @@
 // into Firestore. Runs unauthenticated (Netlify scheduled functions are
 // server-side only).
 
-import { withLambda } from "@netlify/aws-lambda-compat";
 import { getDb } from "./_auth.js";
 import { fetchAllLeads, syncLeadsToFirestore } from "./_sheetLeads.js";
 
-export default withLambda(async () => {
+export const handler = async () => {
   const t0 = Date.now();
   try {
     const leads = await fetchAllLeads();
@@ -20,4 +19,4 @@ export default withLambda(async () => {
     console.error("[sheetLeadsCron] Error:", err.message);
   }
   return { statusCode: 200 };
-});
+};

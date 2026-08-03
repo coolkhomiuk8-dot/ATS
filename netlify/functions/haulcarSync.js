@@ -3,7 +3,6 @@
 //
 // Required env: HAULCAR_API_KEY
 
-import { withLambda } from "@netlify/aws-lambda-compat";
 import { requireAdminOrRoot, getDb } from "./_auth.js";
 import { fetchAllLoads, syncLoadsToFirestore } from "./_haulcar.js";
 
@@ -15,7 +14,7 @@ function json(code, body) {
   };
 }
 
-export default withLambda(async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "POST only" });
 
   try {
@@ -50,4 +49,4 @@ export default withLambda(async (event) => {
   } catch (err) {
     return json(500, { error: err.message || "Sync failed" });
   }
-});
+};

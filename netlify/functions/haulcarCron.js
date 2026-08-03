@@ -3,11 +3,10 @@
 //
 // Required env: HAULCAR_API_KEY
 
-import { withLambda } from "@netlify/aws-lambda-compat";
 import { getDb } from "./_auth.js";
 import { fetchAllLoads, syncLoadsToFirestore } from "./_haulcar.js";
 
-export default withLambda(async () => {
+export const handler = async () => {
   const apiKey = process.env.HAULCAR_API_KEY;
   if (!apiKey) {
     console.warn("[haulcarCron] HAULCAR_API_KEY not set — skipping.");
@@ -30,4 +29,4 @@ export default withLambda(async () => {
   }
 
   return { statusCode: 200 };
-});
+};
