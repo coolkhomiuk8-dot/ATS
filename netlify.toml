@@ -17,8 +17,9 @@
 [functions."dispatcher-reminders"]
   schedule = "*/30 * * * *"
 
-[functions."dispatcher-digest"]
-  schedule = "0 6 * * *"
+# Temporarily disabled per user request (2026-08-03) — remove the "#" to re-enable.
+# [functions."dispatcher-digest"]
+#   schedule = "0 6 * * *"
 
 [functions."dispatcher-stale-digest"]
   schedule = "0 6 * * *"
