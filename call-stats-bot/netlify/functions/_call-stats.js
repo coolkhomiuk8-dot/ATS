@@ -47,7 +47,8 @@ function formatStatsMessage(stats, title) {
     );
   }
 
-  let msg = `📊 <b>${title}</b>\n\n`;
+  let msg = `📊 <b>${title}</b>\n`;
+  msg += `<i>(+N/2г = дзвінків за останні 2 год)</i>\n\n`;
 
   const byAccount = new Map();
   for (const s of stats) {
@@ -60,9 +61,10 @@ function formatStatsMessage(stats, title) {
     for (const s of list) {
       if (s.error) {
         msg += `  ⚠️ ${s.name} — помилка: ${s.error}\n`;
+      } else if (s.callCount === 0) {
+        msg += `  ⚠️ <b>${s.name}</b> — 0 дзвінків\n`;
       } else {
-        const zeroFlag = s.callCount === 0 ? " ⚠️ нуль дзвінків" : "";
-        msg += `  📞 <b>${s.name}</b>: ${s.callCount} дзвінків, ${s.timeStr} на лінії, сер. ${s.avgStr}${zeroFlag}\n`;
+        msg += `  📞 <b>${s.name}</b> — <b>${s.callCount}</b> (+${s.recentCount}/2г) · ${s.timeStr}\n`;
       }
     }
     msg += "\n";

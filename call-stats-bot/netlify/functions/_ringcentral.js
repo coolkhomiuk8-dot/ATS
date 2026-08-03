@@ -64,16 +64,20 @@ function formatAvg(callCount, totalSec) {
   return avgM > 0 ? `${avgM}хв ${avgS}с` : `${avgS}с`;
 }
 
+const RECENT_WINDOW_MS = 2 * 60 * 60 * 1000; // "recent" = last 2 hours
+
 // One request (paginated) for the whole account's calls today, grouped by
-// the internal extension id that owns each record.
+// the internal extension id that owns each record. Also tallies a "recent"
+// (last 2h) count per extension from the same records — no extra RC call.
 async function fetchAccountCallLogToday(clientId, clientSecret, jwt) {
   const token = await getRCToken(clientId, clientSecret, jwt);
 
   const todayET = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
   const offsetStr = getETOffsetStr();
   const dateFrom = encodeURIComponent(`${todayET}T00:00:00${offsetStr}`);
+  const recentCutoff = Date.now() - RECENT_WINDOW_MS;
 
-  const perExtension = new Map(); // internal id -> { callCount, totalSec }
+  const perExtension = new Map(); // internal id -> { callCount, totalSec, recentCount }
   let page = 1;
 
   for (let i = 0; i < 20; i++) {
@@ -89,9 +93,10 @@ async function fetchAccountCallLogToday(clientId, clientSecret, jwt) {
       const extId = rec.extension?.id;
       if (!extId) continue;
       const key = String(extId);
-      const cur = perExtension.get(key) || { callCount: 0, totalSec: 0 };
+      const cur = perExtension.get(key) || { callCount: 0, totalSec: 0, recentCount: 0 };
       cur.callCount += 1;
       cur.totalSec += rec.duration || 0;
+      if (rec.startTime && new Date(rec.startTime).getTime() >= recentCutoff) cur.recentCount += 1;
       perExtension.set(key, cur);
     }
 
@@ -208,19 +213,24 @@ export async function getAllTrackedCallStats() {
       continue;
     }
 
-    for (const ext of acc.extensions) {
+    const extResults = acc.extensions.map((ext) => {
       const stat = perExtension.get(String(ext.id));
       const callCount = stat?.callCount || 0;
       const totalSec = stat?.totalSec || 0;
-      results.push({
+      return {
         account: acc.label,
         id: ext.id,
         name: ext.name,
         callCount,
+        recentCount: stat?.recentCount || 0,
         timeStr: formatDuration(totalSec),
         avgStr: formatAvg(callCount, totalSec),
-      });
-    }
+      };
+    });
+
+    // Busiest first — makes leaders and zero-activity people equally obvious at a glance.
+    extResults.sort((a, b) => b.callCount - a.callCount);
+    results.push(...extResults);
   }
 
   return results;
