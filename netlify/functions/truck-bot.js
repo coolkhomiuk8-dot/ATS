@@ -11,7 +11,6 @@
 import { withLambda } from "@netlify/aws-lambda-compat";
 import { getDb } from "./_auth.js";
 import { FieldValue } from "firebase-admin/firestore";
-import { buildCallStatsMessage } from "./_call-stats.js";
 
 const BOT_TOKEN     = process.env.TELEGRAM_BOT_TOKEN;
 const HR_CHAT_ID    = process.env.TELEGRAM_HR_CHAT_ID;
@@ -103,9 +102,12 @@ async function cmdRemove(db, chatId, args) {
   return reply(chatId, `Трак <b>${unit}</b> видалено.`);
 }
 
-async function cmdCalls(chatId) {
-  const { msg } = await buildCallStatsMessage({ title: "Статистика дзвінків — зараз" });
-  return reply(chatId, msg);
+// Forwarded to its own function (not imported directly) to keep this
+// function's env-var footprint small — see call-stats-oncall.js.
+async function cmdCalls() {
+  const base = process.env.URL || "https://ats-drivers-project.netlify.app";
+  const res = await fetch(`${base}/.netlify/functions/call-stats-oncall`, { method: "POST" });
+  if (!res.ok) console.error("call-stats-oncall trigger failed:", res.status, await res.text());
 }
 
 export default withLambda(async (event) => {
@@ -161,7 +163,7 @@ export default withLambda(async (event) => {
 
     } else if (/^\/calls(@\S+)?$/i.test(text)) {
       // Personal only — call stats stay private to the owner, not the HR group.
-      if (chatId === String(OWNER_CHAT_ID)) await cmdCalls(chatId);
+      if (chatId === String(OWNER_CHAT_ID)) await cmdCalls();
     }
   } catch (e) {
     console.error("truck-bot error:", e.message);
