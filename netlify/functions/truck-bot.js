@@ -7,6 +7,7 @@
 //   /addtruck 145        — add new truck
 //   /removetruck 145     — remove truck
 //   /calls               — call stats digest on demand (owner's personal chat only)
+//   (any other text)     — free-text call-stats question, answered via Claude (owner's chat only)
 
 import { withLambda } from "@netlify/aws-lambda-compat";
 import { getDb } from "./_auth.js";
@@ -112,6 +113,17 @@ async function cmdCalls() {
   if (!res.ok) console.error("call-stats-oncall trigger failed:", res.status, await res.text());
 }
 
+// Any free-text message (not a slash command) in the owner's personal chat is
+// treated as a question about call stats, e.g. "скільки дзвінків вчора у Andrew?"
+async function cmdAsk(question) {
+  const res = await fetch("https://ats-call-stats-bot.netlify.app/.netlify/functions/call-stats-ask", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question }),
+  });
+  if (!res.ok) console.error("call-stats-ask trigger failed:", res.status, await res.text());
+}
+
 export default withLambda(async (event) => {
   if (event.httpMethod !== "POST") return { statusCode: 200, body: "ok" };
 
@@ -166,6 +178,9 @@ export default withLambda(async (event) => {
     } else if (/^\/calls(@\S+)?$/i.test(text)) {
       // Personal only — call stats stay private to the owner, not the HR group.
       if (chatId === String(OWNER_CHAT_ID)) await cmdCalls();
+
+    } else if (!text.startsWith("/") && chatId === String(OWNER_CHAT_ID)) {
+      await cmdAsk(text);
     }
   } catch (e) {
     console.error("truck-bot error:", e.message);

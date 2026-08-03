@@ -107,6 +107,53 @@ async function fetchAccountCallLogToday(clientId, clientSecret, jwt) {
   return perExtension;
 }
 
+// One request (paginated) spanning yesterday 00:00 ET through now, bucketed
+// into "today" vs "yesterday" per extension — used for free-text Q&A, where
+// the question might be about either day.
+async function fetchAccountCallLogTodayAndYesterday(clientId, clientSecret, jwt) {
+  const token = await getRCToken(clientId, clientSecret, jwt);
+
+  const offsetStr = getETOffsetStr();
+  const todayET = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const yesterdayET = new Date(Date.now() - 24 * 3600 * 1000).toLocaleDateString("en-CA", {
+    timeZone: "America/New_York",
+  });
+  const dateFrom = encodeURIComponent(`${yesterdayET}T00:00:00${offsetStr}`);
+
+  const todayMap = new Map();
+  const yesterdayMap = new Map();
+  let page = 1;
+
+  for (let i = 0; i < 30; i++) {
+    const res = await fetch(
+      `https://platform.ringcentral.com/restapi/v1.0/account/~/call-log` +
+        `?dateFrom=${dateFrom}&type=Voice&view=Simple&perPage=250&page=${page}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) throw new Error(`RC call log failed (${res.status})`);
+    const data = await res.json();
+
+    for (const rec of data.records || []) {
+      const extId = rec.extension?.id;
+      if (!extId || !rec.startTime) continue;
+      const recDateET = new Date(rec.startTime).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+      const map = recDateET === todayET ? todayMap : recDateET === yesterdayET ? yesterdayMap : null;
+      if (!map) continue;
+
+      const key = String(extId);
+      const cur = map.get(key) || { callCount: 0, totalSec: 0 };
+      cur.callCount += 1;
+      cur.totalSec += rec.duration || 0;
+      map.set(key, cur);
+    }
+
+    if (!data.navigation?.nextPage) break;
+    page++;
+  }
+
+  return { todayMap, yesterdayMap };
+}
+
 function parseExtensionList(raw) {
   if (!raw) return [];
   return raw
@@ -234,4 +281,49 @@ export async function getAllTrackedCallStats() {
   }
 
   return results;
+}
+
+// For free-text Q&A (answerCallStatsQuestion in _call-stats.js) — same
+// roster, but with both today's and yesterday's counts per person.
+export async function getTodayAndYesterdayStats() {
+  const today = [];
+  const yesterday = [];
+
+  for (const acc of accountConfigs()) {
+    if (!acc.clientId || !acc.jwt || acc.extensions.length === 0) continue;
+
+    let todayMap, yesterdayMap;
+    try {
+      ({ todayMap, yesterdayMap } = await fetchAccountCallLogTodayAndYesterday(
+        acc.clientId,
+        acc.clientSecret,
+        acc.jwt
+      ));
+    } catch (e) {
+      console.error(`RingCentral error (${acc.label}):`, e.message);
+      const errRow = { account: acc.label, name: `(${acc.label})`, error: e.message.slice(0, 200) };
+      today.push(errRow);
+      yesterday.push(errRow);
+      continue;
+    }
+
+    for (const ext of acc.extensions) {
+      const t = todayMap.get(String(ext.id));
+      const y = yesterdayMap.get(String(ext.id));
+      today.push({
+        account: acc.label,
+        name: ext.name,
+        callCount: t?.callCount || 0,
+        timeStr: formatDuration(t?.totalSec || 0),
+      });
+      yesterday.push({
+        account: acc.label,
+        name: ext.name,
+        callCount: y?.callCount || 0,
+        timeStr: formatDuration(y?.totalSec || 0),
+      });
+    }
+  }
+
+  return { today, yesterday };
 }
