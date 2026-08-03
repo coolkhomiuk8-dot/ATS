@@ -2,9 +2,10 @@
 // Mid-day nudge: if anyone tracked still has 0 calls by lunchtime, ping the owner.
 // Stays silent if everyone already has activity — no need to spam a good day.
 
+import { withLambda } from "@netlify/aws-lambda-compat";
 import { buildCallStatsMessage, sendToOwner } from "./_call-stats.js";
 
-export const handler = async () => {
+export default withLambda(async () => {
   const day = new Date().toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short" });
   if (day === "Sat" || day === "Sun") return { statusCode: 200, body: "Weekend — skipped" };
 
@@ -20,4 +21,4 @@ export const handler = async () => {
   await sendToOwner(msg.trimEnd());
 
   return { statusCode: 200, body: `Nudge sent for ${zeroActivity.length} extension(s)` };
-};
+});

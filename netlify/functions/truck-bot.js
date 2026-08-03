@@ -8,6 +8,7 @@
 //   /removetruck 145     — remove truck
 //   /calls               — call stats digest on demand (owner's personal chat only)
 
+import { withLambda } from "@netlify/aws-lambda-compat";
 import { getDb } from "./_auth.js";
 import { FieldValue } from "firebase-admin/firestore";
 import { buildCallStatsMessage } from "./_call-stats.js";
@@ -106,7 +107,7 @@ async function cmdCalls(chatId) {
   return reply(chatId, msg);
 }
 
-export const handler = async (event) => {
+export default withLambda(async (event) => {
   if (event.httpMethod !== "POST") return { statusCode: 200, body: "ok" };
 
   let update;
@@ -167,4 +168,4 @@ export const handler = async (event) => {
   }
 
   return { statusCode: 200, body: "ok" };
-};
+});
