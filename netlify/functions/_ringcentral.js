@@ -2,16 +2,22 @@
 //
 // Account 1 (existing, e.g. Emma HR):
 //   RC_CLIENT_ID, RC_CLIENT_SECRET, RC_JWT_TOKEN   — JWT app credentials
-//   RC_ACCOUNT1_EXTENSIONS = "106:Emma"             — "id:Name" pairs, comma-separated
-//     (if RC_ACCOUNT1_EXTENSIONS is unset, defaults to "106:Emma" for backward compat)
 //
 // Account 2 (second RC account, other half of the team):
 //   RC_CLIENT_ID_2, RC_CLIENT_SECRET_2, RC_JWT_TOKEN_2
-//   RC_ACCOUNT2_EXTENSIONS = "201:Maria,202:Ivan"
 //
-// NOTE: tracking an extension other than the JWT user's own ("~") requires the
-// JWT user to be an account admin and the RC app to have Call Log read access
-// at the account/company level, not just the personal scope.
+// IMPORTANT: the roster below is keyed by RingCentral's INTERNAL extension id
+// (e.g. "1148405035"), NOT the short extension number shown in the admin UI's
+// "Ext." column (e.g. "106") — the two are different RC identifiers, and the
+// API rejects the short number. Resolve the internal id for someone new by
+// finding a call they made in the company call-log and reading `extension.id`
+// off that record (see getAllTrackedCallStats below, which does this in bulk).
+//
+// Fetching also uses the single company-wide call-log endpoint
+// (`/account/~/call-log`) instead of one request per extension: querying
+// per-extension needs an admin "Company Call Log" grant AND trips RC's rate
+// limit fast with more than a couple of people; the company-wide endpoint is
+// one request per account and only needs plain "Read Call Log".
 
 function getETOffsetStr() {
   const formatter = new Intl.DateTimeFormat("en-US", {
@@ -41,37 +47,59 @@ async function getRCToken(clientId, clientSecret, jwt) {
     }).toString(),
   });
 
-  if (!res.ok) throw new Error(`RC auth failed: ${await res.text()}`);
+  if (!res.ok) throw new Error(`RC auth failed (${res.status})`);
   return (await res.json()).access_token;
 }
 
-async function fetchExtensionCallStats(token, extensionId) {
+function formatDuration(totalSec) {
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  return h > 0 ? `${h}г ${m}хв` : `${m}хв`;
+}
+
+function formatAvg(callCount, totalSec) {
+  const avgSec = callCount > 0 ? Math.round(totalSec / callCount) : 0;
+  const avgM = Math.floor(avgSec / 60);
+  const avgS = avgSec % 60;
+  return avgM > 0 ? `${avgM}хв ${avgS}с` : `${avgS}с`;
+}
+
+// One request (paginated) for the whole account's calls today, grouped by
+// the internal extension id that owns each record.
+async function fetchAccountCallLogToday(clientId, clientSecret, jwt) {
+  const token = await getRCToken(clientId, clientSecret, jwt);
+
   const todayET = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
   const offsetStr = getETOffsetStr();
   const dateFrom = encodeURIComponent(`${todayET}T00:00:00${offsetStr}`);
 
-  const res = await fetch(
-    `https://platform.ringcentral.com/restapi/v1.0/account/~/extension/${extensionId}/call-log` +
-      `?dateFrom=${dateFrom}&type=Voice&view=Simple&perPage=250`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
+  const perExtension = new Map(); // internal id -> { callCount, totalSec }
+  let page = 1;
 
-  if (!res.ok) throw new Error(`RC call log failed: ${await res.text()}`);
-  const { records = [] } = await res.json();
+  for (let i = 0; i < 20; i++) {
+    const res = await fetch(
+      `https://platform.ringcentral.com/restapi/v1.0/account/~/call-log` +
+        `?dateFrom=${dateFrom}&type=Voice&view=Simple&perPage=250&page=${page}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) throw new Error(`RC call log failed (${res.status})`);
+    const data = await res.json();
 
-  const callCount = records.length;
-  const totalSec = records.reduce((s, r) => s + (r.duration || 0), 0);
+    for (const rec of data.records || []) {
+      const extId = rec.extension?.id;
+      if (!extId) continue;
+      const key = String(extId);
+      const cur = perExtension.get(key) || { callCount: 0, totalSec: 0 };
+      cur.callCount += 1;
+      cur.totalSec += rec.duration || 0;
+      perExtension.set(key, cur);
+    }
 
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const timeStr = h > 0 ? `${h}г ${m}хв` : `${m}хв`;
+    if (!data.navigation?.nextPage) break;
+    page++;
+  }
 
-  const avgSec = callCount > 0 ? Math.round(totalSec / callCount) : 0;
-  const avgM = Math.floor(avgSec / 60);
-  const avgS = avgSec % 60;
-  const avgStr = avgM > 0 ? `${avgM}хв ${avgS}с` : `${avgS}с`;
-
-  return { callCount, timeStr, avgStr };
+  return perExtension;
 }
 
 function parseExtensionList(raw) {
@@ -96,25 +124,47 @@ export async function getEmmaCallStats() {
       process.env.RC_CLIENT_SECRET,
       process.env.RC_JWT_TOKEN
     );
+    const todayET = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+    const offsetStr = getETOffsetStr();
+    const dateFrom = encodeURIComponent(`${todayET}T00:00:00${offsetStr}`);
+
     // "~" resolves to the JWT user's own extension (Emma, 106) — no admin scope needed.
-    return await fetchExtensionCallStats(token, "~");
+    const res = await fetch(
+      `https://platform.ringcentral.com/restapi/v1.0/account/~/extension/~/call-log` +
+        `?dateFrom=${dateFrom}&type=Voice&view=Simple&perPage=250`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) throw new Error(`RC call log failed: ${await res.text()}`);
+    const { records = [] } = await res.json();
+
+    const callCount = records.length;
+    const totalSec = records.reduce((s, r) => s + (r.duration || 0), 0);
+    return { callCount, timeStr: formatDuration(totalSec), avgStr: formatAvg(callCount, totalSec) };
   } catch (e) {
     console.error("RingCentral error:", e.message);
     return { error: e.message };
   }
 }
 
-// Roster (extension id -> name) lives in code, not env vars: it's not a secret,
-// and Netlify bakes every env var into every function's Lambda bundle, which is
-// capped at 4KB total (AWS Lambda limit) — a long roster string blows that budget.
-// To update who's tracked, just edit these two lists.
+// Roster (internal extension id -> name) lives in code, not env vars: it's not
+// a secret, and Netlify bakes every env var into every function's Lambda
+// bundle, which is capped at 4KB total (AWS Lambda limit) — a long roster
+// string blows that budget. To update who's tracked, just edit these lists.
 const ACCOUNT1_EXTENSIONS = parseExtensionList(
-  "110:Amara HR Manager,119:Anastasiia General,109:Antony Fleet,101:David David," +
-    "113:Diana Gomez,106:Emma HR,107:Henry Anderson,111:Jim Davis,120:Johnny Morgan," +
-    "114:Kateryna Fleet Management,105:Kent White,118:Maxym Dispatcher,116:Nick Dispatch," +
-    "117:Tony Dispatcher,115:Tyler Mans"
+  "1214947035:Amara HR Manager,485068034:Anastasiia General,1181387035:Antony Fleet," +
+    "865715035:David David,483529034:Diana Gomez,1148405035:Emma HR,1168919035:Henry Anderson," +
+    "1214973035:Jim Davis,485644034:Johnny Morgan,1226045035:Kateryna Fleet Management," +
+    "1041243035:Kent White,484845034:Maxym Dispatcher,484771034:Nick Dispatch," +
+    "484808034:Tony Dispatcher,484768034:Tyler Mans"
 );
 
+// TODO: these are still the short "Ext." numbers from the admin UI, not resolved
+// internal ids — account 2's RC app is also missing the "Read Call Log"
+// permission entirely (confirmed 2026-08-03: API returned
+// InsufficientPermissions/ReadCallLog for the company call-log endpoint).
+// Once that permission is added in RC2's Developer Console app, re-resolve each
+// person's internal id the same way account 1's were resolved (pull ~30 days of
+// company call-log and read `extension.id` off a record from each person).
 const ACCOUNT2_EXTENSIONS = parseExtensionList(
   "5570:Alex Dispatcher,5568:Andrew Kondes,5571:Blake Skylar,5575:Bob Perez," +
     "5569:Dennis Milton,120:Jeff Watson,102:Kelsey Jones,103:Matt White," +
@@ -148,25 +198,29 @@ export async function getAllTrackedCallStats() {
   for (const acc of accountConfigs()) {
     if (!acc.clientId || !acc.jwt || acc.extensions.length === 0) continue;
 
-    let token;
+    let perExtension;
     try {
-      token = await getRCToken(acc.clientId, acc.clientSecret, acc.jwt);
+      perExtension = await fetchAccountCallLogToday(acc.clientId, acc.clientSecret, acc.jwt);
     } catch (e) {
-      console.error(`RingCentral auth error (${acc.label}):`, e.message);
-      for (const ext of acc.extensions) {
-        results.push({ account: acc.label, id: ext.id, name: ext.name, error: `Auth: ${e.message}` });
-      }
+      console.error(`RingCentral error (${acc.label}):`, e.message);
+      // One shared error line per account instead of repeating it per extension —
+      // keeps the Telegram message short enough to actually send.
+      results.push({ account: acc.label, id: null, name: `(${acc.label})`, error: e.message.slice(0, 200) });
       continue;
     }
 
     for (const ext of acc.extensions) {
-      try {
-        const stats = await fetchExtensionCallStats(token, ext.id);
-        results.push({ account: acc.label, id: ext.id, name: ext.name, ...stats });
-      } catch (e) {
-        console.error(`RingCentral call log error (${acc.label}, ext ${ext.id}):`, e.message);
-        results.push({ account: acc.label, id: ext.id, name: ext.name, error: e.message });
-      }
+      const stat = perExtension.get(String(ext.id));
+      const callCount = stat?.callCount || 0;
+      const totalSec = stat?.totalSec || 0;
+      results.push({
+        account: acc.label,
+        id: ext.id,
+        name: ext.name,
+        callCount,
+        timeStr: formatDuration(totalSec),
+        avgStr: formatAvg(callCount, totalSec),
+      });
     }
   }
 

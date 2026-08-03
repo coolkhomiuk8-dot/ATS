@@ -18,11 +18,12 @@ const HR_CHAT_ID    = process.env.TELEGRAM_HR_CHAT_ID;
 const OWNER_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "384588590";
 
 async function reply(chatId, text) {
-  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+  const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
   });
+  if (!res.ok) console.error("truck-bot reply() failed:", res.status, await res.text());
 }
 
 function parseUnits(str) {
