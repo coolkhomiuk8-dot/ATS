@@ -158,6 +158,16 @@ export async function answerCallStatsQuestion(question) {
   }
 }
 
+// AI-generated text sometimes slips in a bare "<" (e.g. "менше <30 дзвінків")
+// that isn't a real tag — Telegram's HTML parser then rejects the WHOLE
+// message with a 400 and nothing gets sent at all. Escape everything first,
+// then re-enable only the handful of tags this bot actually emits.
+const ALLOWED_TAGS = /&lt;(\/?)(b|i|code|pre)&gt;/gi;
+function sanitizeForTelegramHtml(text) {
+  const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return escaped.replace(ALLOWED_TAGS, "<$1$2>");
+}
+
 // Sends to an explicit chat — used when the request (via truck-bot.js) tells
 // us which chat asked, so a group chat gets its answer back in that group,
 // not always in the owner's personal chat.
@@ -168,7 +178,7 @@ export async function sendTelegramMessage(chatId, text) {
   const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
+    body: JSON.stringify({ chat_id: chatId, text: sanitizeForTelegramHtml(text), parse_mode: "HTML" }),
   });
   if (!res.ok) {
     const body = await res.text();
