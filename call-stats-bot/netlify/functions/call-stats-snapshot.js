@@ -1,13 +1,13 @@
 // Scheduled every 30 minutes — stores a snapshot of current per-person call
 // stats to Netlify Blobs, so the dashboard (dashboard.html + call-stats-history.js)
-// can show trends over the past week instead of only "right now".
+// can show trends over the past month instead of only "right now".
 
 import { getHistoryStore } from "./_blobs-store.js";
 import { getAllTrackedCallStats } from "./_ringcentral.js";
 import Anthropic from "@anthropic-ai/sdk";
 
 const KEY = "snapshots";
-const MAX_AGE_MS = 7 * 24 * 3600 * 1000; // keep a week, per the dashboard's scope
+const MAX_AGE_MS = 30 * 24 * 3600 * 1000; // keep a month, per the dashboard's scope
 
 async function getTrendNote(stats, previous) {
   if (!process.env.ANTHROPIC_API_KEY) return null;
@@ -31,7 +31,8 @@ async function getTrendNote(stats, previous) {
           role: "user",
           content:
             `Ти — асистент диспетчерської компанії. Ось поточна статистика дзвінків команди, з динамікою за останні 30 хв.\n` +
-            `Дай ОДНЕ-ДВА коротких речення українською: що варто скоригувати прямо зараз (хто відстає, хто застряг на нулі, хто різко сповільнився).\n` +
+            `Ціль — 50 дзвінків/день на людину, менше 30 — реальна проблема, незважаючи на те, як йдуть справи в інших.\n` +
+            `Дай ОДНЕ-ДВА коротких речення українською: що варто скоригувати прямо зараз (хто відстає від цілі, хто застряг на нулі, хто різко сповільнився).\n` +
             `Якщо все в нормі — так і скажи одним словом. Без markdown, звичайний текст.\n\n${lines}`,
         },
       ],

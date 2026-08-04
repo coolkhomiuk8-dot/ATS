@@ -154,6 +154,82 @@ async function fetchAccountCallLogTodayAndYesterday(clientId, clientSecret, jwt)
   return { todayMap, yesterdayMap };
 }
 
+// One request (paginated) spanning the last `daysBack` days, bucketed per
+// (ET calendar date, extension) — used for the dashboard's one-time history
+// backfill (call-stats-history-backfill.js), so it doesn't start empty.
+async function fetchAccountCallLogDaily(clientId, clientSecret, jwt, daysBack) {
+  const token = await getRCToken(clientId, clientSecret, jwt);
+
+  const offsetStr = getETOffsetStr();
+  const fromET = new Date(Date.now() - daysBack * 24 * 3600 * 1000).toLocaleDateString("en-CA", {
+    timeZone: "America/New_York",
+  });
+  const dateFrom = encodeURIComponent(`${fromET}T00:00:00${offsetStr}`);
+
+  const perDay = new Map(); // dateET -> Map(extId -> { callCount, totalSec })
+  let page = 1;
+
+  for (let i = 0; i < 60; i++) {
+    const res = await fetch(
+      `https://platform.ringcentral.com/restapi/v1.0/account/~/call-log` +
+        `?dateFrom=${dateFrom}&type=Voice&view=Simple&perPage=250&page=${page}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) throw new Error(`RC call log failed (${res.status})`);
+    const data = await res.json();
+
+    for (const rec of data.records || []) {
+      const extId = rec.extension?.id;
+      if (!extId || !rec.startTime) continue;
+      const dateET = new Date(rec.startTime).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+      if (!perDay.has(dateET)) perDay.set(dateET, new Map());
+      const dayMap = perDay.get(dateET);
+
+      const key = String(extId);
+      const cur = dayMap.get(key) || { callCount: 0, totalSec: 0 };
+      cur.callCount += 1;
+      cur.totalSec += rec.duration || 0;
+      dayMap.set(key, cur);
+    }
+
+    if (!data.navigation?.nextPage) break;
+    page++;
+  }
+
+  return perDay;
+}
+
+// One-time backfill helper for the dashboard's history store — daily totals
+// (not 30-min resolution) for the last `daysBack` days across both accounts.
+// Returns [{ dateET, stats: [{account, name, callCount}] }, ...] sorted oldest first.
+export async function getDailyHistory(daysBack) {
+  const perAccount = [];
+
+  for (const acc of accountConfigs()) {
+    if (!acc.clientId || !acc.jwt || acc.extensions.length === 0) continue;
+    try {
+      const perDay = await fetchAccountCallLogDaily(acc.clientId, acc.clientSecret, acc.jwt, daysBack);
+      perAccount.push({ acc, perDay });
+    } catch (e) {
+      console.error(`RingCentral daily history error (${acc.label}):`, e.message);
+    }
+  }
+
+  const allDates = new Set();
+  for (const { perDay } of perAccount) for (const d of perDay.keys()) allDates.add(d);
+
+  return [...allDates].sort().map((dateET) => {
+    const stats = [];
+    for (const { acc, perDay } of perAccount) {
+      const dayMap = perDay.get(dateET) || new Map();
+      for (const ext of acc.extensions) {
+        stats.push({ account: acc.label, name: ext.name, callCount: dayMap.get(String(ext.id))?.callCount || 0 });
+      }
+    }
+    return { dateET, stats };
+  });
+}
+
 function parseExtensionList(raw) {
   if (!raw) return [];
   return raw

@@ -104,10 +104,14 @@
       });
     }
 
-    function trafficColor(callCount, avg) {
-      if (avg <= 0) return getComputedStyle(document.documentElement).getPropertyValue("--muted");
-      if (callCount >= avg * 1.25) return getComputedStyle(document.documentElement).getPropertyValue("--green");
-      if (callCount >= avg * 0.75) return getComputedStyle(document.documentElement).getPropertyValue("--yellow");
+    // Fixed business target (not relative to the team average) — 50/day is
+    // the goal, below 30 is a real problem regardless of how others did.
+    const DAILY_TARGET = 50;
+    const MIN_ACCEPTABLE = 30;
+
+    function trafficColor(callCount) {
+      if (callCount >= DAILY_TARGET) return getComputedStyle(document.documentElement).getPropertyValue("--green");
+      if (callCount >= MIN_ACCEPTABLE) return getComputedStyle(document.documentElement).getPropertyValue("--yellow");
       return getComputedStyle(document.documentElement).getPropertyValue("--orange");
     }
 
@@ -137,10 +141,12 @@
       const ok = latest.stats;
       const active = ok.filter((s) => s.callCount > 0);
       const zero = ok.filter((s) => s.callCount === 0);
+      const metTarget = ok.filter((s) => s.callCount >= DAILY_TARGET);
       const top = ok.reduce((best, s) => (!best || s.callCount > best.callCount ? s : best), null);
 
       document.getElementById("summary").innerHTML = `
         <div class="stat-card"><div class="label">Активні</div><div class="value">${active.length}/${ok.length}</div></div>
+        <div class="stat-card"><div class="label">🎯 Ціль (${DAILY_TARGET})</div><div class="value">${metTarget.length}/${ok.length}</div></div>
         <div class="stat-card"><div class="label">🏆 Лідер</div><div class="value" style="font-size:16px">${top ? top.name + " (" + top.callCount + ")" : "—"}</div></div>
         <div class="stat-card"><div class="label">⚠️ Нулі</div><div class="value">${zero.length}</div></div>
       `;
@@ -167,7 +173,6 @@
       container.innerHTML = "";
 
       for (const [account, people] of byAccount) {
-        const avg = people.reduce((sum, p) => sum + p.callCount, 0) / (people.length || 1);
         people.sort((a, b) => b.callCount - a.callCount);
 
         const section = document.createElement("div");
@@ -181,7 +186,7 @@
         for (const p of people) {
           const card = document.createElement("div");
           card.className = "card";
-          const color = trafficColor(p.callCount, avg);
+          const color = trafficColor(p.callCount);
           card.innerHTML = `
             <div class="top">
               <span class="name"><span class="dot" style="background:${color}"></span>${p.name}</span>

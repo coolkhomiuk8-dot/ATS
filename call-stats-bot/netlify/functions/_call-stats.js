@@ -27,8 +27,9 @@ async function getAICommentary(stats) {
           role: "user",
           content:
             `Ти — асистент диспетчерської компанії, аналізуєш денну статистику дзвінків команди.\n` +
+            `Ціль — 50 дзвінків/день на людину, менше 30 вважається проблемою незалежно від того, як справи в інших.\n` +
             `Дай ОДНЕ коротке речення українською (розмовне, без зайвої води) — коментар або порада на основі цих цифр.\n` +
-            `Якщо хтось явно відстає від інших — зауваж це прямо, по імені.\n\n${summary}`,
+            `Якщо хтось не дотягує до цілі — зауваж це прямо, по імені.\n\n${summary}`,
         },
       ],
     });
@@ -39,12 +40,14 @@ async function getAICommentary(stats) {
   }
 }
 
-// Traffic light relative to that account's own average — a flat threshold
-// doesn't work when accounts range from 2 calls to 107 calls in the same day.
-function trafficLight(callCount, avg) {
-  if (avg <= 0) return "📞";
-  if (callCount >= avg * 1.25) return "🟢";
-  if (callCount >= avg * 0.75) return "🟡";
+// Fixed business target, not relative to the team's own average — 50 calls/day
+// is the goal, below 30 is a real problem regardless of how everyone else did.
+const DAILY_TARGET = 50;
+const MIN_ACCEPTABLE = 30;
+
+function trafficLight(callCount) {
+  if (callCount >= DAILY_TARGET) return "🟢";
+  if (callCount >= MIN_ACCEPTABLE) return "🟡";
   return "🟠";
 }
 
@@ -65,21 +68,19 @@ function formatStatsMessage(stats, title) {
   const ok = stats.filter((s) => !s.error);
   const active = ok.filter((s) => s.callCount > 0);
   const zero = ok.filter((s) => s.callCount === 0);
+  const metTarget = ok.filter((s) => s.callCount >= DAILY_TARGET);
   const top = ok.reduce((best, s) => (!best || s.callCount > best.callCount ? s : best), null);
 
   let msg = `📊 <b>${title}</b>\n`;
   if (ok.length > 0) {
-    msg += `✅ ${active.length}/${ok.length} активні`;
+    msg += `✅ ${active.length}/${ok.length} активні · 🎯 ${metTarget.length} досягли цілі (${DAILY_TARGET})`;
     if (top && top.callCount > 0) msg += ` · 🏆 ${top.name} (${top.callCount})`;
     if (zero.length > 0) msg += ` · ⚠️ ${zero.length} нулів`;
     msg += `\n`;
   }
-  msg += `<i>(+N/2г = дзвінків за останні 2 год)</i>\n\n`;
+  msg += `<i>(+N/2г = дзвінків за останні 2 год · 🟢≥${DAILY_TARGET} 🟡≥${MIN_ACCEPTABLE} 🟠&lt;${MIN_ACCEPTABLE})</i>\n\n`;
 
   for (const [account, list] of byAccount) {
-    const nonError = list.filter((s) => !s.error);
-    const avg = nonError.length > 0 ? nonError.reduce((sum, s) => sum + s.callCount, 0) / nonError.length : 0;
-
     msg += `<b>${account}:</b>\n`;
     for (const s of list) {
       if (s.error) {
@@ -87,7 +88,7 @@ function formatStatsMessage(stats, title) {
       } else if (s.callCount === 0) {
         msg += `  ⚠️ <b>${s.name}</b> — 0 дзвінків\n`;
       } else {
-        const dot = trafficLight(s.callCount, avg);
+        const dot = trafficLight(s.callCount);
         msg += `  ${dot} <b>${s.name}</b> — <b>${s.callCount}</b> (+${s.recentCount}/2г) · ${s.timeStr}\n`;
       }
     }
@@ -142,6 +143,7 @@ export async function answerCallStatsQuestion(question) {
           role: "user",
           content:
             `Ти — асистент диспетчерської компанії. Нижче — дані про дзвінки команди за сьогодні й учора.\n` +
+            `Ціль команди — 50 дзвінків/день на людину, менше 30 вважається проблемою.\n` +
             `Відповідай КОРОТКО, українською, спираючись лише на ці дані. Якщо даних для відповіді немає — так і скажи, не вигадуй.\n` +
             `Це піде в Telegram з parse_mode=HTML: НЕ використовуй markdown (**, __, \`\`\`) — якщо треба виділити щось, ` +
             `використовуй HTML-теги <b>...</b> або взагалі без форматування.\n\n` +
