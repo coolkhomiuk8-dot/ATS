@@ -137,7 +137,7 @@ export async function answerCallStatsQuestion(question) {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const res = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 300,
+      max_tokens: 1200, // a full-team report (28 people) needs more room than a one-person answer
       messages: [
         {
           role: "user",
