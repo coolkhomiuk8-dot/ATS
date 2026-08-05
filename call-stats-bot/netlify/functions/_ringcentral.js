@@ -202,11 +202,14 @@ export async function getEmmaCallStats() {
 // a secret, and Netlify bakes every env var into every function's Lambda
 // bundle, which is capped at 4KB total (AWS Lambda limit) — a long roster
 // string blows that budget. To update who's tracked, just edit these lists.
+// Antony Fleet, Emma HR, Kateryna Fleet Management, Kent White, Kelsey Jones,
+// Michael Hayes, and UT Service removed 2026-08-04 per request — not
+// dispatchers, not needed for this tracking.
 const ACCOUNT1_EXTENSIONS = parseExtensionList(
-  "1214947035:Amara HR Manager,485068034:Anastasiia General,1181387035:Antony Fleet," +
-    "865715035:David David,483529034:Diana Gomez,1148405035:Emma HR,1168919035:Henry Anderson," +
-    "1214973035:Jim Davis,485644034:Johnny Morgan,1226045035:Kateryna Fleet Management," +
-    "1041243035:Kent White,484845034:Maxym Dispatcher,484771034:Nick Dispatch," +
+  "1214947035:Amara HR Manager,485068034:Anastasiia General," +
+    "865715035:David David,483529034:Diana Gomez,1168919035:Henry Anderson," +
+    "1214973035:Jim Davis,485644034:Johnny Morgan," +
+    "484845034:Maxym Dispatcher,484771034:Nick Dispatch," +
     "484808034:Tony Dispatcher,484768034:Tyler Mans"
 );
 
@@ -217,9 +220,8 @@ const ACCOUNT1_EXTENSIONS = parseExtensionList(
 const ACCOUNT2_EXTENSIONS = parseExtensionList(
   "2198706019:Alex Dispatcher,2186731019:Andrew Kondes,2200528019:Blake Skylar," +
     "882868018:Bob Perez,2186732019:Dennis Milton,2186520019:Jeff Watson," +
-    "1905511019:Kelsey Jones,2153100019:Mason Collins,2061583019:Matt White," +
-    "2201980019:Michael Hayes,2201973019:Rick Cash,2203136019:Ross Lopez," +
-    "1905371019:UT Service"
+    "2153100019:Mason Collins,2061583019:Matt White," +
+    "2201973019:Rick Cash,2203136019:Ross Lopez"
 );
 
 function accountConfigs() {
