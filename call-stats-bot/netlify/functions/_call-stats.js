@@ -6,30 +6,80 @@
 //   ANTHROPIC_API_KEY (optional)         — enables the short AI commentary line
 
 import { getAllTrackedCallStats, getTodayAndYesterdayStats } from "./_ringcentral.js";
+import { getHistoryStore } from "./_blobs-store.js";
 import Anthropic from "@anthropic-ai/sdk";
+
+// Finds the stored 30-min snapshot closest to "24h ago" so the AI commentary
+// can compare today's pace to yesterday at roughly the same hour — a much
+// more useful signal than yesterday's full-day total. Returns null if history
+// isn't populated yet, or nothing lands within 45 min of the target time.
+async function getYesterdaySameTimeSnapshot() {
+  try {
+    const store = getHistoryStore();
+    const snapshots = (await store.get("snapshots", { type: "json" })) || [];
+    if (snapshots.length === 0) return null;
+
+    const targetTs = Date.now() - 24 * 3600 * 1000;
+    let closest = null;
+    let closestDiff = Infinity;
+    for (const snap of snapshots) {
+      const diff = Math.abs(snap.ts - targetTs);
+      if (diff < closestDiff) {
+        closest = snap;
+        closestDiff = diff;
+      }
+    }
+    return closestDiff <= 45 * 60 * 1000 ? closest : null;
+  } catch (e) {
+    console.error("Yesterday-same-time lookup error:", e.message);
+    return null;
+  }
+}
 
 async function getAICommentary(stats) {
   if (!process.env.ANTHROPIC_API_KEY) return null;
   const ok = stats.filter((s) => !s.error);
   if (ok.length === 0) return null;
 
+  const yesterdaySnap = await getYesterdaySameTimeSnapshot();
+  const yesterdayByName = new Map((yesterdaySnap?.stats || []).map((s) => [s.name, s.callCount]));
+
+  const hourET = Number(
+    new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", hourCycle: "h23" }).format(
+      new Date()
+    )
+  );
+  // Mornings until ~14:00 ET are prime time for finding loads — dispatchers
+  // need to be very active then specifically; a slow morning is a bigger
+  // red flag than a slow afternoon.
+  const windowNote =
+    hourET < 14
+      ? `Зараз ранково-денне вікно (до 14:00 за Нью-Йорком) — найважливіший час для пошуку вантажів, диспетчери мають бути дуже активними саме зараз. Повільний темп зараз — серйозніша проблема, ніж повільний темп після обіду.`
+      : `Зараз друга половина дня (після 14:00 за Нью-Йорком) — вікно пошуку вантажів уже пройшло, але динаміка за день все одно має значення.`;
+
   const summary = ok
-    .map((s) => `${s.name}: ${s.callCount} дзвінків, ${s.timeStr} на лінії, середній дзвінок ${s.avgStr}`)
+    .map((s) => {
+      const y = yesterdayByName.get(s.name);
+      const trend = y !== undefined ? ` (учора о цій же годині: ${y})` : "";
+      return `${s.name}: ${s.callCount} дзвінків${trend}, ${s.timeStr} на лінії`;
+    })
     .join("\n");
 
   try {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const res = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 200,
+      max_tokens: 300,
       messages: [
         {
           role: "user",
           content:
-            `Ти — асистент диспетчерської компанії, аналізуєш денну статистику дзвінків команди.\n` +
+            `Ти — асистент диспетчерської компанії, аналізуєш статистику дзвінків команди та її динаміку.\n` +
             `Ціль — 50 дзвінків/день на людину, менше 30 вважається проблемою незалежно від того, як справи в інших.\n` +
-            `Дай ОДНЕ коротке речення українською (розмовне, без зайвої води) — коментар або порада на основі цих цифр.\n` +
-            `Якщо хтось не дотягує до цілі — зауваж це прямо, по імені.\n\n${summary}`,
+            `${windowNote}\n` +
+            `Де є дані за учора о цій же годині — порівняй темп і зауваж, якщо хтось помітно сповільнився чи прискорився.\n` +
+            `Дай 1-2 коротких речення українською (розмовне, без зайвої води) — конкретна порада: чи треба щось коригувати, і що саме.\n` +
+            `Якщо хтось не дотягує до цілі або явно відстає від свого вчорашнього темпу — зауваж прямо, по імені.\n\n${summary}`,
         },
       ],
     });
