@@ -192,3 +192,17 @@ export async function sendToOwner(text) {
   if (!chatId) throw new Error("Missing TELEGRAM_CHAT_ID");
   return sendTelegramMessage(chatId, text);
 }
+
+// Shared by the three weekday group-chat digest schedules (9am/1pm/4pm ET) —
+// see call-stats-digest-group-*.js.
+export async function sendGroupDigest() {
+  const chatId = process.env.TELEGRAM_DISPATCH_CHAT_ID;
+  if (!chatId) return "TELEGRAM_DISPATCH_CHAT_ID not set — skipping";
+
+  const day = new Date().toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short" });
+  if (day === "Sat" || day === "Sun") return "Weekend — skipped";
+
+  const { msg } = await buildCallStatsMessage({ title: "Статистика дзвінків — команда" });
+  await sendTelegramMessage(chatId, msg);
+  return "Group digest sent";
+}

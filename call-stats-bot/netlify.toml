@@ -11,8 +11,14 @@
 [functions."call-stats-digest"]
   schedule = "0 23 * * *"
 
-[functions."call-stats-digest-group"]
-  schedule = "0 22 * * *"
+[functions."call-stats-digest-group-9am"]
+  schedule = "0 13 * * *"
+
+[functions."call-stats-digest-group-1pm"]
+  schedule = "0 17 * * *"
+
+[functions."call-stats-digest-group-4pm"]
+  schedule = "0 20 * * *"
 
 [functions."call-stats-snapshot"]
   schedule = "*/30 * * * *"
