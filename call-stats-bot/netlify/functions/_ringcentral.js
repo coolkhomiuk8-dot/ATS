@@ -204,9 +204,10 @@ export async function getEmmaCallStats() {
 // string blows that budget. To update who's tracked, just edit these lists.
 // Antony Fleet, Emma HR, Kateryna Fleet Management, Kent White, Kelsey Jones,
 // Michael Hayes, and UT Service removed 2026-08-04 per request — not
-// dispatchers, not needed for this tracking.
+// dispatchers, not needed for this tracking. Amara HR Manager removed
+// 2026-08-05 — also an HR role, not a dispatcher.
 const ACCOUNT1_EXTENSIONS = parseExtensionList(
-  "1214947035:Amara HR Manager,485068034:Anastasiia General," +
+  "485068034:Anastasiia General," +
     "865715035:David David,483529034:Diana Gomez,1168919035:Henry Anderson," +
     "1214973035:Jim Davis,485644034:Johnny Morgan," +
     "484845034:Maxym Dispatcher,484771034:Nick Dispatch," +

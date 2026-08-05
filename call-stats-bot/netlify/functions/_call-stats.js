@@ -36,6 +36,48 @@ async function getYesterdaySameTimeSnapshot() {
   }
 }
 
+// Per-day end-of-day totals (max callCount seen that ET calendar day) for
+// every COMPLETE day in history — excludes today, since it's still in
+// progress and would unfairly count as "below minimum" before the day ends.
+async function getDayEndTotals() {
+  const store = getHistoryStore();
+  const snapshots = (await store.get("snapshots", { type: "json" })) || [];
+  const todayET = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+
+  const byDay = new Map(); // dateET -> Map(name -> maxCallCount)
+  for (const snap of snapshots) {
+    const dateET = new Date(snap.ts).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+    if (dateET === todayET) continue;
+    if (!byDay.has(dateET)) byDay.set(dateET, new Map());
+    const dayMap = byDay.get(dateET);
+    for (const s of snap.stats) {
+      if (s.callCount > (dayMap.get(s.name) || 0)) dayMap.set(s.name, s.callCount);
+    }
+  }
+
+  return [...byDay.keys()].sort().map((d) => byDay.get(d)); // oldest first
+}
+
+// People who've been below the minimum-acceptable pace for `daysBack`
+// consecutive COMPLETE days — a distinct, more urgent signal than just
+// "0 today", used by the daily chronic-underperformer alert.
+export async function getChronicUnderperformers(daysBack = 3) {
+  const dayTotals = await getDayEndTotals();
+  if (dayTotals.length < daysBack) return []; // not enough history yet
+
+  const recentDays = dayTotals.slice(-daysBack);
+  const roster = (await getAllTrackedCallStats()).filter((s) => !s.error);
+
+  const chronic = [];
+  for (const person of roster) {
+    const counts = recentDays.map((dayMap) => dayMap.get(person.name) ?? 0);
+    if (counts.every((c) => c < MIN_ACCEPTABLE)) {
+      chronic.push({ account: person.account, name: person.name, counts });
+    }
+  }
+  return chronic;
+}
+
 async function getAICommentary(stats) {
   if (!process.env.ANTHROPIC_API_KEY) return null;
   const ok = stats.filter((s) => !s.error);
