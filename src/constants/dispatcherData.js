@@ -42,3 +42,16 @@ export const STAGE_STALE_DAYS = {
   interview:   2,
   on_hold:     14,
 };
+
+// Closed stages — a candidate landed there and we don't need to keep
+// pulling them into the kanban every session. When 2000+ leads accumulate,
+// most are "rejected" and hidden by default saves both Firestore reads and
+// client-side render work.
+export const ARCHIVED_STAGES = ["rejected", "hired"];
+
+// Kanban columns shown by default (i.e. all stages EXCEPT the archived set).
+// Used by the Firestore query filter and the column render loop so both stay
+// in sync automatically.
+export const ACTIVE_STAGES = DISPATCHER_STAGES
+  .filter((s) => !ARCHIVED_STAGES.includes(s.id))
+  .map((s) => s.id);

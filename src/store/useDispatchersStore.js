@@ -2,8 +2,9 @@ import { create } from "zustand";
 import { auth, db, ensureAuthReady, isFirebaseConfigured } from "../lib/firebase";
 import {
   collection, deleteDoc, doc,
-  arrayUnion, onSnapshot, query, setDoc, updateDoc,
+  arrayUnion, onSnapshot, query, setDoc, updateDoc, where,
 } from "firebase/firestore";
+import { ACTIVE_STAGES } from "../constants/dispatcherData";
 
 function ensureShape(d) {
   return {
@@ -30,14 +31,41 @@ export const useDispatchersStore = create((set, get) => ({
   dispatchers: [],
   loaded: false,
   unsub: null,
+  // Which subscription is currently active — controls whether to re-subscribe
+  // when the caller changes their mind (e.g. toggles "show archive").
+  includeArchived: false,
 
-  subscribe() {
+  /**
+   * Subscribe to the dispatchers collection.
+   *
+   * Default (`includeArchived: false`) applies a Firestore filter to skip
+   * candidates in the terminal stages (rejected / hired). With 2000+ leads
+   * accumulated, that filter reduces the read count roughly 10x, cuts the
+   * initial payload, and eliminates the per-render work of buckets we don't
+   * actually show.
+   *
+   * Call again with { includeArchived: true } to load everything. The old
+   * listener is torn down before the new one attaches.
+   */
+  subscribe({ includeArchived = false } = {}) {
     if (!isFirebaseConfigured || !auth?.currentUser) return;
-    const unsub = onSnapshot(query(colRef()), (snap) => {
+
+    // If already subscribed with the same mode, nothing to do.
+    if (get().unsub && get().includeArchived === includeArchived) return;
+
+    // Tear down any previous listener before replacing.
+    get().unsub?.();
+
+    // 'in' operator caps at 30 values — ACTIVE_STAGES is well under that.
+    const q = includeArchived
+      ? query(colRef())
+      : query(colRef(), where("stage", "in", ACTIVE_STAGES));
+
+    const unsub = onSnapshot(q, (snap) => {
       const dispatchers = snap.docs.map((d) => ensureShape({ id: d.id, ...d.data() }));
       set({ dispatchers, loaded: true });
     });
-    set({ unsub });
+    set({ unsub, includeArchived });
   },
 
   unsubscribe() {

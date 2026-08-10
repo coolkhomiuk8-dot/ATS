@@ -1,16 +1,23 @@
-import { useMemo, useState } from "react";
-import { DISPATCHER_STAGES, DISPATCHER_ROLES, ROLE_COLORS } from "../constants/dispatcherData";
+import { useEffect, useMemo, useState } from "react";
+import { DISPATCHER_STAGES, DISPATCHER_ROLES, ROLE_COLORS, ARCHIVED_STAGES } from "../constants/dispatcherData";
 import { useDispatchersStore } from "../store/useDispatchersStore";
 import DispatcherCard from "../components/DispatcherCard";
 import DispatcherDrawer from "../components/DispatcherDrawer";
 import ImportFBModal from "../components/ImportFBModal";
 
 export default function DispatchersView() {
-  const { dispatchers, add, upd, remove, appendLog } = useDispatchersStore();
+  const { dispatchers, add, upd, remove, appendLog, subscribe: subDispatchers, includeArchived } = useDispatchersStore();
   const [selected, setSelected] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [dragOverStage, setDragOverStage] = useState(null);
+  const [showArchived, setShowArchived] = useState(false);
+
+  // Re-subscribe when toggle changes. subDispatchers is idempotent when the
+  // mode already matches — safe to call on every mount and toggle flip.
+  useEffect(() => {
+    subDispatchers({ includeArchived: showArchived });
+  }, [showArchived, subDispatchers]);
 
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState({ done: 0, total: 0 });
@@ -127,7 +134,23 @@ export default function DispatchersView() {
           )}
         </div>
 
-        <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
+        <div style={{ display: "flex", gap: 8, marginLeft: "auto", alignItems: "center" }}>
+          <button
+            onClick={() => setShowArchived((v) => !v)}
+            title={showArchived
+              ? "Приховати архів (Rejected, Hired) — прискорює завантаження"
+              : "Показати архів (Rejected, Hired) — може бути повільно"
+            }
+            style={{
+              background: showArchived ? "#fef2f2" : "#f8fafc",
+              color: showArchived ? "#b91c1c" : "#64748b",
+              border: `1px solid ${showArchived ? "#fecaca" : "#e2e8f0"}`,
+              borderRadius: 9, padding: "9px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+              display: "inline-flex", alignItems: "center", gap: 6,
+            }}
+          >
+            {showArchived ? "🗂 Архів: показано" : "🗂 Показати архів"}
+          </button>
           <button onClick={() => setShowImport(true)} style={{
             background: "#f0f9ff", color: "#0369a1", border: "1px solid #bae6fd",
             borderRadius: 9, padding: "9px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
@@ -145,7 +168,10 @@ export default function DispatchersView() {
 
       {/* Kanban board */}
       <div style={{ flex: 1, overflowX: "auto", display: "flex", gap: 14, padding: 20 }}>
-        {DISPATCHER_STAGES.map((stage) => {
+        {(showArchived
+          ? DISPATCHER_STAGES
+          : DISPATCHER_STAGES.filter((s) => !ARCHIVED_STAGES.includes(s.id))
+        ).map((stage) => {
           const cards = cardsByStage[stage.id] || [];
           const isOver = dragOverStage === stage.id;
           return (
