@@ -21,6 +21,12 @@ export const STAGES = [
   { id: "fired",           label: "Fired",                                       color: "#ef4444", light: "#fef2f2" },
 ];
 
+// Driver stages that we skip from the kanban by default. With 2000+ cold
+// leads accumulating in Trash/Cold, pulling them on every session cost
+// Firestore reads and killed render perf. A toggle in the top bar re-loads
+// them on demand when a recruiter needs to look one up.
+export const ARCHIVED_DRIVER_STAGES = ["trash"];
+
 export const DOC_LIST = [
   { name: "Driver License",         required: true },
   { name: "MVR Report",             required: true },

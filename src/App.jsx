@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, getDocFromServer, serverTimestamp, setDoc } from "firebase/firestore";
-import { STAGES } from "./constants/data";
+import { STAGES, ARCHIVED_DRIVER_STAGES } from "./constants/data";
 import { nextActionTs, todayStr } from "./utils/date";
 import { useDriversStore } from "./store/useDriversStore";
 import { SPill } from "./components/UiBits";
@@ -52,6 +52,9 @@ export default function App() {
   const [showDailyReport, setShowDailyReport] = useState(false);
   const [showToolsMenu, setShowToolsMenu] = useState(false);
   const [filterStage, setFilterStage] = useState("all");
+  // Trash/Cold column hidden by default. When enabled we re-subscribe to
+  // Firestore with the wider query and render the extra column.
+  const [showArchivedDrivers, setShowArchivedDrivers] = useState(false);
   const [search, setSearch] = useState("");
   const [searchFocus, setSearchFocus] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
@@ -135,11 +138,14 @@ export default function App() {
       return undefined;
     }
 
-    initDrivers();
+    // Passing showArchivedDrivers into initDrivers lets the store choose the
+    // right Firestore query and re-subscribe if the mode flipped since last
+    // call. Idempotent when the mode hasn't changed.
+    initDrivers({ includeArchived: showArchivedDrivers });
     subDispatchers();
     subscribeTrucks();
     return () => { stopDriversSync(); unsubDispatchers(); unsubscribeTrucks(); };
-  }, [firebaseUser, initDrivers, stopDriversSync, subDispatchers, unsubDispatchers, subscribeTrucks, unsubscribeTrucks]);
+  }, [firebaseUser, showArchivedDrivers, initDrivers, stopDriversSync, subDispatchers, unsubDispatchers, subscribeTrucks, unsubscribeTrucks]);
 
   const searchResults = useMemo(() => {
     if (!search.trim()) return [];
@@ -815,10 +821,35 @@ export default function App() {
             }}
           >
             <option value="all">All stages</option>
-            {STAGES.map((stage) => (
-              <option key={stage.id} value={stage.id}>{stage.label}</option>
-            ))}
+            {STAGES
+              .filter((stage) => showArchivedDrivers || !ARCHIVED_DRIVER_STAGES.includes(stage.id))
+              .map((stage) => (
+                <option key={stage.id} value={stage.id}>{stage.label}</option>
+              ))}
           </select>
+
+          {view === "pipeline" && (
+            <button
+              onClick={() => setShowArchivedDrivers((v) => !v)}
+              title={showArchivedDrivers
+                ? "Приховати Trash/Cold — прискорить завантаження"
+                : "Показати Trash/Cold — може бути повільно (2000+ карток)"
+              }
+              style={{
+                padding: "7px 12px",
+                fontSize: 13, fontWeight: 600,
+                background: showArchivedDrivers ? "var(--color-warning-bg)" : "var(--bg-raised)",
+                color:      showArchivedDrivers ? "var(--color-warning-text)" : "var(--text-secondary)",
+                border: `1px solid ${showArchivedDrivers ? "var(--color-warning-border)" : "var(--border)"}`,
+                borderRadius: 8,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+            >
+              {showArchivedDrivers ? "🗑 Trash: показано" : "🗑 Показати Trash"}
+            </button>
+          )}
 
           {/* Compact stats */}
           <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
@@ -1049,7 +1080,9 @@ export default function App() {
         <div style={{ flex: 1, overflow: "hidden", display: "flex", minWidth: 0 }}>
           {view === "pipeline" && (
             <PipelineView
-              stages={STAGES}
+              stages={showArchivedDrivers
+                ? STAGES
+                : STAGES.filter((s) => !ARCHIVED_DRIVER_STAGES.includes(s.id))}
               filteredDrivers={filtered}
               onSelectDriver={setSelectedId}
               onDropDriverToStage={requestStageChange}

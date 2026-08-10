@@ -14,7 +14,9 @@ import {
   query,
   setDoc,
   updateDoc,
+  where,
 } from "firebase/firestore";
+import { ARCHIVED_DRIVER_STAGES } from "../constants/data";
 
 const driveUploadEndpoint = import.meta.env.VITE_DRIVE_UPLOAD_ENDPOINT || "/.netlify/functions/driveUpload";
 const driveDeleteEndpoint = import.meta.env.VITE_DRIVE_DELETE_ENDPOINT || "/.netlify/functions/driveDelete";
@@ -249,11 +251,22 @@ export const useDriversStore = create((set, get) => ({
   isLoading: true,
   syncError: null,
   unsubscribeDrivers: null,
+  // Tracks which subscription mode is currently active so a caller can
+  // request the same mode idempotently, or trigger a re-subscribe by
+  // changing modes.
+  driversIncludeArchived: false,
 
-  initDrivers: async () => {
-    if (get().unsubscribeDrivers) return;
+  initDrivers: async ({ includeArchived = false } = {}) => {
+    // Same mode already active → no-op.
+    if (get().unsubscribeDrivers && get().driversIncludeArchived === includeArchived) return;
 
-    set({ isLoading: true, syncError: null });
+    // Different mode → tear down existing listener before replacing.
+    if (get().unsubscribeDrivers) {
+      try { get().unsubscribeDrivers(); } catch (_) { /* ignore */ }
+      set({ unsubscribeDrivers: null });
+    }
+
+    set({ isLoading: true, syncError: null, driversIncludeArchived: includeArchived });
 
     if (!isFirebaseConfigured || !db) {
       set({
@@ -287,8 +300,17 @@ export const useDriversStore = create((set, get) => ({
       });
     }, 12000);
 
+    // Default: skip archived stages (Trash/Cold). With 2000+ cold leads,
+    // filtering server-side cuts Firestore reads and the client-side sort
+    // work proportionally. Firestore `not-in` supports up to 30 values.
+    // Note: `not-in` also excludes docs where `stage` is missing — every
+    // driver has a stage default via ensureDriverShape so that's fine.
+    const q = includeArchived
+      ? collection(db, "drivers")
+      : query(collection(db, "drivers"), where("stage", "not-in", ARCHIVED_DRIVER_STAGES));
+
     const unsubscribe = onSnapshot(
-      collection(db, "drivers"),
+      q,
       (snapshot) => {
         try {
           const drivers = snapshot.docs
