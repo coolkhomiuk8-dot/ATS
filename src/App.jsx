@@ -68,6 +68,15 @@ export default function App() {
   const [currentRole, setCurrentRole] = useState("user");
   const [roleLoading, setRoleLoading] = useState(true);
 
+  const showTopStatus = (kind, text, timeoutMs) => {
+    setDebugBanner({ kind, text });
+    if (timeoutMs) {
+      window.setTimeout(() => {
+        setDebugBanner((current) => (current && current.text === text ? null : current));
+      }, timeoutMs);
+    }
+  };
+
   const { theme, setTheme, THEMES, LABELS } = useTheme();
 
   const canManageRoles = currentRole === "root";
@@ -251,7 +260,7 @@ export default function App() {
     // The debugBanner state is a big in-app pill so we can see the outcome
     // even if a browser alert() is being suppressed by extension / policy.
     console.log("[stage-change] attempt", { driverId, toStage, patch });
-    setDebugBanner({ kind: "info", text: `⏳ Крок 1/2: локальний запис для driver ${driverId} → ${toStage}…` });
+    showTopStatus("info", `⏳ Крок 1/2: локальний запис для driver ${driverId} → ${toStage}…`);
 
     // 8-second timeout wrapper. Firestore SDK can silently sit forever if the
     // network/auth state is off (e.g. token failed to refresh, offline queue
@@ -269,10 +278,10 @@ export default function App() {
       try {
         await withTimeout(upd(driverId, patch), 8000, "локальний write");
         console.log("[stage-change] local ok", { driverId, toStage });
-        setDebugBanner({ kind: "info", text: `⏳ Крок 2/2: перевіряю на сервері (driver ${driverId})…` });
+        showTopStatus("info", `⏳ Крок 2/2: перевіряю на сервері (driver ${driverId})…`);
 
         if (!db) {
-          setDebugBanner({ kind: "warn", text: `⚠ Firebase не сконфігуровано. Зміна лише локально.` });
+          showTopStatus("warn", "⚠ Firebase не сконфігуровано. Зміна лише локально.");
           return;
         }
 
@@ -289,21 +298,20 @@ export default function App() {
             ? `Сервер має stage="${serverStage}", а ми намагалися записати "${toStage}".`
             : `Документ водія не існує на сервері (docId="${docId}").`;
           console.error("[stage-change] SERVER MISMATCH", detail);
-          setDebugBanner({
-            kind: "error",
-            text: `⚠ Зміна НЕ збереглась на сервері. ${detail} Найімовірніше цей акаунт не має ролі admin в user_roles.`,
-          });
+          showTopStatus(
+            "error",
+            `⚠ Зміна НЕ збереглась на сервері. ${detail} Найімовірніше цей акаунт не має ролі admin в user_roles.`
+          );
           return;
         }
         console.log("[stage-change] server confirmed", { driverId, toStage });
-        setDebugBanner({ kind: "ok", text: `✅ Стейдж збережено на сервері: ${toStage}` });
-        window.setTimeout(() => setDebugBanner(null), 2500);
+        showTopStatus("ok", `✅ Стейдж збережено на сервері: ${toStage}`, 2500);
       } catch (err) {
         console.error("[stage-change] FAILED", err);
-        setDebugBanner({
-          kind: "error",
-          text: `⚠ ${err?.message || err}. Скоріш за все Firestore не приймає write — акаунт без ролі admin, або токен протух. Спробуй Log out → Log in.`,
-        });
+        showTopStatus(
+          "error",
+          `⚠ ${err?.message || err}. Скоріш за все Firestore не приймає write — акаунт без ролі admin, або токен протух. Спробуй Log out → Log in.`
+        );
       }
     })();
 
@@ -1017,7 +1025,7 @@ export default function App() {
           </div>
         )}
 
-        {!isLoading && syncError && (
+        {!isLoading && syncError && !debugBanner && (
           <div
             style={{
               padding: "8px 14px",
@@ -1031,25 +1039,25 @@ export default function App() {
           </div>
         )}
 
-        {debugBanner && (
+        {(debugBanner || (!isLoading && syncError)) && (
           <div
             style={{
               padding: "10px 16px",
               borderBottom: "1px solid",
               borderColor:
-                debugBanner.kind === "error" ? "#fecaca"
-                : debugBanner.kind === "ok"    ? "#a7f3d0"
-                : debugBanner.kind === "warn"  ? "#fde68a"
+                (debugBanner?.kind || "error") === "error" ? "#fecaca"
+                : (debugBanner?.kind || "error") === "ok"    ? "#a7f3d0"
+                : (debugBanner?.kind || "error") === "warn"  ? "#fde68a"
                 : "#bfdbfe",
               background:
-                debugBanner.kind === "error" ? "#fef2f2"
-                : debugBanner.kind === "ok"    ? "#ecfdf5"
-                : debugBanner.kind === "warn"  ? "#fffbeb"
+                (debugBanner?.kind || "error") === "error" ? "#fef2f2"
+                : (debugBanner?.kind || "error") === "ok"    ? "#ecfdf5"
+                : (debugBanner?.kind || "error") === "warn"  ? "#fffbeb"
                 : "#eff6ff",
               color:
-                debugBanner.kind === "error" ? "#b91c1c"
-                : debugBanner.kind === "ok"    ? "#047857"
-                : debugBanner.kind === "warn"  ? "#92400e"
+                (debugBanner?.kind || "error") === "error" ? "#b91c1c"
+                : (debugBanner?.kind || "error") === "ok"    ? "#047857"
+                : (debugBanner?.kind || "error") === "warn"  ? "#92400e"
                 : "#1e40af",
               fontSize: 13,
               fontWeight: 600,
@@ -1059,7 +1067,7 @@ export default function App() {
               gap: 12,
             }}
           >
-            <span style={{ flex: 1 }}>{debugBanner.text}</span>
+            <span style={{ flex: 1 }}>{debugBanner?.text || syncError}</span>
             <button
               onClick={() => setDebugBanner(null)}
               style={{
