@@ -377,9 +377,11 @@ function DriverRow({ driver, truck, onClick }) {
 /* ══════════════════════════════════════════
    DRIVERS VIEW
 ══════════════════════════════════════════ */
-export default function DriversView({ onSelectDriver }) {
-  const { drivers, addDriver } = useDriversStore();
+export default function DriversView({ onSelectDriver, drivers: visibleDrivers }) {
+  const { drivers: allDrivers, addDriver } = useDriversStore();
   const { trucks } = useTrucksStore();
+
+  const drivers = visibleDrivers || allDrivers;
 
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
@@ -496,7 +498,7 @@ export default function DriversView({ onSelectDriver }) {
       {/* Add Driver Modal */}
       {showAdd && (
         <AddDriverModal
-          drivers={drivers}
+          drivers={allDrivers}
           onClose={() => setShowAdd(false)}
           onAdd={addDriver}
         />

@@ -71,7 +71,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
   const EDITABLE_INFO_FIELDS = [
     "name", "phone", "email", "city",
     "exp", "source", "startDate",
-    "dlExpiry", "hireDate", "truckTypes",
+    "dlExpiry", "hireDate", "truckTypes", "driverGroup",
   ];
 
   function saveInfo() {
@@ -469,6 +469,18 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                   </div>
 
                   <div>
+                    <FL t="Driver Group" />
+                    <select
+                      value={String(editData.driverGroup || "us")}
+                      onChange={(event) => setEditData((prev) => ({ ...prev, driverGroup: event.target.value }))}
+                      style={{ width: "100%", padding: "8px 10px", fontSize: 13, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-secondary)", outline: "none" }}
+                    >
+                      <option value="us">US Driver</option>
+                      <option value="ukraine">Ukraine Driver</option>
+                    </select>
+                  </div>
+
+                  <div>
                     <FL t="Available" />
                     <select
                       value={editData.startDate || "TBD"}
@@ -548,6 +560,7 @@ export default function DriverDrawer({ driver, onClose, onUpd, onNote, onFile, o
                       ["Phone", driver.phone],
                       ["Email", driver.email],
                       ["City", driver.city],
+                      ["Driver Group", String(driver.driverGroup || "us") === "ukraine" ? "Ukraine" : "US"],
                       ["Experience", `${driver.exp} years`],
                       ["Source", driver.source],
                       ...(driver.jobType ? [["Job Type", driver.jobType]] : []),

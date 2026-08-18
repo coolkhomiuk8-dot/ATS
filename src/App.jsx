@@ -28,6 +28,27 @@ import { auth, db, isFirebaseConfigured } from "./lib/firebase";
 import { useDispatchersStore } from "./store/useDispatchersStore";
 import { useTrucksStore } from "./store/useTrucksStore";
 
+const DRIVER_GROUP_COOKIE = "driver_group";
+
+function readDriverGroupCookie() {
+  if (typeof document === "undefined") return "us";
+
+  const match = document.cookie.match(new RegExp(`(?:^|; )${DRIVER_GROUP_COOKIE}=([^;]*)`));
+  const value = match ? decodeURIComponent(match[1]) : "";
+  return value === "ukraine" ? "ukraine" : "us";
+}
+
+function writeDriverGroupCookie(group) {
+  if (typeof document === "undefined") return;
+
+  document.cookie = `${DRIVER_GROUP_COOKIE}=${encodeURIComponent(group)}; path=/; max-age=31536000; samesite=lax`;
+}
+
+const DRIVER_GROUPS = [
+  { id: "us", label: "US Driver" },
+  { id: "ukraine", label: "Ukraine Driver" },
+];
+
 export default function App() {
   const { drivers, upd, addNote, addFile, removeFile, addDriver, deleteDriver, initDrivers, stopDriversSync, isLoading, syncError } = useDriversStore();
   const { subscribe: subDispatchers, unsubscribe: unsubDispatchers } = useDispatchersStore();
@@ -52,6 +73,8 @@ export default function App() {
   const [showDailyReport, setShowDailyReport] = useState(false);
   const [showToolsMenu, setShowToolsMenu] = useState(false);
   const [filterStage, setFilterStage] = useState("all");
+  const [driverGroup, setDriverGroup] = useState(() => readDriverGroupCookie());
+  const [showDriverGroupPicker, setShowDriverGroupPicker] = useState(false);
   // Trash/Cold column hidden by default. When enabled we re-subscribe to
   // Firestore with the wider query and render the extra column.
   const [showArchivedDrivers, setShowArchivedDrivers] = useState(false);
@@ -79,8 +102,16 @@ export default function App() {
 
   const { theme, setTheme, THEMES, LABELS } = useTheme();
 
+  useEffect(() => {
+    writeDriverGroupCookie(driverGroup);
+  }, [driverGroup]);
+
   const canManageRoles = currentRole === "root";
   const canManageFiles = currentRole === "root" || currentRole === "admin";
+
+  const activeDrivers = useMemo(() => {
+    return drivers.filter((driver) => String(driver.driverGroup || "us").toLowerCase() === driverGroup);
+  }, [drivers, driverGroup]);
 
   useEffect(() => {
     function onHashChange() {
@@ -162,7 +193,7 @@ export default function App() {
     const query = search.trim().toLowerCase();
     const digits = query.replace(/\D/g, "");
 
-    return drivers
+    return activeDrivers
       .filter((driver) => {
         const driverName = String(driver.name || "");
         const driverPhone = String(driver.phone || "");
@@ -176,31 +207,31 @@ export default function App() {
           (digits.length >= 3 && phoneDigits.includes(digits))
         );
       })
-      .slice(0, 8);
-  }, [drivers, search]);
+        .slice(0, 8);
+      }, [activeDrivers, search]);
 
   const showDropdown = searchFocus && search.trim().length > 0;
 
   const filtered = useMemo(() => {
-    const list = drivers.filter((driver) => filterStage === "all" || driver.stage === filterStage);
+    const list = activeDrivers.filter((driver) => filterStage === "all" || driver.stage === filterStage);
     return [...list].sort((a, b) => nextActionTs(a) - nextActionTs(b));
-  }, [drivers, filterStage]);
+  }, [activeDrivers, filterStage]);
 
   const today = todayStr();
   const yesterdayDate = new Date();
   yesterdayDate.setDate(yesterdayDate.getDate() - 1);
   const yesterday = yesterdayDate.toISOString().split("T")[0];
 
-  const addedToday = drivers.filter((d) => d.createdAt === today).length;
-  const addedYesterday = drivers.filter((d) => d.createdAt === yesterday).length;
-  const total = drivers.filter((d) => d.stage !== "trash").length;
+  const addedToday = activeDrivers.filter((d) => d.createdAt === today).length;
+  const addedYesterday = activeDrivers.filter((d) => d.createdAt === yesterday).length;
+  const total = activeDrivers.filter((d) => d.stage !== "trash").length;
   const finalStepStages = ["offer_accepted", "drug_test_sched", "drug_test", "set_date", "yard", "hired"];
-  const finalStep = drivers.filter((d) => finalStepStages.includes(d.stage)).length;
+  const finalStep = activeDrivers.filter((d) => finalStepStages.includes(d.stage)).length;
 
-  const { activeAlerts, dismissAlert } = useDriverAlerts(drivers);
+  const { activeAlerts, dismissAlert } = useDriverAlerts(activeDrivers);
 
   const todayDateStr = new Date().toISOString().split("T")[0];
-  const pendingAlerts = drivers.filter((d) => {
+  const pendingAlerts = activeDrivers.filter((d) => {
     if (d.stage === "trash" || d.stage === "fired") return false;
     if (!d.nextAction) return false;
     return d.nextAction <= todayDateStr;
@@ -218,6 +249,12 @@ export default function App() {
     navigator.clipboard.writeText(text).catch(() => {});
     setCopiedTpl(id);
     setTimeout(() => setCopiedTpl(null), 2000);
+  }
+
+  function selectDriverGroup(group) {
+    setDriverGroup(group);
+    setShowDriverGroupPicker(false);
+    setView("pipeline");
   }
 
   function requestStageChange(driverId, toStage) {
@@ -361,7 +398,7 @@ export default function App() {
     );
   }
 
-  const selected = selectedId ? drivers.find((driver) => driver.id === selectedId) : null;
+  const selected = selectedId ? activeDrivers.find((driver) => driver.id === selectedId) : null;
 
   if (isFirebaseConfigured && (authLoading || !firebaseUser)) {
     return <FirebaseAuthGate />;
@@ -513,7 +550,7 @@ export default function App() {
           <button
             key={item.id}
             title={!sidebarExpanded ? item.title : undefined}
-            onClick={() => setView(item.id)}
+            onClick={() => (item.id === "pipeline" ? setShowDriverGroupPicker(true) : setView(item.id))}
             style={{
               width: sidebarExpanded ? "calc(100% - 16px)" : 36,
               height: 36,
@@ -1101,13 +1138,13 @@ export default function App() {
 
           {view === "fleet" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}><TrucksView onAddDriver={() => setShowAdd(true)} /></div>}
 
-          {view === "drivers" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}><DriversView onSelectDriver={setSelectedId} /></div>}
+          {view === "drivers" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}><DriversView drivers={activeDrivers} onSelectDriver={setSelectedId} /></div>}
 
           {view === "loads" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}><LoadsView /></div>}
 
           {view === "expenses" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}><ExpensesView /></div>}
 
-          {view === "dashboard" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}><DashboardView drivers={drivers} /></div>}
+          {view === "dashboard" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}><DashboardView drivers={activeDrivers} /></div>}
 
           {view === "templates" && <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}><TemplatesView copiedTpl={copiedTpl} onCopy={copyTpl} /></div>}
         </div>
@@ -1181,6 +1218,49 @@ export default function App() {
           onConfirm={confirmStageChange}
           onCancel={() => setStageModal(null)}
         />
+      )}
+
+      {showDriverGroupPicker && (
+        <div
+          onClick={() => setShowDriverGroupPicker(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 220, background: "rgba(15,23,42,.52)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            style={{ width: "100%", maxWidth: 360, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 16, boxShadow: "var(--shadow-lg)", padding: 22 }}
+          >
+            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginBottom: 6 }}>Choose driver group</div>
+            <div style={{ fontSize: 12, color: "var(--text-faint)", marginBottom: 16 }}>Pipeline will load only the selected group.</div>
+            <div style={{ display: "grid", gap: 10 }}>
+              {DRIVER_GROUPS.map((group) => (
+                <button
+                  key={group.id}
+                  onClick={() => selectDriverGroup(group.id)}
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "12px 14px",
+                    borderRadius: 12,
+                    border: `1px solid ${driverGroup === group.id ? "var(--color-primary-border)" : "var(--border)"}`,
+                    background: driverGroup === group.id ? "var(--color-primary-light)" : "var(--bg-raised)",
+                    color: "var(--text-primary)",
+                    cursor: "pointer",
+                    fontSize: 14,
+                    fontWeight: 700,
+                  }}
+                >
+                  {group.label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowDriverGroupPicker(false)}
+              style={{ marginTop: 14, width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-raised)", color: "var(--text-secondary)", cursor: "pointer", fontSize: 13, fontWeight: 600 }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       )}
 
       {showRoleModal && canManageRoles && (

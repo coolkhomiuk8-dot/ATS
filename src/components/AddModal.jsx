@@ -6,6 +6,7 @@ import { FL } from "./UiBits";
 export default function AddModal({ onClose, onAdd, drivers = [] }) {
   const [dupDriver, setDupDriver] = useState(null);
   const [form, setForm] = useState({
+    driverGroup: "",
     name: "",
     phone: "",
     email: "",
@@ -91,6 +92,44 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+          <div>
+            <FL t="Driver Group *" />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 4 }}>
+              {[
+                { id: "us", label: "US Driver" },
+                { id: "ukraine", label: "Ukraine Driver" },
+              ].map((option) => {
+                const checked = form.driverGroup === option.id;
+                return (
+                  <label
+                    key={option.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "10px 12px",
+                      borderRadius: 10,
+                      cursor: "pointer",
+                      background: checked ? "var(--color-primary-light)" : "var(--bg-raised)",
+                      border: `1px solid ${checked ? "var(--color-primary-border)" : "var(--border)"}`,
+                      color: checked ? "var(--color-primary-dark)" : "var(--text-secondary)",
+                      fontSize: 13,
+                      fontWeight: 600,
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="driverGroup"
+                      checked={checked}
+                      onChange={() => setField("driverGroup", option.id)}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {[
               ["name", "Full Name *", "James Miller"],
@@ -306,6 +345,7 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
           )}
           <button
             onClick={() => {
+              if (!form.driverGroup) return;
               if (!form.name.trim() || !form.phone.trim()) return;
               const normalized = form.phone.replace(/\D/g, "");
               const dup = normalized.length >= 7
@@ -313,18 +353,19 @@ export default function AddModal({ onClose, onAdd, drivers = [] }) {
                 : null;
               if (dup) { setDupDriver(dup); return; }
               setDupDriver(null);
-              onAdd({ ...form, exp: +form.exp || 0 });
+              onAdd({ ...form, exp: +form.exp || 0, driverGroup: form.driverGroup });
             }}
+            disabled={!form.driverGroup}
             className="btn-p"
             style={{
-              background: "var(--color-primary)",
+              background: form.driverGroup ? "var(--color-primary)" : "var(--text-disabled)",
               border: "none",
               color: "#fff",
               padding: "11px",
               borderRadius: 9,
               fontSize: 14,
               fontWeight: 600,
-              cursor: "pointer",
+              cursor: form.driverGroup ? "pointer" : "not-allowed",
               marginTop: 4,
             }}
           >

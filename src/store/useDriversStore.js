@@ -77,6 +77,7 @@ function ensureDriverShape(driver) {
     emptyMilesRate: 0,
     loadedMilesRate: 0,
     enabled: true,
+    driverGroup: "us",
     citizen: null,       // true | false | null
     militaryLoads: null, // "yes" | "no" | "not_sure" | null
     emergencyContacts: [], // [{ name, phone }]
@@ -721,6 +722,7 @@ export const useDriversStore = create((set, get) => ({
     const newDriver = ensureDriverShape({
       id: nextId,
       docId: String(nextId),
+      driverGroup: data.driverGroup || "us",
       ...data,
       createdAt,
       stageHistory: existingHistory.length > 0
